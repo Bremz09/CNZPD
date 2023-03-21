@@ -22,7 +22,7 @@ st.subheader('All results')
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages\MensRaceResults.xlsm',
+        io='pages/MensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Sprint Qual',
         skiprows=0,
