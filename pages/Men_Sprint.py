@@ -95,66 +95,66 @@ fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final Rank", title = "Rank by Date", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_Rank", title = "Rank by Date", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = ["200m R1"], title = "R1 Times by Age", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100m", title = "100m Times by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m R2", title = "R2 Times by Age", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100-200m", title = "100-200m Times by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m R3", title = "R3 Times by Age", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)
 
 
-st.markdown("---")
+# st.markdown("---")
     
-st.title(":mag_right: Race Analysis Tool")
-uniqueYear = df_orig['Year'].drop_duplicates().sort_values(ascending=False)
+# st.title(":mag_right: Race Analysis Tool")
+# uniqueYear = df_orig['Year'].drop_duplicates().sort_values(ascending=False)
 
 
-left_column, middle_column, right_column = st.columns(3)
-with left_column:
-    an_year = st.selectbox("Select Year:", uniqueYear)
+# left_column, middle_column, right_column = st.columns(3)
+# with left_column:
+#     an_year = st.selectbox("Select Year:", uniqueYear)
     
-df_an_year = df_orig.query(
-    "Year == @an_year"
-)
-uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
+# df_an_year = df_orig.query(
+#     "Year == @an_year"
+# )
+# uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
-with middle_column:
-    an_location = st.selectbox("Select Location:", uniqueLocation)
+# with middle_column:
+#     an_location = st.selectbox("Select Location:", uniqueLocation)
     
-df_an_year_location = df_an_year.query(
-    "Year == @an_year & Location == @an_location"
-)
+# df_an_year_location = df_an_year.query(
+#     "Year == @an_year & Location == @an_location"
+# )
     
-uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
-with right_column:
-    an_event = st.selectbox("Select Event:", uniqueEvent)
+# uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
+# with right_column:
+#     an_event = st.selectbox("Select Event:", uniqueEvent)
 
-df_an = df_an_year_location.query(
-    "Year == @an_year & Location == @an_location & Event == @an_event"
-)
+# df_an = df_an_year_location.query(
+#     "Year == @an_year & Location == @an_location & Event == @an_event"
+# )
 
-st.dataframe(df_an)
+# st.dataframe(df_an)
 
-df_and=df_an
+# df_and=df_an
 
 
 
-fig_event = px.line(df_an, y=["100m","200m"], x = "Athlete")
+# fig_event = px.line(df_an, y=["100m","200m"], x = "Athlete")
 
-st.plotly_chart(fig_event)
+# st.plotly_chart(fig_event)
 
 #t.write(df_and["100m"])
 
