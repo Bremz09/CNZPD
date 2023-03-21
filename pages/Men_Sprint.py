@@ -16,7 +16,7 @@ from PIL import Image
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Man\'s Sprint')
+st.header('Men\'s Sprint')
 st.subheader('All results')
 
 @st.cache_data
