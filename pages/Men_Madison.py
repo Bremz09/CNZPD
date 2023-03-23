@@ -27,7 +27,7 @@ def get_data_from_excel():
         sheet_name='Madison',
         skiprows=0,
         usecols='A:AI',
-        nrows=599
+        nrows=2000
         )
     df = df.replace(',','')
     return df
@@ -177,9 +177,9 @@ for i in range(len(df_an)):
 
 st.dataframe(df_worm)
 
-fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
+fig_worm = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_worm)
 
 
 ###Markers Dataframe and plot
@@ -192,3 +192,25 @@ fig_event = px.line(df_an, y=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprin
 #fig_event.update_layout(legend_title="legend")
 st.plotly_chart(fig_event)
 
+##
+
+df_mean = df_orig.groupby('Country', as_index=False).mean()
+
+st.write("Points Average")
+df_splits_mean = pd.DataFrame()
+df_splits_mean["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"]
+for i in range(len(df_mean)):
+    var = str(df_mean["Country"].iloc[i])
+    df_splits_mean[f"{var}"]=df_mean.iloc[i][3:23].values
+
+st.dataframe(df_splits_mean)
+
+fig_event_mean = px.line(df_splits_mean, x="Marker", y = df_splits.columns, title="Points Scoring Average", markers=True)
+
+st.plotly_chart(fig_event_mean)
+df_mean_total = df_orig[df_orig.Total != "DNF"]
+df_mean_total = df_mean_total.groupby('Country', as_index=False)["Total"].mean()
+st.dataframe(df_mean_total)
+
+fig_total_mean = px.bar(df_mean_total, x="Country", y = "Total", title="Total Scoring Average")
+st.plotly_chart(fig_total_mean)

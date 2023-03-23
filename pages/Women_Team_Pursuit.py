@@ -16,13 +16,13 @@ import numpy as np
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s Team Pursuit')
+st.header('Women\'s Team Pursuit')
 st.subheader('All results')
 
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Team Pursuit',
         skiprows=0,
@@ -205,12 +205,139 @@ st.plotly_chart(fig_event)
 st.write("Random Useless thing")
 st.dataframe(df_an)
 
+st.title(":two_women_holding_hands: Head to Head")
+st.subheader("Select First Athlete Ride")
+
+### HEAD TO HEAD
 
 
-fig_event = px.line(df_an, y=["250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"], x = "Country", title="Pretty useless????", markers=True)
-#fig_event.update_layout(legend_title="legend")
-st.plotly_chart(fig_event)
+hh_uniqueAthlete = df_orig['Country'].drop_duplicates().sort_values(ascending=True)
 
+left_column, middle_column, right_column = st.columns(3)
+with left_column:
+    hh_athlete = st.selectbox("Select Country:", hh_uniqueAthlete, key="hh_athlete")
+    
+df_hh_athlete = df_orig.query(
+    "Country == @hh_athlete"
+)
+hh_uniqueYear = df_hh_athlete['Year'].drop_duplicates().sort_values()
+
+
+
+with middle_column:
+    hh_year = st.selectbox("Select Year:", hh_uniqueYear, key="hh_year")
+    
+df_hh_athlete_year = df_hh_athlete.query(
+    "Year == @hh_year & Country == @hh_athlete"
+)
+    
+hh_uniqueLocation = df_hh_athlete_year['Location'].drop_duplicates().sort_values()
+with right_column:
+    hh_location = st.selectbox("Select Location:", hh_uniqueLocation, key="hh_location")
+
+df_hh_athlete_year_location = df_hh_athlete_year.query(
+    "Year == @hh_year & Location == @hh_location & Country == @hh_athlete"
+)
+
+hh_uniqueEvent = df_hh_athlete_year_location['Event'].drop_duplicates().sort_values(ascending=True)
+
+
+
+left_column, middle_column, right_column = st.columns(3)
+with left_column:
+    hh_event = st.selectbox("Select Event:", hh_uniqueEvent, key="hh_event")
+    
+df_hh_athlete_year_location_event = df_hh_athlete_year_location.query(
+    "Year == @hh_year & Location == @hh_location & Country == @hh_athlete & Event == @hh_event"
+)
+
+hh_uniqueStage = df_hh_athlete_year_location_event['Stage'].drop_duplicates().sort_values()
+
+with middle_column:
+    hh_stage = st.selectbox("Select Stage:", hh_uniqueStage, key="hh_stage")
+    
+df_hh_final = df_hh_athlete_year_location_event.query(
+    "Year == @hh_year & Location == @hh_location & Country == @hh_athlete & Event == @hh_event & Stage == @hh_stage"
+)
+
+st.dataframe(df_hh_final)
+
+
+
+### HEAD TO HEAD RIDER 2 
+
+st.subheader("Select Second Country Ride")
+
+hh2_uniqueAthlete = df_orig['Country'].drop_duplicates().sort_values(ascending=True)
+
+left_column, middle_column, right_column = st.columns(3)
+with left_column:
+    hh2_athlete = st.selectbox("Select Country:", hh2_uniqueAthlete, key="hh2_athlete")
+    
+df_hh2_athlete = df_orig.query(
+    "Country == @hh2_athlete"
+)
+hh2_uniqueYear = df_hh2_athlete['Year'].drop_duplicates().sort_values()
+
+
+
+with middle_column:
+    hh2_year = st.selectbox("Select Year:", hh2_uniqueYear, key="hh2_year")
+    
+df_hh2_athlete_year = df_hh2_athlete.query(
+    "Year == @hh2_year & Country == @hh2_athlete"
+)
+    
+hh2_uniqueLocation = df_hh2_athlete_year['Location'].drop_duplicates().sort_values()
+with right_column:
+    hh2_location = st.selectbox("Select Location:", hh2_uniqueLocation, key="hh2_location")
+
+df_hh2_athlete_year_location = df_hh2_athlete_year.query(
+    "Year == @hh2_year & Location == @hh2_location & Country == @hh2_athlete"
+)
+
+hh2_uniqueEvent = df_hh2_athlete_year_location['Event'].drop_duplicates().sort_values(ascending=True)
+
+
+
+left_column, middle_column, right_column = st.columns(3)
+with left_column:
+    hh2_event = st.selectbox("Select Event:", hh2_uniqueEvent, key="hh2_event")
+    
+df_hh2_athlete_year_location_event = df_hh2_athlete_year_location.query(
+    "Year == @hh2_year & Location == @hh2_location & Country == @hh2_athlete & Event == @hh2_event"
+)
+
+hh2_uniqueStage = df_hh2_athlete_year_location_event['Stage'].drop_duplicates().sort_values()
+
+with middle_column:
+    hh2_stage = st.selectbox("Select Stage:", hh2_uniqueStage, key="hh2_stage")
+    
+df_hh2_final = df_hh2_athlete_year_location_event.query(
+    "Year == @hh2_year & Location == @hh2_location & Country == @hh2_athlete & Event == @hh2_event & Stage == @hh2_stage"
+)
+
+st.dataframe(df_hh2_final)
+
+merge = [df_hh_final,df_hh2_final]
+
+df_hh_comp = pd.concat(merge)
+st.subheader("Comparison")
+
+df_hh_splits = pd.DataFrame()
+df_hh_splits["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
+
+var1 = str(df_hh_comp["Country"].iloc[0] + " " +str(df_hh_comp["Year"].iloc[0]))
+df_hh_splits[f"{var1}"]=df_an.iloc[0][16:48].values
+
+var2 = str(df_hh_comp["Country"].iloc[1] + " " +str(df_hh_comp["Year"].iloc[1]))
+df_hh_splits[f"{var2}"]=df_an.iloc[1][16:48].values
+
+st.dataframe(df_hh_splits)
+
+fig_hh=px.line(df_hh_splits,x="Marker", y=df_hh_splits.columns) # fill down to xaxis
+
+st.plotly_chart(fig_hh)
 
 
 

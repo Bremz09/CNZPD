@@ -8,6 +8,7 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 from PIL import Image
+import datetime
 
 
 
@@ -30,8 +31,23 @@ def get_data_from_excel():
         nrows=1137
         )
     df = df.replace(',','')
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
     return df
 df= get_data_from_excel()
+
+def get_points_data_from_excel():
+    df = pd.read_excel(
+        io='pages/MensSprintPoints.xlsm',
+        engine ='openpyxl',
+        sheet_name='MensSprintPoints',
+        skiprows=0,
+        usecols='A:J',
+        nrows=3000
+        )
+    df = df.replace(',','')
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    return df
+df_points = get_points_data_from_excel()
 
 df_orig = df
 
@@ -159,3 +175,40 @@ st.plotly_chart(fig_athlete_history)
 #t.write(df_and["100m"])
 
 
+
+
+
+
+
+
+st.markdown("---")
+    
+st.title(":date: Points Tool")
+
+dates = df_points['Date'].drop_duplicates().sort_values()
+
+today = datetime.date.today()
+year_ago = today + datetime.timedelta(days=-365)
+
+
+start_date = st.date_input('Period Start:', year_ago)
+end_date = st.date_input('Period Finish:', today)
+df_points_dates = df_points[(df_points['Date'] > start_date) & (df_points['Date'] < end_date)]
+st.write("Number of days: "+str((end_date-start_date).days))
+
+df_points_dates=df_points_dates.sort_values("Current_Rank")
+
+st.dataframe(df_points_dates)
+#df_points_topten = df_points.sort_values("Time").head(10)
+
+names = df_points_dates['Name'].drop_duplicates()
+
+
+df_grouped = df_points_dates.groupby(by="Name")["Points"].sum()
+
+df_grouped = df_grouped.to_frame()
+df_grouped = df_grouped.sort_values(by="Points",ascending=False)
+    
+st.header(":moneybag: Top 50")
+df_grouped.insert(0, 'Rank', range(1, 1+len(df_grouped)))
+st.dataframe(df_grouped.head(50))
