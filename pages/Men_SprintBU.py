@@ -65,7 +65,7 @@ def get_trueskill_data_from_excel():
     return df
 df_TS = get_trueskill_data_from_excel()
 
-df_orig = df_TS
+df_orig = df
 
 year = st.multiselect(
     "Select Year:",
@@ -122,7 +122,7 @@ df_athleteHistory = df_orig.query(
 
 st.dataframe(df_athleteHistory)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Date", y = ["200m"], title = "Times by Date", markers = "True", text = "Location", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Date", y = ["200m R1"], title = "Times by Date", markers = "True", text = "Location", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
@@ -132,17 +132,17 @@ fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = ["200m"], title = "Times by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = ["200m R1"], title = "R1 Times by Age", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m R2", title = "R2 Times by Age", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m R3", title = "R3 Times by Age", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)

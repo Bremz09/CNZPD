@@ -12,7 +12,6 @@ import numpy as np
 
 
 
-
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
@@ -93,13 +92,13 @@ st.dataframe(df_topten)
 df_splits_tt = pd.DataFrame()
 df_splits_tt["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
 for i in range(len(df_topten)):
-    var = str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+    var = str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
     df_splits_tt[f"{var}"]=df_topten.iloc[i][16:48].values
 
     
-fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Splits")
+fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten")
 
-st.plotly_chart(fig_tt)
+st.plotly_chart(fig_tt, use_container_width=True)
 
 st.markdown("---")
     
@@ -115,22 +114,43 @@ df_countryHistory = df_orig.query(
 )
 
 #DATAFRAME
-
+df_countryHistory = df_countryHistory.sort_values("Time")
 st.dataframe(df_countryHistory)
 
 #FIRST FIGURE -- FINAL TIME PROGRESSION
 
-fig_country_history = px.line(df_countryHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", color="Country")
+fig_country_history = px.scatter(df_countryHistory, x="Date", y = "Time", title = "Times by Date", color="Country")
 fig_country_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_country_history)
+st.plotly_chart(fig_country_history, use_container_width=True)
 
-#Could try do an average age thing here
+#Second Figure -- Chart with rider names
 
-# fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", markers = "True", color="Athlete")
-# fig_athlete_history.update_traces(textposition="top right")
+df_splits_CH = pd.DataFrame()
+df_splits_CH["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
+for i in range(len(df_countryHistory)):
+    var = str(df_countryHistory["Country"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])+ " " +str(df_countryHistory["Rider1"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider2"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider3"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider4"].iloc[i].split(" ")[0])
+    df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][16:48].values
 
-# st.plotly_chart(fig_athlete_history)
+    
+fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="All Rides")
+
+
+st.plotly_chart(fig_CH, use_container_width=True)
+
+#Third Figure - Worm
+
+df_worm_CH = pd.DataFrame()
+df_worm_CH["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
+for i in range(len(df_countryHistory)):
+    var = str(df_countryHistory["Country"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])+ " " +str(df_countryHistory["Rider1"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider2"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider3"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider4"].iloc[i].split(" ")[0])
+    df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][16:48].values.cumsum()
+
+
+
+fig_event_CH = px.line(df_worm_CH, x="Marker", y = df_worm_CH.columns, title="The Worm")
+
+st.plotly_chart(fig_event_CH, use_container_width=True)
 
 
 
@@ -184,7 +204,7 @@ st.dataframe(df_splits)
 
 fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event, use_container_width=True)
 
 ### Worm dataframe and plot
 st.write("Running Time")
@@ -198,7 +218,7 @@ st.dataframe(df_worm)
 
 fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event, use_container_width=True)
 
 
 ###Markers Dataframe and plot
@@ -209,7 +229,7 @@ st.dataframe(df_an)
 
 fig_event = px.line(df_an, y=["250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"], x = "Country", title="Pretty useless????", markers=True)
 #fig_event.update_layout(legend_title="legend")
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event, use_container_width=True)
 
 
 

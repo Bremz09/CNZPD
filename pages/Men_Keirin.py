@@ -9,17 +9,17 @@ import plotly.express as px
 import plotly.graph_objects as go
 from PIL import Image
 import datetime
+#from matplotlib.pyplot import figure
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
 
 
-
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s Sprint')
+st.header('Men\'s Keirin')
 st.subheader('All results')
 
 @st.cache_data
@@ -27,10 +27,10 @@ def get_data_from_excel():
     df = pd.read_excel(
         io='pages/MensRaceResults.xlsm',
         engine ='openpyxl',
-        sheet_name='Sprint',
+        sheet_name='Keirin_Trueskill',
         skiprows=0,
-        usecols='A:S',
-        nrows=1137
+        usecols='A:Q',
+        nrows=5000
         )
     df = df.replace(',','')
     df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -39,9 +39,9 @@ df= get_data_from_excel()
 
 def get_points_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensSprintPoints.xlsm',
+        io='pages/2023_Keirin_points.xlsm',
         engine ='openpyxl',
-        sheet_name='MensSprintPoints',
+        sheet_name='2023_Keirin_points',
         skiprows=0,
         usecols='A:J',
         nrows=3000
@@ -51,21 +51,7 @@ def get_points_data_from_excel():
     return df
 df_points = get_points_data_from_excel()
 
-def get_trueskill_data_from_excel():
-    df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
-        engine ='openpyxl',
-        sheet_name='Sprint_Trueskill',
-        skiprows=0,
-        usecols='A:R',
-        nrows=3000
-        )
-    df = df.replace(',','')
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
-    return df
-df_TS = get_trueskill_data_from_excel()
-
-df_orig = df_TS
+df_orig = df
 
 year = st.multiselect(
     "Select Year:",
@@ -122,30 +108,27 @@ df_athleteHistory = df_orig.query(
 
 st.dataframe(df_athleteHistory)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Date", y = ["200m"], title = "Times by Date", markers = "True", text = "Location", color="Athlete")
+fig_athlete_history = px.scatter(df_athleteHistory, x="Date", y = ["Rank"], title = "Rank by Date", text = "Location", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_Rank", title = "Rank by Date", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Trueskill Rank by Date", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = ["200m"], title = "Times by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.scatter(df_athleteHistory, x="Age", y = ["Rank"], title = "Rank by Age", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Trueskill Rank by Age", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
 
-
-st.plotly_chart(fig_athlete_history)
 
 
 # st.markdown("---")
@@ -229,13 +212,12 @@ st.header(":moneybag: Top 50")
 df_grouped.insert(0, 'Rank', range(1, 1+len(df_grouped)))
 st.dataframe(df_grouped.head(50))
 
-###Trueskill Stuff
 
 st.markdown("---")
     
 st.title(":brain: Trueskill - Head to Head")
 
-df_TS = df_TS.drop_duplicates("Athlete",keep="last")
+df_TS = df_orig.drop_duplicates("Athlete",keep="last")
 #athlete_TS = st.multiselect("Select Athlete(s):", latest_TS)
 
 ath1 = st.selectbox("Select Athlete 1:", df_TS["Athlete"].sort_values(), key="df_TS")
@@ -286,7 +268,7 @@ with middle_column:
 with right_column:
 
     st.write(name2 + " has mu value " + str(mu2) + " and sigma value " + str(sig2))
-    st.write("From " +str(trials) + " trials, " + name2 + " has a " + str(round(s2_win_prob,2))+ "% chance of beating " + name1)
+    st.write("From " +str(trials) + " trials, " + name2 + " has a " + str(s2_win_prob)+ "% chance of beating " + name1)
     
     
     
@@ -300,7 +282,7 @@ st.markdown("---")
     
 st.title(":brain: Trueskill - Race Simulator")
 
-df_TS_multi = df_TS.drop_duplicates("Athlete",keep="last")
+df_TS_multi = df_orig.drop_duplicates("Athlete",keep="last")
 plt.figure(1)
 aths = st.multiselect("Select Athletes:", df_TS_multi["Athlete"].sort_values(), key="df_TS_multi")
 
