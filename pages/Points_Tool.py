@@ -24,7 +24,7 @@ update = datetime.date.today()
 s = update.strftime("%d/%m/%Y")
 st.subheader("Last update on "+ str(s))
 
-@st.cache_data
+#@st.cache_data
 
 def get_MS_points_data_from_excel():
     df_MS = pd.read_excel(
@@ -137,10 +137,12 @@ with col_five:
 col_one, col_two, col_three, col_four, col_five = st.columns(5)
 with col_one:
     max_athletes = st.number_input("Max numbers of athletes from each nation", min_value=0, max_value=None, value=2, key="Max_athletes")
-
+    
+    
+df = df[(df['Date'] > start_date) & (df['Date'] < end_date)]
 athletes = df['Name'].drop_duplicates()
 countries = []
-df = df[(df['Date'] > start_date) & (df['Date'] < end_date)]
+
 WC_totals = []
 NC_totals = []
 CC_totals = []
@@ -153,10 +155,10 @@ totals=[]
 allowed_athletes = []
 
 for i in range(len(athletes)):
-    x = df.loc[(df.Name == athletes.iloc[i]),'Country'].iloc[0]
-    if countries.count(x)<max_athletes:
+    y = df.loc[(df.Name == athletes.iloc[i]),'Country'].iloc[0]
+    if countries.count(y)<max_athletes:
         allowed_athletes.append(athletes.iloc[i])
-        countries.append(x)
+        countries.append(y)
         total=0
         x = df.loc[(df.Class == "UCI World Championships") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         WC_total = sum(x[:WC_events])
