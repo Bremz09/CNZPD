@@ -161,7 +161,7 @@ st.write("This sums the best World Champs, Nations Cup, Continental Champs, Nati
 
 col_one, col_two, col_three, col_four = st.columns(4)
 with col_one:
-    toggle = tog.st_toggle_switch(label="Restrict to top two athletes from each country", 
+    toggle = tog.streamlit_toggle_switch(label="Restrict to top two athletes from each country", 
                         key="Key1", 
                         default_value=True, 
                         label_after = True, 
