@@ -38,6 +38,14 @@ df= get_data_from_excel()
 
 df_orig = df
 
+
+
+
+# color = st.select_slider(
+#     'Select a color of the rainbow',
+#     options=['2', 'All'])
+# st.write('My favorite color is', color)
+
 year = st.multiselect(
     "Select Year:",
     options=df["Year"].unique(),
