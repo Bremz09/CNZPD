@@ -12,7 +12,8 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-import streamlit_toggle as tog
+# import streamlit_toggle as tog
+# import streamlit_toggle
 #from streamlit_toggle import toggle, st_toggle_switch
 
 
@@ -152,7 +153,7 @@ TCLRR_events=5
 CONE_events=3
 start_date = default_start
 end_date = datetime.date(2023, 6, 21)
-max_athletes=2
+#max_athletes=2
 
 
 
@@ -161,8 +162,8 @@ max_athletes=2
 st.write("This sums the best World Champs, Nations Cup, Continental Champs, National Champs, and Overall Champions League points, as well as top three Class 1 and Class 2 points, and top five Champions League Round points, between " + str(start_date) + " and " + str(end_date))
 
 col_one, col_two, col_three, col_four = st.columns(4)
-# with col_one:
-#     toggle = tog.st_toggle_switch(label="Restrict to top two athletes from each country", 
+with col_one:
+#     toggle = streamlit_toggle.toggle(label="Restrict to top two athletes from each country", 
 #                         key="Key1", 
 #                         default_value=True, 
 #                         label_after = True, 
@@ -171,13 +172,15 @@ col_one, col_two, col_three, col_four = st.columns(4)
 #                         track_color="#29B5E8"
 #                         )
 
-    
+
+    options = ["All athletes","Top two from each Nation"]
+    Max_Ath = st.selectbox("Athletes shown:", options, key="Max Athletes")
 
 
-# if toggle:
-#     max_athletes = 2
-# else:
-#     max_athletes = 200
+if Max_Ath=="Top two from each Nation":
+    max_athletes = 2
+else:
+    max_athletes = 200
     
     
 df = df[(df['Date'] > start_date) & (df['Date'] < end_date)]
@@ -201,42 +204,42 @@ for i in range(len(athletes)):
         allowed_athletes.append(athletes.iloc[i])
         countries.append(y)
         total=0
-        x = df.loc[(df.Class == "WCh") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "UCI World Championships") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         WC_total = sum(x[:WC_events])
         WC_totals.append(WC_total)
         total+=WC_total
 
-        x = df.loc[(df.Class == "NCp") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "Nations' Cup") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         NC_total = sum(x[:NC_events])
         NC_totals.append(NC_total)
         total+=NC_total
 
-        x = df.loc[(df.Class == "CCh") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "Continental Championships") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         CC_total = sum(x[:CC_events])
         CC_totals.append(CC_total)
         total+=CC_total
 
-        x = df.loc[(df.Class == "NCh") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "National Championships") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         NCH_total = sum(x[:NCH_events])
         NCH_totals.append(NCH_total)
         total+=NCH_total
 
-        x = df.loc[(df.Class == "ChL") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "TCL General Ranking") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         TCLOR_total = sum(x[:TCLOR_events])
         TCLOR_totals.append(TCLOR_total)
         total+=TCLOR_total
 
-        x = df.loc[(df.Class == "ChR") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "TCL Round Ranking") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         TCLRR_total = sum(x[:TCLRR_events])
         TCLRR_totals.append(TCLRR_total)
         total+=TCLRR_total
 
-        x = df.loc[(df.Class == "CL1") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "Class 1") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         CONE_total = sum(x[:CONE_events])
         CONE_totals.append(CONE_total)
         total+=CONE_total
 
-        x = df.loc[(df.Class == "CL2") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "Class 2") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         CTWO_total = sum(x[:CTWO_events])
         CTWO_totals.append(CTWO_total)
         total+=CTWO_total
