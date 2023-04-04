@@ -163,16 +163,6 @@ st.write("This sums the best World Champs, Nations Cup, Continental Champs, Nati
 
 col_one, col_two, col_three, col_four = st.columns(4)
 with col_one:
-#     toggle = streamlit_toggle.toggle(label="Restrict to top two athletes from each country", 
-#                         key="Key1", 
-#                         default_value=True, 
-#                         label_after = True, 
-#                         inactive_color = '#D3D3D3', 
-#                         active_color="#11567f", 
-#                         track_color="#29B5E8"
-#                         )
-
-
     options = ["All athletes","Top two from each Nation"]
     Max_Ath = st.selectbox("Athletes shown:", options, key="Max Athletes")
 
