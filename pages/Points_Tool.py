@@ -29,6 +29,22 @@ st.subheader("Last update on "+ str(s))
 
 @st.cache_data
 
+def get_MK_points_data_from_excel():
+    df_MK = pd.read_excel(
+        io='pages/Kierin_Points_Men.xlsx',
+        engine ='openpyxl',
+        sheet_name='Kierin_Points_Men',
+        skiprows=0,
+        usecols='A:J',
+        nrows=3000
+        )
+    df_MK = df_MK.replace(',','')
+    df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
+    return df_MK
+df_MK = get_MK_points_data_from_excel()
+
+
+
 def get_MS_points_data_from_excel():
     df_MS = pd.read_excel(
         io='pages/Sprint_Points_Men.xlsx',
@@ -43,22 +59,6 @@ def get_MS_points_data_from_excel():
     return df_MS
 df_MS = get_MS_points_data_from_excel()
 
-
-
-
-def get_MK_points_data_from_excel():
-    df_MK = pd.read_excel(
-        io='pages/Kierin_Points_Men.xlsx',
-        engine ='openpyxl',
-        sheet_name='Kierin_Points_Men',
-        skiprows=0,
-        usecols='A:J',
-        nrows=3000
-        )
-    df_MK = df_MK.replace(',','')
-    df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
-    return df_MK
-df_MK = get_MK_points_data_from_excel()
 
 
 
@@ -156,8 +156,6 @@ end_date = datetime.date(2023, 6, 21)
 #max_athletes=2
 
 
-
-st.write("Hello")
 
 st.write("This sums the best World Champs, Nations Cup, Continental Champs, National Champs, and Overall Champions League points, as well as top three Class 1 and Class 2 points, and top five Champions League Round points, between " + str(start_date) + " and " + str(end_date))
 
