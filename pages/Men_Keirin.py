@@ -39,9 +39,9 @@ df= get_data_from_excel()
 
 def get_points_data_from_excel():
     df = pd.read_excel(
-        io='pages/2023_Keirin_points.xlsm',
+        io='pages/Kierin_Points_Men.xlsx',
         engine ='openpyxl',
-        sheet_name='2023_Keirin_points',
+        sheet_name='Kierin_Points_Men',
         skiprows=0,
         usecols='A:J',
         nrows=3000

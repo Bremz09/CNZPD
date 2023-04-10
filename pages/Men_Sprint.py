@@ -39,9 +39,9 @@ df= get_data_from_excel()
 
 def get_points_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensSprintPoints.xlsm',
+        io='pages/Sprint_Points_Men.xlsx',
         engine ='openpyxl',
-        sheet_name='MensSprintPoints',
+        sheet_name='Sprint_Points_Men',
         skiprows=0,
         usecols='A:J',
         nrows=3000
@@ -127,7 +127,7 @@ fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_Rank", title = "Rank by Date", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final Rank", title = "Rank by Date", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
@@ -137,12 +137,12 @@ fig_athlete_history.update_traces(textposition="top right")
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
+fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)
@@ -197,37 +197,37 @@ st.plotly_chart(fig_athlete_history)
 
 
 
-st.markdown("---")
+# st.markdown("---")
     
-st.title(":date: Points Tool")
+# st.title(":date: Points Tool")
 
-dates = df_points['Date'].drop_duplicates().sort_values()
+# dates = df_points['Date'].drop_duplicates().sort_values()
 
-today = datetime.date.today()
-year_ago = today + datetime.timedelta(days=-365)
-
-
-start_date = st.date_input('Period Start:', year_ago)
-end_date = st.date_input('Period Finish:', today)
-df_points_dates = df_points[(df_points['Date'] > start_date) & (df_points['Date'] < end_date)]
-st.write("Number of days: "+str((end_date-start_date).days))
-
-df_points_dates=df_points_dates.sort_values("Current_Rank")
-
-st.dataframe(df_points_dates)
-#df_points_topten = df_points.sort_values("Time").head(10)
-
-names = df_points_dates['Name'].drop_duplicates()
+# today = datetime.date.today()
+# year_ago = today + datetime.timedelta(days=-365)
 
 
-df_grouped = df_points_dates.groupby(by="Name")["Points"].sum()
+# start_date = st.date_input('Period Start:', year_ago)
+# end_date = st.date_input('Period Finish:', today)
+# df_points_dates = df_points[(df_points['Date'] > start_date) & (df_points['Date'] < end_date)]
+# st.write("Number of days: "+str((end_date-start_date).days))
 
-df_grouped = df_grouped.to_frame()
-df_grouped = df_grouped.sort_values(by="Points",ascending=False)
+# df_points_dates=df_points_dates.sort_values("Current_Rank")
+
+# st.dataframe(df_points_dates)
+# #df_points_topten = df_points.sort_values("Time").head(10)
+
+# names = df_points_dates['Name'].drop_duplicates()
+
+
+# df_grouped = df_points_dates.groupby(by="Name")["Points"].sum()
+
+# df_grouped = df_grouped.to_frame()
+# df_grouped = df_grouped.sort_values(by="Points",ascending=False)
     
-st.header(":moneybag: Top 50")
-df_grouped.insert(0, 'Rank', range(1, 1+len(df_grouped)))
-st.dataframe(df_grouped.head(50))
+# st.header(":moneybag: Top 50")
+# df_grouped.insert(0, 'Rank', range(1, 1+len(df_grouped)))
+# st.dataframe(df_grouped.head(50))
 
 ###Trueskill Stuff
 

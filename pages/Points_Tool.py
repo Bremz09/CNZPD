@@ -23,9 +23,9 @@ st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
 st.header('Points Tool')
-update = datetime.date.today()
+update = datetime.date.today()+ pd.DateOffset(1)
 s = update.strftime("%d/%m/%Y")
-st.subheader("Last update on "+ str(s))
+#st.subheader("Last update on "+ str(s))
 
 @st.cache_data
 
