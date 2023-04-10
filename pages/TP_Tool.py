@@ -11,6 +11,9 @@ from PIL import Image
 import numpy as np
 from io import StringIO
 
+from plotly.subplots import make_subplots
+
+
 
 
 st.set_page_config(page_title='CNZ Performance Database',
@@ -47,18 +50,19 @@ if uploaded_file is not None:
 
     with col_two:
         offset = st.number_input("Input offset:")
+        Title = st.text_input("Plot Title:")
 
     with col_three:
         for i in range(len(df)-1):
-            splits.append(df.Time[i+1]-df.Time[i])
-            speeds.append((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1])
+            splits.append(round(df.Time[i+1]-df.Time[i],3))
+            speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
             if df.Change[i]=="n":
                 front.append(eval(f'rider{r%4 +1}'))
                 del_speeds.append(speeds[i])
             else:
                 r+=1
                 front.append(eval(f'rider{r%4 +1}'))
-                del_speeds.append(speeds[i]*splits[i]/(splits[i]-offset))
+                del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
         del_speeds.append(speeds[len(speeds)-1])
 #         for j in range(len(df)):
 #             if df.Change[j]=="n":
@@ -71,5 +75,17 @@ if uploaded_file is not None:
         df["Front"]=front
         st.write(df)
         
-    fig = px.bar(df, x='Distance', y='Avg_Speed',color="Front")
+
+        
+    fig = px.bar(df, x='Distance', y='Avg_Speed',color="Front",hover_data=['Split', 'Avg_Speed','Del_Speed'])
+    #fig.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    fig.add_trace(go.Scatter(x=df['Distance'][1:], y=df['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
+    fig.update_layout(
+    title={
+        'text': Title,
+        'y':0.9,
+        'x':0.5,
+        'xanchor': 'center',
+        'yanchor': 'top',
+        'font':dict(size=25)})
     st.plotly_chart(fig, use_container_width=True)
