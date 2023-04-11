@@ -22,7 +22,7 @@ st.set_page_config(page_title='CNZ Performance Database',
 st.header('Pursuit Visualiser')
 
 
-with open('pages\TP_demo.xlsx', "rb") as template_file:
+with open('pages/TP_demo.xlsx', "rb") as template_file:
         template_byte = template_file.read()
 
 col_1, col_2 = st.columns(2)
