@@ -20,13 +20,22 @@ st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
 st.header('Pursuit Visualiser')
-st.subheader('All results')
 
 
+with open('pages\TP_demo.xlsx', "rb") as template_file:
+        template_byte = template_file.read()
 
-riders=["GATE Aaron","BRIDGEWATER Dan","SEXTON Tom", "GOUGH Regan", "STEWART Campbell", "JACKSON George"]
-riders.sort()
-uploaded_file = st.file_uploader("Choose a file")
+col_1, col_2 = st.columns(2)
+with col_1:
+    st.download_button(label="Click to Download Template File",
+                        data=template_byte,
+                        file_name="template.xlsx"
+                      )
+
+    riders=["GATE Aaron","BRIDGEWATER Dan","SEXTON Tom", "GOUGH Regan", "STEWART Campbell", "JACKSON George"]
+    riders.sort()
+
+    uploaded_file = st.file_uploader("Choose a file")
 
 
 
