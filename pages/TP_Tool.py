@@ -58,8 +58,10 @@ if uploaded_file is not None:
 
 
     with col_two:
-        offset = st.number_input("Input offset:")
+        offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
+        schedule = st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3)
         Title = st.text_input("Plot Title:")
+        
 
     with col_three:
         for i in range(len(df)-1):
@@ -97,4 +99,5 @@ if uploaded_file is not None:
         'xanchor': 'center',
         'yanchor': 'top',
         'font':dict(size=25)})
+    fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white")
     st.plotly_chart(fig, use_container_width=True)

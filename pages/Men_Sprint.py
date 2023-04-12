@@ -12,6 +12,7 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+pd.set_option("display.precision", 1)
 
 
 
@@ -30,12 +31,13 @@ def get_data_from_excel():
         sheet_name='Sprint',
         skiprows=0,
         usecols='A:S',
-        nrows=1137
+        nrows=3000
         )
     df = df.replace(',','')
     df['Date'] = pd.to_datetime(df['Date']).dt.date
     return df
 df= get_data_from_excel()
+
 
 def get_points_data_from_excel():
     df = pd.read_excel(
@@ -70,7 +72,7 @@ df_orig = df_TS
 year = st.multiselect(
     "Select Year:",
     options=df["Year"].unique(),
-    default=df["Year"].unique()[0]
+    default=df["Year"].unique()[-1]
 )    
 if year:
     df = df.query(
@@ -143,6 +145,11 @@ fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final Rank", titl
 st.plotly_chart(fig_athlete_history)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
+
+
+st.plotly_chart(fig_athlete_history)
+
+fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final CSE", title = "Conservative Skill Estimate by Date", markers = "True", color="Athlete")
 
 
 st.plotly_chart(fig_athlete_history)

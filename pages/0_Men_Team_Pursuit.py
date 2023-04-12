@@ -14,7 +14,8 @@ import numpy as np
 
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
-                  layout="wide")
+                  layout="wide",
+                  )
 st.header('Men\'s Team Pursuit')
 st.subheader('All results')
 
