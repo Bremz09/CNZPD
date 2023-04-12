@@ -27,7 +27,7 @@ update = datetime.date.today()+ pd.DateOffset(1)
 s = update.strftime("%d/%m/%Y")
 #st.subheader("Last update on "+ str(s))
 
-@st.cache_data
+#@st.cache_data
 
 def get_MK_points_data_from_excel():
     df_MK = pd.read_excel(
