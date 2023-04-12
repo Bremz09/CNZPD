@@ -27,7 +27,7 @@ update = datetime.date.today()+ pd.DateOffset(1)
 s = update.strftime("%d/%m/%Y")
 #st.subheader("Last update on "+ str(s))
 
-#@st.cache_data
+@st.cache_data
 
 def get_MK_points_data_from_excel():
     df_MK = pd.read_excel(
@@ -113,7 +113,7 @@ df_orig=df
 #st.subheader("Number of events for inclusion (shouldn't have to change these values)")
 today = datetime.date.today()
 default_start = datetime.date(2022, 6, 22)
-col_one, col_two, col_three, col_four, col_five = st.columns(5)
+# col_one, col_two, col_three, col_four, col_five = st.columns(5)
 
 ### This was when you could change the number of events etc
 
@@ -192,46 +192,47 @@ for i in range(len(athletes)):
         allowed_athletes.append(athletes.iloc[i])
         countries.append(y)
         total=0
-        x = df.loc[(df.Class == "UCI World Championships") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "WCh") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         WC_total = sum(x[:WC_events])
         WC_totals.append(WC_total)
         total+=WC_total
 
-        x = df.loc[(df.Class == "Nations' Cup") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "NCp") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         NC_total = sum(x[:NC_events])
         NC_totals.append(NC_total)
         total+=NC_total
 
-        x = df.loc[(df.Class == "Continental Championships") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "CCh") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         CC_total = sum(x[:CC_events])
         CC_totals.append(CC_total)
         total+=CC_total
 
-        x = df.loc[(df.Class == "National Championships") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "NCh") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         NCH_total = sum(x[:NCH_events])
         NCH_totals.append(NCH_total)
         total+=NCH_total
 
-        x = df.loc[(df.Class == "TCL General Ranking") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "ChL") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         TCLOR_total = sum(x[:TCLOR_events])
         TCLOR_totals.append(TCLOR_total)
         total+=TCLOR_total
 
-        x = df.loc[(df.Class == "TCL Round Ranking") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "ChR") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         TCLRR_total = sum(x[:TCLRR_events])
         TCLRR_totals.append(TCLRR_total)
         total+=TCLRR_total
 
-        x = df.loc[(df.Class == "Class 1") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "CL1") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         CONE_total = sum(x[:CONE_events])
         CONE_totals.append(CONE_total)
         total+=CONE_total
 
-        x = df.loc[(df.Class == "Class 2") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
+        x = df.loc[(df.Class == "CL2") &  (df.Name == athletes.iloc[i]),'Points'].astype(int).sort_values(ascending=False)
         CTWO_total = sum(x[:CTWO_events])
         CTWO_totals.append(CTWO_total)
         total+=CTWO_total
         totals.append(total)
+
 
 
 Points = {'Name': allowed_athletes,
