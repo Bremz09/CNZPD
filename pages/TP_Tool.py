@@ -100,9 +100,37 @@ if master_file:
 #         df_splits_tt[f"{var}"]=df_topten.iloc[i][16:48].values
 
 
-    fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title")
+        fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
 
-    st.plotly_chart(fig_tt, use_container_width=True)
+        st.plotly_chart(fig_tt, use_container_width=True)
+        
+        if len(selections) >1:
+        
+            df_zero = df_combine
+            df_zero = df_zero.reset_index(drop=True)
+            st.write(len(selections))
+            length = df_zero.Title.value_counts()[selections[0]]
+            
+            for j in range(length,len(selections)*length):
+                df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+                df_zero.Split[j-length]=0
+                
+                    
+                    
+            df_zero
+            
+            fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+
+            st.plotly_chart(fig_zero, use_container_width=True)
+            
+            fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+            st.plotly_chart(fig_worm, use_container_width=True)
+                           
+                       
+            
+            
+            
 
             
             
