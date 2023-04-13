@@ -71,10 +71,12 @@ if master_file:
 
 
     if len(selections) !=0:
+        df_combine = pd.DataFrame()
         for i in range(len(selections)):
             col_1,col_2=st.columns(2)
             with col_1:
                 df_temp = df_master.loc[df_master['Title'] == selections[i]]
+                df_combine = pd.concat([df_combine, df_temp], axis=0)
                 df_temp
             with col_2:
                 fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
@@ -91,8 +93,17 @@ if master_file:
                 st.plotly_chart(fig, use_container_width=True)
             
 
+#     df_total = pd.DataFrame()
+#     df_total["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
+#     for i in range(len(df_combine)):
+#         var = str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+#         df_splits_tt[f"{var}"]=df_topten.iloc[i][16:48].values
 
-            
+
+    fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title")
+
+    st.plotly_chart(fig_tt, use_container_width=True)
+
             
             
             
