@@ -14,6 +14,7 @@ from openpyxl import load_workbook
 from plotly.subplots import make_subplots
 import xlwings as xw
 import datetime
+import io
 
 
 
@@ -187,40 +188,88 @@ if uploaded_file is not None:
     
     
     
-    master_path=st.text_input("Add path to master file:",key="prompt")
-    if st.button("Save this effort to master",key="upload"):
+    #master_path=st.text_input("Add path to master file:",key="prompt")
+    if st.button("Append this effort to master",key="upload"):
         
         
   
       
         df_save=df
         df_save.insert(0, 'Save_Date', datetime.date.today())
+        df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
         df_save.insert(0, 'Title', Title)
-        df_save
-        st.write("Saved to Database")
+        df = pd.concat([df_master, df_save], axis=0)
+        df
+        
+        ##Testing downloader
+        
+
+        # buffer to use for excel writer
+        buffer = io.BytesIO()
 
 
 
-        master=xw.Book(f'{master_path}')
-        master_sheets=master.sheets
-        sheet=master_sheets[0]
-        if sheet.range('A1').end('down').row > 1000000:
-            index=2
-        else:
-            index=sheet.range('A1').end('down').row+1
-        for i in range(len(df)):
-            sheet[f'A{index}'].value = df_save.iloc[i][0]
-            sheet[f'B{index}'].value = df_save.iloc[i][1]
-            sheet[f'C{index}'].value = df_save.iloc[i][2]
-            sheet[f'D{index}'].value = df_save.iloc[i][3]
-            sheet[f'E{index}'].value = df_save.iloc[i][4]
-            sheet[f'F{index}'].value = df_save.iloc[i][5]
-            sheet[f'G{index}'].value = df_save.iloc[i][6]
-            sheet[f'H{index}'].value = df_save.iloc[i][7]
-            sheet[f'I{index}'].value = df_save.iloc[i][8]
-            index+=1
-        master.save()
-        master.close()
+        @st.cache_data
+        def convert_to_csv(df):
+            # IMPORTANT: Cache the conversion to prevent computation on every rerun
+            return df.to_csv(index=False).encode('utf-8')
+
+        csv = convert_to_csv(df)
+
+        # display the dataframe on streamlit app
+#         st.write(df)
+
+        # download button 1 to download dataframe as csv
+        download1 = st.download_button(
+            label="Download new Master as CSV",
+            data=csv,
+            file_name='TP_Master.csv',
+            mime='text/csv'
+        )
+
+        # download button 2 to download dataframe as xlsx
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            # Write each dataframe to a different worksheet.
+            df.to_excel(writer, sheet_name='Sheet1', index=False)
+            # Close the Pandas Excel writer and output the Excel file to the buffer
+            writer.save()
+
+            download2 = st.download_button(
+                label="Download new Master as Excel",
+                data=buffer,
+                file_name='TP_Master.xlsx',
+                mime='application/vnd.ms-excel'
+            )
+        
+        
+        
+        
+        
+#         df_save
+#         st.write("Saved to Database")
+
+
+
+#         master=xw.Book(f'{master_path}')
+#         master_sheets=master.sheets
+#         sheet=master_sheets[0]
+#         if sheet.range('A1').end('down').row > 1000000:
+#             index=2
+#         else:
+#             index=sheet.range('A1').end('down').row+1
+#         for i in range(len(df)):
+#             sheet[f'A{index}'].value = df_save.iloc[i][0]
+#             sheet[f'B{index}'].value = df_save.iloc[i][1]
+#             sheet[f'C{index}'].value = df_save.iloc[i][2]
+#             sheet[f'D{index}'].value = df_save.iloc[i][3]
+#             sheet[f'E{index}'].value = df_save.iloc[i][4]
+#             sheet[f'F{index}'].value = df_save.iloc[i][5]
+#             sheet[f'G{index}'].value = df_save.iloc[i][6]
+#             sheet[f'H{index}'].value = df_save.iloc[i][7]
+#             sheet[f'I{index}'].value = df_save.iloc[i][8]
+#             index+=1
+#         master.save()
+#         master.close()
 
 
 
