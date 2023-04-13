@@ -161,7 +161,7 @@ if uploaded_file is not None:
         df_save.insert(0, 'Title', Title)
         df_save
         st.write("Saved to Database")
-        #excel_app = xlwings.App(visible=False)
+
  
         
         master=xw.Book(f'{path_to_master}')

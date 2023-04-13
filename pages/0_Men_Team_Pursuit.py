@@ -39,6 +39,57 @@ df= get_data_from_excel()
 
 df_orig = df
 
+##Testing downloader
+import io
+
+# buffer to use for excel writer
+buffer = io.BytesIO()
+
+
+
+@st.cache_data
+def convert_to_csv(df):
+    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+    return df.to_csv(index=False).encode('utf-8')
+
+csv = convert_to_csv(df)
+
+# display the dataframe on streamlit app
+st.write(df)
+
+# download button 1 to download dataframe as csv
+download1 = st.download_button(
+    label="Download data as CSV",
+    data=csv,
+    file_name='large_df.csv',
+    mime='text/csv'
+)
+
+# download button 2 to download dataframe as xlsx
+with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+    # Write each dataframe to a different worksheet.
+    df.to_excel(writer, sheet_name='Sheet1', index=False)
+    # Close the Pandas Excel writer and output the Excel file to the buffer
+    writer.save()
+
+    download2 = st.download_button(
+        label="Download data as Excel",
+        data=buffer,
+        file_name='large_df.xlsx',
+        mime='application/vnd.ms-excel'
+    )
+
+##Testing done
+
+
+
+
+
+
+
+
+
+
 
 year = st.multiselect(
     "Select Year:",
