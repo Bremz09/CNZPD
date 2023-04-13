@@ -148,23 +148,29 @@ if uploaded_file is not None:
         'font':dict(size=25)})
     fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
     st.plotly_chart(fig, use_container_width=True)
-
-    if st.button("Save this effort to main database"):
+    
+    
+    
+    
+    path_to_master=st.text_input("Path to your master document:")
+    
+    
+    if st.button("Save this effort to master",key="upload"):
         df_save=df
         df_save.insert(0, 'Save_Date', datetime.date.today())
         df_save.insert(0, 'Title', Title)
-#         df_save["Save_Date"] = datetime.date.today()
         df_save
         st.write("Saved to Database")
         #excel_app = xlwings.App(visible=False)
  
         
-        
-        master=xw.Book(r"pages\TP_Master.xlsx")
+        master=xw.Book(f'{path_to_master}')
         master_sheets=master.sheets
         sheet=master_sheets[0]
-        #index=2
-        index=sheet.range('A1').end('down').row+1
+        if sheet.range('A1').end('down').row > 1000000:
+            index=2
+        else:
+            index=sheet.range('A1').end('down').row+1
         for i in range(len(df)):
             sheet[f'A{index}'].value = df_save.iloc[i][0]
             sheet[f'B{index}'].value = df_save.iloc[i][1]
