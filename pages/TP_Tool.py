@@ -117,7 +117,7 @@ if master_file:
                 
                     
                     
-            df_zero
+           
             
             fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
 
