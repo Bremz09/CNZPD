@@ -17,10 +17,9 @@ st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
 st.header('Men\'s Sprint Qualifying')
-st.subheader('All results')
 
-Devs = ["No","Yes"]
-Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key="Dev_selector")
+
+
 
 @st.cache_data
 def get_data_from_excel():
@@ -50,53 +49,61 @@ def get_dev_data_from_excel():
     return df_dev
 df_dev= get_dev_data_from_excel()
 
-if Dev == "Yes":
-    df = pd.concat([df,df_dev])
+col1, col2, col3, col4 = st.columns(4)
+with col1:
 
+    Devs = ["No","Yes"]
+    Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key="Dev_selector")
 
-df_orig = df
+    if Dev == "Yes":
+        df = pd.concat([df,df_dev])
 
-year = st.multiselect(
-    "Select Year:",
-    options=df["Year"].unique(),
-    default=df["Year"].unique()[0]
-)    
-if year:
-    df = df.query(
-        "Year == @year"
-        )
-else:
-    df=df_orig
+with col2:
+    df_orig = df
 
+    year = st.multiselect(
+        "Select Year:",
+        options=df["Year"].unique(),
+        default=df["Year"].unique()[0]
+    )    
+    if year:
+        df = df.query(
+            "Year == @year"
+            )
+    else:
+        df=df_orig
 
-location = st.multiselect(
-    "Select Location:",
-    options=df["Location"].unique(),
-    default=df["Location"].unique()[0]
-)
+with col3:
+    location = st.multiselect(
+        "Select Location:",
+        options=df["Location"].unique(),
+        default=df["Location"].unique()[0]
+    )
 
-if location:
-    df = df.query(
-        "Location == @location"
-        )
-else:
-    df=df_orig
+    if location:
+        df = df.query(
+            "Location == @location"
+            )
+    else:
+        df=df_orig
+        
+        
+with col4:
+    event = st.multiselect(
+        "Select Event Type:",
+        options=df["Event"].unique(),
+        default=df["Event"].unique()[0]
+    )
 
-event = st.multiselect(
-    "Select Event Type:",
-    options=df["Event"].unique(),
-    default=df["Event"].unique()[0]
-)
-
-if event:
-    df = df.query(
-        "Event == @event"
-        )
-else:
-    df=df_orig
+    if event:
+        df = df.query(
+            "Event == @event"
+            )
+    else:
+        df=df_orig
 
     
-st.dataframe(df)
+st.dataframe(df,use_container_width=True)
 
     
 st.markdown("---")
@@ -105,7 +112,7 @@ st.title(":bar_chart: Top Ten Performances")
 
 df_topten = df_orig.sort_values('200m').head(10)
 
-st.dataframe(df_topten)
+st.dataframe(df_topten,use_container_width=True)
 
 st.markdown("---")
     
@@ -118,32 +125,32 @@ df_athleteHistory = df_orig.query(
     "Athlete == @athlete"
 )
 
-st.dataframe(df_athleteHistory)
+st.dataframe(df_athleteHistory,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "200m", title = "Times by Date", markers = "True", text = "Location", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Rank", title = "Rank by Date", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100m", title = "100m Times by Age", markers = "True", color="Athlete")
 
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100-200m", title = "100-200m Times by Age", markers = "True", color="Athlete")
 
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 
 st.markdown("---")
@@ -176,13 +183,13 @@ df_an = df_an_year_location.query(
     "Year == @an_year & Location == @an_location & Event == @an_event"
 )
 
-st.dataframe(df_an)
+st.dataframe(df_an,use_container_width=True)
 
 
 
 fig_event = px.line(df_an, y=["100m","200m","Diff"], x = "Athlete")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 #t.write(df_and["100m"])
 

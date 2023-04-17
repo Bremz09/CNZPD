@@ -38,12 +38,13 @@ def get_data_from_excel():
 df= get_data_from_excel()
 
 df_orig = df
-
-year = st.multiselect(
-    "Select Year:",
-    options=df["Year"].unique(),
-    default=df["Year"].unique()[0]
-)    
+c1,c2,c3=st.columns(3)
+with c1:
+    year = st.multiselect(
+        "Select Year:",
+        options=df["Year"].unique(),
+        default=df["Year"].unique()[0]
+    )    
 if year:
     df = df.query(
         "Year == @year"
@@ -51,12 +52,12 @@ if year:
 else:
     df=df_orig
 
-
-location = st.multiselect(
-    "Select Location:",
-    options=df["Location"].unique(),
-    default=df["Location"].unique()[0]
-)
+with c2:
+    location = st.multiselect(
+        "Select Location:",
+        options=df["Location"].unique(),
+        default=df["Location"].unique()[0]
+    )
 
 if location:
     df = df.query(
@@ -64,12 +65,12 @@ if location:
         )
 else:
     df=df_orig
-
-event = st.multiselect(
-    "Select Event Type:",
-    options=df["Event"].unique(),
-    default=df["Event"].unique()[0]
-)
+with c3:
+    event = st.multiselect(
+        "Select Event Type:",
+        options=df["Event"].unique(),
+        default=df["Event"].unique()[0]
+    )
 
 if event:
     df = df.query(
@@ -79,7 +80,7 @@ else:
     df=df_orig
 
 #st.write(df["250m"][1]+df["125m"][1])
-st.dataframe(df)
+st.dataframe(df,use_container_width=True)
     
 st.markdown("---")
     
@@ -104,21 +105,21 @@ df_athleteHistory = df_orig.query(
 
 #DATAFRAME
 
-st.dataframe(df_athleteHistory)
+st.dataframe(df_athleteHistory,use_container_width=True)
 
 #FIRST FIGURE -- FINAL TIME PROGRESSION
 
 fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 ### Time by Age
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Time", title = "Times by Age", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 
 
@@ -129,7 +130,7 @@ st.title(":mag_right: Race Analysis Tool")
 uniqueYear = df_orig['Year'].drop_duplicates().sort_values(ascending=False)
 
 
-left_column, middle_column, right_column = st.columns(3)
+left_column, middle_column, right_column,col4 = st.columns(4)
 with left_column:
     an_year = st.selectbox("Select Year:", uniqueYear)
     
@@ -153,8 +154,8 @@ df_an_year_location_event = df_an_year_location.query(
     "Year == @an_year & Location == @an_location & Event == @an_event"
 )
 
-left_column, middle_column, right_column = st.columns(3)
-with left_column:
+
+with col4:
 
     uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
     an_stage = st.selectbox("Select Stage:", uniqueStage)
@@ -177,7 +178,7 @@ st.dataframe(df_splits)
 
 fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 ### Worm dataframe and plot
 st.write("Running Time")
@@ -191,7 +192,7 @@ st.dataframe(df_worm)
 
 fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 
 ###Markers Dataframe and plot
@@ -202,7 +203,7 @@ st.dataframe(df_an)
 
 fig_event = px.line(df_an, y=[125,250,375,500,625,750,875,1000,1125,1250,1375,1500,1625,1750,1875,2000,2125,2250,2375,2500,2625,2750,2875,3000,3125,3250,3375,3500,3625,3750,3875,4000], x = "Athlete", title="Pretty useless????", markers=True)
 #fig_event.update_layout(legend_title="legend")
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 st.markdown("---")
     
@@ -215,7 +216,7 @@ st.subheader("Select First Athlete Ride")
 
 hh_uniqueAthlete = df_orig['Athlete'].drop_duplicates().sort_values(ascending=True)
 
-left_column, middle_column, right_column = st.columns(3)
+left_column, middle_column, right_column,c4,c5 = st.columns(5)
 with left_column:
     hh_athlete = st.selectbox("Select Athlete:", hh_uniqueAthlete, key="hh_athlete")
     
@@ -245,8 +246,8 @@ hh_uniqueEvent = df_hh_athlete_year_location['Event'].drop_duplicates().sort_val
 
 
 
-left_column, middle_column, right_column = st.columns(3)
-with left_column:
+
+with c4:
     hh_event = st.selectbox("Select Event:", hh_uniqueEvent, key="hh_event")
     
 df_hh_athlete_year_location_event = df_hh_athlete_year_location.query(
@@ -255,7 +256,7 @@ df_hh_athlete_year_location_event = df_hh_athlete_year_location.query(
 
 hh_uniqueStage = df_hh_athlete_year_location_event['Stage'].drop_duplicates().sort_values()
 
-with middle_column:
+with c5:
     hh_stage = st.selectbox("Select Stage:", hh_uniqueStage, key="hh_stage")
     
 df_hh_final = df_hh_athlete_year_location_event.query(
@@ -272,10 +273,10 @@ st.subheader("Select Second Athlete Ride")
 
 hh2_uniqueAthlete = df_orig['Athlete'].drop_duplicates().sort_values(ascending=True)
 
-left_column, middle_column, right_column = st.columns(3)
+left_column, middle_column, right_column,c4,c5 = st.columns(5)
 with left_column:
     hh2_athlete = st.selectbox("Select Athlete:", hh2_uniqueAthlete, key="hh2_athlete")
-    
+
 df_hh2_athlete = df_orig.query(
     "Athlete == @hh2_athlete"
 )
@@ -302,8 +303,8 @@ hh2_uniqueEvent = df_hh2_athlete_year_location['Event'].drop_duplicates().sort_v
 
 
 
-left_column, middle_column, right_column = st.columns(3)
-with left_column:
+
+with c4:
     hh2_event = st.selectbox("Select Event:", hh2_uniqueEvent, key="hh2_event")
     
 df_hh2_athlete_year_location_event = df_hh2_athlete_year_location.query(
@@ -312,7 +313,7 @@ df_hh2_athlete_year_location_event = df_hh2_athlete_year_location.query(
 
 hh2_uniqueStage = df_hh2_athlete_year_location_event['Stage'].drop_duplicates().sort_values()
 
-with middle_column:
+with c5:
     hh2_stage = st.selectbox("Select Stage:", hh2_uniqueStage, key="hh2_stage")
     
 df_hh2_final = df_hh2_athlete_year_location_event.query(
@@ -339,4 +340,4 @@ st.dataframe(df_hh_splits)
 
 fig_hh=px.line(df_hh_splits,x="Marker", y=df_hh_splits.columns) # fill down to xaxis
 
-st.plotly_chart(fig_hh)
+st.plotly_chart(fig_hh,use_container_width=True)

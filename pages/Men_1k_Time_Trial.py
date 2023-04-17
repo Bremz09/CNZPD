@@ -32,14 +32,14 @@ def get_data_from_excel():
     df = df.replace(',','')
     return df
 df= get_data_from_excel()
-
+c1,c2,c3=st.columns(3)
 df_orig = df
-
-year = st.multiselect(
-    "Select Year:",
-    options=df["Year"].unique(),
-    default=df["Year"].unique()[0]
-)    
+with c1:
+    year = st.multiselect(
+        "Select Year:",
+        options=df["Year"].unique(),
+        default=df["Year"].unique()[0]
+    )    
 if year:
     df = df.query(
         "Year == @year"
@@ -48,11 +48,12 @@ else:
     df=df_orig
 
 
-location = st.multiselect(
-    "Select Location:",
-    options=df["Location"].unique(),
-    default=df["Location"].unique()[0]
-)
+with c2:
+    location = st.multiselect(
+        "Select Location:",
+        options=df["Location"].unique(),
+        default=df["Location"].unique()[0]
+    )
 
 if location:
     df = df.query(
@@ -60,12 +61,12 @@ if location:
         )
 else:
     df=df_orig
-
-event = st.multiselect(
-    "Select Event Type:",
-    options=df["Event"].unique(),
-    default=df["Event"].unique()[0]
-)
+with c3:
+    event = st.multiselect(
+        "Select Event Type:",
+        options=df["Event"].unique(),
+        default=df["Event"].unique()[0]
+    )
 
 if event:
     df = df.query(
@@ -75,7 +76,7 @@ else:
     df=df_orig
 
     
-st.dataframe(df)
+st.dataframe(df,use_container_width=True)
     
 st.markdown("---")
     
@@ -83,7 +84,7 @@ st.title(":bar_chart: Top Ten Performances")
 
 df_topten = df_orig.sort_values('Time').head(10)
 
-st.dataframe(df_topten)
+st.dataframe(df_topten,use_container_width=True)
 
 st.markdown("---")
     
@@ -96,29 +97,29 @@ df_athleteHistory = df_orig.query(
     "Athlete == @athlete"
 )
 
-st.dataframe(df_athleteHistory)
+st.dataframe(df_athleteHistory,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", text = "Location", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Rank", title = "Rank by Date", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Time", title = "Times by Age", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 df_athleteHistory["Half"] = df_athleteHistory["125m"]+df_athleteHistory["250m"]+df_athleteHistory["375m"]+df_athleteHistory["500m"]
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Half", title = "500m Times by Age", markers = "True", color="Athlete")
 
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 
 
@@ -129,7 +130,7 @@ st.title(":mag_right: Race Analysis Tool")
 uniqueYear = df_orig['Year'].drop_duplicates().sort_values(ascending=False)
 
 
-left_column, middle_column, right_column = st.columns(3)
+left_column, middle_column, right_column,c4 = st.columns(4)
 with left_column:
     an_year = st.selectbox("Select Year:", uniqueYear)
     
@@ -155,21 +156,21 @@ df_an_year_location_event = df_an_year_location.query(
 
 uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
 
-left_column, middle_column, right_column = st.columns(3)
-with left_column:
+
+with c4:
     an_stage = st.selectbox("Select Stage:", uniqueStage)
     
 df_an = df_an_year_location_event.query(
     "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
 )
 
-st.dataframe(df_an)
+st.dataframe(df_an,use_container_width=True)
 
 
 
 fig_event = px.line(df_an, y=["125m","250m","375m","500m","625m","750m","875m","1000m"], x = "Athlete")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 ### Worm dataframe and plot
 # st.write("Running Time")
@@ -180,10 +181,10 @@ for i in range(len(df_an)):
     var = str(df_an["Athlete"].iloc[i])
     df_worm[f"{var}"]=df_an.iloc[i][9:17].values.cumsum()
 
-st.dataframe(df_worm)
+st.dataframe(df_worm,use_container_width=True)
 
 fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 

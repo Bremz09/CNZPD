@@ -81,12 +81,13 @@ df_elim_orig = df_elim
 df_tempo_orig = df_tempo
 df_points_orig = df_points
 
-
-year = st.multiselect(
-    "Select Year:",
-    options=df_points["Year"].unique(),
-    default=df_points["Year"].unique()[0]
-)    
+c1,c2,c3=st.columns(3)
+with c1:
+    year = st.multiselect(
+        "Select Year:",
+        options=df_points["Year"].unique(),
+        default=df_points["Year"].unique()[0]
+    )    
 if year:
     df_points = df_points.query(
         "Year == @year"
@@ -106,12 +107,12 @@ else:
     df_tempo=df_tempo_orig
     df_elim=df_elim_orig
 
-
-location = st.multiselect(
-    "Select Location:",
-    options=df_points["Location"].unique(),
-    default=df_points["Location"].unique()[0]
-)
+with c2:
+    location = st.multiselect(
+        "Select Location:",
+        options=df_points["Location"].unique(),
+        default=df_points["Location"].unique()[0]
+    )
 
 if location:
     df_points = df_points.query(
@@ -131,12 +132,12 @@ else:
     df_scratch=df_scratch_orig
     df_tempo=df_tempo_orig
     df_elim=df_elim_orig
-
-event = st.multiselect(
-    "Select Event Type:",
-    options=df_points["Event"].unique(),
-    default=df_points["Event"].unique()[0]
-)
+with c3:
+    event = st.multiselect(
+        "Select Event Type:",
+        options=df_points["Event"].unique(),
+        default=df_points["Event"].unique()[0]
+    )
 
 if event:
     df_points = df_points.query(
@@ -158,13 +159,13 @@ else:
     df_elim=df_elim_orig
 
 st.subheader('Summary & Points Race')
-st.dataframe(df_points)
+st.dataframe(df_points,use_container_width=True)
 st.subheader('Scratch Race')
-st.dataframe(df_scratch)
+st.dataframe(df_scratch,use_container_width=True)
 st.subheader('Tempo Race')
-st.dataframe(df_tempo)
+st.dataframe(df_tempo,use_container_width=True)
 st.subheader('Elimination Race')
-st.dataframe(df_elim)
+st.dataframe(df_elim,use_container_width=True)
     
 st.markdown("---")
     
@@ -184,28 +185,32 @@ st.dataframe(df_countryHistory)
 fig_country_history = px.line(df_countryHistory, x="Date", y = "Final", title = "Totals by Date", markers = "True", text = "Location", color="Country")
 fig_country_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_country_history)
+st.plotly_chart(fig_country_history,use_container_width=True)
 
 ## Ranks by Date -- DB and plot
 
 fig_country_history = px.line(df_countryHistory, x="Date", y = "Rank", title = "Rank by Date", markers = "True", color="Country")
 #fig_country_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_country_history)
+st.plotly_chart(fig_country_history,use_container_width=True)
 
 ## Laps taken by date -- DB and plot
 
 fig_country_history = px.line(df_countryHistory, x="Date", y = "Lap +", title = "Laps Taken by Date", markers = "True", color="Country")
 #fig_country_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_country_history)
+st.plotly_chart(fig_country_history,use_container_width=True)
 
 ## Laps lost by date -- DB and plot
 
 fig_country_history = px.line(df_countryHistory, x="Date", y = "Lap -", title = "Laps Lost by Date", markers = "True", color="Country")
 
 
-st.plotly_chart(fig_country_history)
+st.plotly_chart(fig_country_history,use_container_width=True)
+
+
+
+
 
 
 
@@ -254,10 +259,10 @@ for i in range(len(df_an)):
 
 fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Points Race Sprint Points", markers=True)
 
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 ### Worm dataframe and plot
-st.write("Running Time")
+
 df_worm = pd.DataFrame()
 df_worm["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"]
 for i in range(len(df_an)):
@@ -268,38 +273,83 @@ for i in range(len(df_an)):
 
 fig_worm = px.line(df_worm, x="Marker", y = df_worm.columns, title="Points Race Worm")
 
-st.plotly_chart(fig_worm)
+st.plotly_chart(fig_worm,use_container_width=True)
 
 
 ###Markers Dataframe and plot
-st.write("Random Useless thing")
-st.dataframe(df_an)
+
+#st.dataframe(df_an)
 
 
 
-fig_event = px.line(df_an, y=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"], x = "Country", title="Pretty useless????", markers=True)
+fig_event = px.line(df_an, y=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"], x = "Name", title="Pretty useless????", markers=True)
 #fig_event.update_layout(legend_title="legend")
-st.plotly_chart(fig_event)
+st.plotly_chart(fig_event,use_container_width=True)
 
 ##
+st.markdown("---")
+st.header("Historical Points Race Averages")
 
-df_mean = df_orig.groupby('Country', as_index=False).mean()
+df_mean_points = df_points_orig.groupby('Name', as_index=False).mean()
 
-st.write("Points Average")
-df_splits_mean = pd.DataFrame()
-df_splits_mean["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"]
-for i in range(len(df_mean)):
-    var = str(df_mean["Country"].iloc[i])
-    df_splits_mean[f"{var}"]=df_mean.iloc[i][3:23].values
+df_mean_points=df_mean_points.drop(['Year','Age','Scratch','Lap +','Lap -','Avg Speed'],axis=1)
 
-st.dataframe(df_splits_mean)
+#st.dataframe(df_mean_points,use_container_width=True)
 
-fig_event_mean = px.line(df_splits_mean, x="Marker", y = df_splits.columns, title="Points Scoring Average", markers=True)
 
-st.plotly_chart(fig_event_mean)
-df_mean_total = df_orig[df_orig.Total != "DNF"]
-df_mean_total = df_mean_total.groupby('Country', as_index=False)["Total"].mean()
-st.dataframe(df_mean_total)
 
-fig_total_mean = px.bar(df_mean_total, x="Country", y = "Total", title="Total Scoring Average")
-st.plotly_chart(fig_total_mean)
+
+
+df_mean_points_transpose = pd.DataFrame()
+df_mean_points_transpose["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"]
+for i in range(len(df_mean_points)):
+    var = str(df_mean_points["Name"].iloc[i])
+    df_mean_points_transpose[f"{var}"]=df_mean_points.iloc[i][1:12].values
+
+#st.dataframe(df_mean_points_transpose)
+
+fig_event_mean = px.line(df_mean_points_transpose, x="Marker", y = df_mean_points_transpose.columns[1:], title="Historical Points Scoring Average", markers=True)
+
+st.plotly_chart(fig_event_mean,use_container_width=True)
+
+
+df_mean_total = df_points_orig[(df_points_orig.Final != "DSQ") & (df_points_orig.Final != "DNF")]
+#st.dataframe(df_mean_total)
+df_mean_total.Final = pd.to_numeric(df_mean_total.Final)
+df_mean_total.Tempo = pd.to_numeric(df_mean_total.Tempo)
+df_mean_total.Elimination = pd.to_numeric(df_mean_total.Elimination)
+df_mean_total["Sub Total"] = pd.to_numeric(df_mean_total["Sub Total"])
+#st.write(df_mean_total.Tempo.dtype)
+df_mean_total["Points"] = df_mean_total["Final"]-df_mean_total["Sub Total"]
+df_mean_total=df_mean_total.drop(["Year","Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sub Total","Final"],axis=1)
+
+df_mean_total = df_mean_total.groupby('Name', as_index=False).mean()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+df_mean_total_transpose = pd.DataFrame()
+df_mean_total_transpose["Marker"] = ["Scratch","Tempo","Elimination","Points"]
+for i in range(len(df_mean_total)):
+    var = str(df_mean_total["Name"].iloc[i])
+    df_mean_total_transpose[f"{var}"]=df_mean_total.iloc[i][1:5].values
+
+#st.dataframe(df_mean_total_transpose)
+
+fig_event_mean = px.line(df_mean_total_transpose, x="Marker", y = df_mean_total_transpose.columns[1:], title="Historical Overall Averages", markers=True)
+
+st.plotly_chart(fig_event_mean,use_container_width=True)

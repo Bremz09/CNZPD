@@ -55,7 +55,7 @@ def convert_to_csv(df):
 csv = convert_to_csv(df)
 
 # display the dataframe on streamlit app
-st.write(df)
+st.write(df,use_container_width=True)
 
 # download button 1 to download dataframe as csv
 download1 = st.download_button(
@@ -139,7 +139,7 @@ st.title(":bar_chart: Top Ten Performances")
 
 df_topten = df_orig.sort_values("Time").head(10)
 
-st.dataframe(df_topten)
+st.dataframe(df_topten,use_container_width=True)
 
 
 df_splits_tt = pd.DataFrame()
@@ -214,7 +214,7 @@ st.title(":mag_right: Race Analysis Tool")
 uniqueYear = df_orig['Year'].drop_duplicates().sort_values(ascending=False)
 
 
-left_column, middle_column, right_column = st.columns(3)
+left_column, middle_column, right_column,fourth_column = st.columns(4)
 with left_column:
     an_year = st.selectbox("Select Year:", uniqueYear)
     
@@ -237,13 +237,13 @@ with right_column:
 df_an_year_location_event = df_an_year_location.query(
     "Year == @an_year & Location == @an_location & Event == @an_event"
 )
+with fourth_column:
+    uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
+    an_stage = st.selectbox("Select Stage:", uniqueStage)
 
-uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-an_stage = st.selectbox("Select Stage:", uniqueStage)
-
-df_an = df_an_year_location_event.query(
-    "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
-)
+    df_an = df_an_year_location_event.query(
+        "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
+    )
 
 ### Splits dataframe and plot
 st.write("Splits")

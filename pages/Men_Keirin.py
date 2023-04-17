@@ -50,14 +50,14 @@ def get_points_data_from_excel():
     df['Date'] = pd.to_datetime(df['Date']).dt.date
     return df
 df_points = get_points_data_from_excel()
-
+c1,c2,c3=st.columns(3)
 df_orig = df
-
-year = st.multiselect(
-    "Select Year:",
-    options=df["Year"].unique(),
-    default=df["Year"].unique()[0]
-)    
+with c1:
+    year = st.multiselect(
+        "Select Year:",
+        options=df["Year"].unique(),
+        default=df["Year"].unique()[0]
+    )    
 if year:
     df = df.query(
         "Year == @year"
@@ -65,12 +65,12 @@ if year:
 else:
     df=df_orig
 
-
-location = st.multiselect(
-    "Select Location:",
-    options=df["Location"].unique(),
-    default=df["Location"].unique()[0]
-)
+with c2:
+    location = st.multiselect(
+        "Select Location:",
+        options=df["Location"].unique(),
+        default=df["Location"].unique()[0]
+    )
 
 if location:
     df = df.query(
@@ -78,12 +78,12 @@ if location:
         )
 else:
     df=df_orig
-
-event = st.multiselect(
-    "Select Event Type:",
-    options=df["Event"].unique(),
-    default=df["Event"].unique()[0]
-)
+with c3:
+    event = st.multiselect(
+        "Select Event Type:",
+        options=df["Event"].unique(),
+        default=df["Event"].unique()[0]
+    )
 
 if event:
     df = df.query(
@@ -93,7 +93,7 @@ else:
     df=df_orig
 
     
-st.dataframe(df)
+st.dataframe(df,use_container_width=True)
 
 st.markdown("---")
     
@@ -106,27 +106,27 @@ df_athleteHistory = df_orig.query(
     "Athlete == @athlete"
 )
 
-st.dataframe(df_athleteHistory)
+st.dataframe(df_athleteHistory,use_container_width=True)
 
 fig_athlete_history = px.scatter(df_athleteHistory, x="Date", y = ["Rank"], title = "Rank by Date", text = "Location", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Trueskill Rank by Date", markers = "True", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.scatter(df_athleteHistory, x="Age", y = ["Rank"], title = "Rank by Age", color="Athlete")
 fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Trueskill Rank by Age", markers = "True", color="Athlete")
 
 
-st.plotly_chart(fig_athlete_history)
+st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 
 
@@ -180,38 +180,6 @@ st.plotly_chart(fig_athlete_history)
 
 
 
-st.markdown("---")
-    
-st.title(":date: Points Tool")
-
-dates = df_points['Date'].drop_duplicates().sort_values()
-
-today = datetime.date.today()
-year_ago = today + datetime.timedelta(days=-365)
-
-
-start_date = st.date_input('Period Start:', year_ago)
-end_date = st.date_input('Period Finish:', today)
-df_points_dates = df_points[(df_points['Date'] > start_date) & (df_points['Date'] < end_date)]
-st.write("Number of days: "+str((end_date-start_date).days))
-
-df_points_dates=df_points_dates.sort_values("Current_Rank")
-
-st.dataframe(df_points_dates)
-#df_points_topten = df_points.sort_values("Time").head(10)
-
-names = df_points_dates['Name'].drop_duplicates()
-
-
-df_grouped = df_points_dates.groupby(by="Name")["Points"].sum()
-
-df_grouped = df_grouped.to_frame()
-df_grouped = df_grouped.sort_values(by="Points",ascending=False)
-    
-st.header(":moneybag: Top 50")
-df_grouped.insert(0, 'Rank', range(1, 1+len(df_grouped)))
-st.dataframe(df_grouped.head(50))
-
 
 st.markdown("---")
     
@@ -219,9 +187,11 @@ st.title(":brain: Trueskill - Head to Head")
 
 df_TS = df_orig.drop_duplicates("Athlete",keep="last")
 #athlete_TS = st.multiselect("Select Athlete(s):", latest_TS)
-
-ath1 = st.selectbox("Select Athlete 1:", df_TS["Athlete"].sort_values(), key="df_TS")
-ath2 = st.selectbox("Select Athlete 2:", df_TS["Athlete"].sort_values(), key="df_TS_2")
+c1,c2=st.columns(2)
+with c1:
+    ath1 = st.selectbox("Select Athlete 1:", df_TS["Athlete"].sort_values(), key="df_TS")
+with c2:
+    ath2 = st.selectbox("Select Athlete 2:", df_TS["Athlete"].sort_values(), key="df_TS_2")
 
 ind1 = df_TS.index[df_TS['Athlete'] == ath1]
 ind2 = df_TS.index[df_TS['Athlete'] == ath2]
