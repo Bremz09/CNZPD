@@ -57,6 +57,7 @@ with col1:
 
     if Dev == "Yes":
         df = pd.concat([df,df_dev])
+        df=df.sort_values("Date", ascending=False)
 
 with col2:
     df_orig = df
