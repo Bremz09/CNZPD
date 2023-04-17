@@ -19,6 +19,9 @@ st.set_page_config(page_title='CNZ Performance Database',
 st.header('Men\'s Sprint Qualifying')
 st.subheader('All results')
 
+Devs = ["No","Yes"]
+Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key="Dev_selector")
+
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
@@ -27,11 +30,29 @@ def get_data_from_excel():
         sheet_name='Sprint Qual',
         skiprows=0,
         usecols='A:M',
-        nrows=691
+        nrows=2000
         )
     df = df.replace(',','')
     return df
 df= get_data_from_excel()
+
+
+def get_dev_data_from_excel():
+    df_dev = pd.read_excel(
+        io='pages/SprintPerformanceDatabase.xlsx',
+        engine ='openpyxl',
+        sheet_name='Sprint Qual Men',
+        skiprows=0,
+        usecols='A:M',
+        nrows=3000
+        )
+    df_dev = df_dev.replace(',','')
+    return df_dev
+df_dev= get_dev_data_from_excel()
+
+if Dev == "Yes":
+    df = pd.concat([df,df_dev])
+
 
 df_orig = df
 
@@ -76,6 +97,7 @@ else:
 
     
 st.dataframe(df)
+
     
 st.markdown("---")
     
