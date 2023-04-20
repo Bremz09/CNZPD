@@ -34,19 +34,19 @@ st.set_page_config(page_title='CNZ Performance Database',
 
 # if authentication_status:
 
-col1, col2, col3 = st.columns(3)
 
-with col1:
-    st.write('')
+
+col1, col2, col3 = st.columns(3)
 
 with col2:
     st.image("CNZ.png")
-    st.header('Cycling New Zealand Performance Database')
-    st.subheader('Event links in the sidebar')
 
-with col3:
-    st.write('')
 
+st.markdown("<h1 style='text-align: center; color: white;'>Performance Database</h1>", unsafe_allow_html=True)
+
+st.markdown("<h2 style='text-align: center; color: Silver;'>Event links in left sidebar</h2>", unsafe_allow_html=True)
+
+st.markdown("<h4 style='text-align: center; color: Silver;'>Please send any ideas or bug reports to sam.bremer@hpsnz.org.nz</h4>", unsafe_allow_html=True)
 
 
 
