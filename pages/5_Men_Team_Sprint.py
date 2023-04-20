@@ -209,6 +209,12 @@ if len(country)>0:
         df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][14:20].values
         df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][14:20].values.cumsum()
 
+    show_name=st.selectbox("Show athlete names?",["Yes","No"])
+    if show_name=="No":
+        for i in range(1,len(df_splits_CH.columns)):
+            df_splits_CH.rename(columns={df_splits_CH.columns[i]: (" ".join(df_splits_CH.columns[i].split(" ")[0:5]))}, inplace=True)
+            df_worm_CH.rename(columns={df_worm_CH.columns[i]: (" ".join(df_worm_CH.columns[i].split(" ")[0:5]))}, inplace=True)
+            #df_splits_CH.columns[i] 
 
     fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="All Rides")
 
