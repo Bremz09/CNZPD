@@ -47,7 +47,7 @@ def get_dev_data_from_excel():
         nrows=3000
         )
     df_dev = df_dev.replace(',','')
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    df_dev['Date'] = pd.to_datetime(df['Date']).dt.date
     return df_dev
 df_dev= get_dev_data_from_excel()
 @st.cache_data
