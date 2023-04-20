@@ -206,24 +206,24 @@ with c1:
     ath1 = st.selectbox("Select Athlete 1:", df_TS["Athlete"].sort_values(), key="df_TS")
 with c2:
     ath2 = st.selectbox("Select Athlete 2:", df_TS["Athlete"].sort_values(), key="df_TS_2")
+
+ind1 = df_TS.index[df_TS['Athlete'] == ath1]
+ind2 = df_TS.index[df_TS['Athlete'] == ath2]
+sig1 = df_TS["Sigma"][ind1].item()
+sig2 = df_TS["Sigma"][ind2].item()
+mu1 = df_TS["Mu"][ind1].item()
+mu2 = df_TS["Mu"][ind2].item()
+name1 = df_TS["Athlete"][ind1].item()
+name2 = df_TS["Athlete"][ind2].item()
+trials=10000
+### -TESTING
+
+
+
+
+#x-axis ranges from -3 and 3 with .001 steps
+x = np.arange(0, 50, 0.001)
 if ath1!=ath2:
-    ind1 = df_TS.index[df_TS['Athlete'] == ath1]
-    ind2 = df_TS.index[df_TS['Athlete'] == ath2]
-    sig1 = df_TS["Sigma"][ind1].item()
-    sig2 = df_TS["Sigma"][ind2].item()
-    mu1 = df_TS["Mu"][ind1].item()
-    mu2 = df_TS["Mu"][ind2].item()
-    name1 = df_TS["Athlete"][ind1].item()
-    name2 = df_TS["Athlete"][ind2].item()
-    trials=10000
-    ### -TESTING
-
-
-
-
-    #x-axis ranges from -3 and 3 with .001 steps
-    x = np.arange(0, 50, 0.001)
-
     #plot normal distribution with mean 0 and standard deviation 1
     plt.plot(x, norm.pdf(x, mu1, sig1), label=df_TS["Athlete"][ind1].iloc[0])
     plt.plot(x, norm.pdf(x, mu2, sig2), label=df_TS["Athlete"][ind2].iloc[0])
@@ -299,7 +299,7 @@ if len(aths)>1:
     i=1      
 
     for i in range(len(aths)):
-        exec(f'st.write(aths[i]+ " has average rank " + str(round(sum(ranks{i})/len(ranks{i}),2)))')
+        exec(f'st.subheader(aths[i]+ " has average rank " + str(round(sum(ranks{i})/len(ranks{i}),2)))')
         for j in range(len(aths)):
             exec(f'st.write("His likelihood of gaining rank " + str(j+1) + " is "+ str(round(ranks{i}.count(j+1)/len(ranks{i}),3)))')
         st.write("")

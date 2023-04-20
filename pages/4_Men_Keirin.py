@@ -180,25 +180,25 @@ with c1:
     ath1 = st.selectbox("Select Athlete 1:", df_TS["Athlete"].sort_values(), key="df_TS")
 with c2:
     ath2 = st.selectbox("Select Athlete 2:", df_TS["Athlete"].sort_values(), key="df_TS_2")
+
+
+ind1 = df_TS.index[df_TS['Athlete'] == ath1]
+ind2 = df_TS.index[df_TS['Athlete'] == ath2]
+sig1 = df_TS["Sigma"][ind1].item()
+sig2 = df_TS["Sigma"][ind2].item()
+mu1 = df_TS["Mu"][ind1].item()
+mu2 = df_TS["Mu"][ind2].item()
+name1 = df_TS["Athlete"][ind1].item()
+name2 = df_TS["Athlete"][ind2].item()
+trials=10000
+### -TESTING
+
+
+
+
+#x-axis ranges from -3 and 3 with .001 steps
+x = np.arange(0, 50, 0.001)
 if ath1!=ath2:
-
-    ind1 = df_TS.index[df_TS['Athlete'] == ath1]
-    ind2 = df_TS.index[df_TS['Athlete'] == ath2]
-    sig1 = df_TS["Sigma"][ind1].item()
-    sig2 = df_TS["Sigma"][ind2].item()
-    mu1 = df_TS["Mu"][ind1].item()
-    mu2 = df_TS["Mu"][ind2].item()
-    name1 = df_TS["Athlete"][ind1].item()
-    name2 = df_TS["Athlete"][ind2].item()
-    trials=10000
-    ### -TESTING
-
-
-
-
-    #x-axis ranges from -3 and 3 with .001 steps
-    x = np.arange(0, 50, 0.001)
-
     #plot normal distribution with mean 0 and standard deviation 1
     plt.plot(x, norm.pdf(x, mu1, sig1), label=df_TS["Athlete"][ind1].iloc[0])
     plt.plot(x, norm.pdf(x, mu2, sig2), label=df_TS["Athlete"][ind2].iloc[0])
