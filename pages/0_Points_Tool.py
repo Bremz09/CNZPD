@@ -12,9 +12,8 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-# import streamlit_toggle as tog
-# import streamlit_toggle
-#from streamlit_toggle import toggle, st_toggle_switch
+import os
+
 
 
 
@@ -24,8 +23,7 @@ st.set_page_config(page_title='CNZ Performance Database',
                   layout="wide")
 st.header('Points Tool')
 update = datetime.date.today()+ pd.DateOffset(1)
-s = update.strftime("%d/%m/%Y")
-#st.subheader("Last update on "+ str(s))
+
 
 #@st.cache_data
 
@@ -93,6 +91,11 @@ def get_WK_points_data_from_excel():
     df_WK['Date'] = pd.to_datetime(df_WK['Date']).dt.date
     return df_WK
 df_WK = get_WK_points_data_from_excel()
+
+s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
+dt_m = datetime.date.fromtimestamp(s)
+s1 = dt_m.strftime("%d/%m/%Y")
+st.subheader("Last updated on "+ str(s1))
 
 Events = ["Men's Sprint","Men's Kierin", "Women's Sprint", "Women's Kierin"]
 
