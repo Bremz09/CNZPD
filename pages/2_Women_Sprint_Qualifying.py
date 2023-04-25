@@ -32,7 +32,7 @@ def get_data_from_excel():
         nrows=2000
         )
     df = df.replace(',','')
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    #df['Date'] = pd.to_datetime(df['Date']).dt.date
     return df
 df= get_data_from_excel()
 
@@ -47,7 +47,7 @@ def get_dev_data_from_excel():
         nrows=3000
         )
     df_dev = df_dev.replace(',','')
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    #df['Date'] = pd.to_datetime(df['Date']).dt.date
     return df_dev
 df_dev= get_dev_data_from_excel()
 @st.cache_data
@@ -172,7 +172,7 @@ athlete = st.multiselect("Select Athlete(s):", athletes)
 df_athleteHistory = df_orig.query(
     "Athlete == @athlete"
 )
-#df_athleteHistory=df_athleteHistory.sort_values("Date",ascending=False)
+df_athleteHistory=df_athleteHistory.sort_values("Date",ascending=False)
 if len(athlete) !=0:
     st.dataframe(df_athleteHistory,use_container_width=True)
     ##Download buttons
@@ -220,7 +220,7 @@ if len(athlete) !=0:
     fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", markers = "True", color="Athlete")
     fig_athlete_history.update_traces(textposition="top right")
     st.plotly_chart(fig_athlete_history,use_container_width=True)
-
+    
     ##Fifth Figure -- 100m times by Age    
     fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100m", title = "100m Times by Age", markers = "True", color="Athlete")
     st.plotly_chart(fig_athlete_history,use_container_width=True)

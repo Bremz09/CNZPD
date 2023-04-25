@@ -35,7 +35,7 @@ def get_data_from_excel():
         nrows=3000
         )
     df = df.replace(',','')
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    #df['Date'] = pd.to_datetime(df['Date']).dt.date
     return df
 df= get_data_from_excel()
 df_orig=df
