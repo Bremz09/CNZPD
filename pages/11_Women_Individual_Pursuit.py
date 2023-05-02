@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from PIL import Image
 import numpy as np
 import io
+import datetime
 
 
 
@@ -31,10 +32,12 @@ def get_data_from_excel():
         nrows=2500
         )
     df = df.replace(',','', regex=True)
+    
     for i in range(len(df)):
         df["Date"][i] = df["Date"][i].date()
-        #if df["125m"][i] != "NULL":
-            #df["125m"][i] = df["125m"][i].strftime("%M:%S.%f")
+        if isinstance(df["Time"][i], datetime.time):
+            df["Time"][i]=df['Time'][i].strftime("%M:%S.%f")[:len(df['Time'][i].strftime("%M:%S.%f"))-3]
+
     return df
 df= get_data_from_excel()
 @st.cache_data
@@ -84,6 +87,7 @@ else:
 
 
 st.dataframe(df,use_container_width=True)
+
 #DOWNLOAD BUTTONS
 csv = convert_to_csv(df)
 buffer = io.BytesIO()
@@ -135,6 +139,17 @@ with pd.ExcelWriter(buffertt, engine='xlsxwriter') as writer:
     )
 
 ##Download buttons complete
+
+df_splits_tt = pd.DataFrame()
+df_splits_tt["Marker"] = marker
+for i in range(len(df_topten)):
+    var = str(i+1)+" "+str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+    df_splits_tt[f"{var}"]=df_topten.iloc[i][10:34].values
+
+
+fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten",markers=False)
+
+st.plotly_chart(fig_tt, use_container_width=True)
 st.markdown("---")
     
 st.title(":bicyclist: Athlete History")
@@ -149,7 +164,10 @@ df_athleteHistory = df_orig.query(
 )
 
 if len(athlete)>0:
+    df_athleteHistory['Time']= pd.to_datetime(df_athleteHistory['Time'])
     st.dataframe(df_athleteHistory,use_container_width=True)
+
+    
     #DOWNLOAD BUTTONS
     csvah = convert_to_csv(df_athleteHistory)
     buffertt = io.BytesIO()
@@ -178,8 +196,8 @@ if len(athlete)>0:
     df_worm_CH["Marker"] = marker
     for i in range(len(df_athleteHistory)):
         var = str(i+1)+" "+str(df_athleteHistory["Athlete"].iloc[i])+" "+str(df_athleteHistory["Location"].iloc[i]) + " " + str(df_athleteHistory["Year"].iloc[i]) + " " +str(df_athleteHistory["Event"].iloc[i]) + " " +str(df_athleteHistory["Stage"].iloc[i])
-        df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values
-        df_worm_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values.cumsum()
+        df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][10:34].values
+        df_worm_CH[f"{var}"]=df_athleteHistory.iloc[i][10:34].values.cumsum()
 
 
     fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
@@ -196,8 +214,9 @@ if len(athlete)>0:
 
 
     #FIRST FIGURE -- FINAL TIME PROGRESSION
-
+    df_athleteHistory.Time
     fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", color="Athlete")
+    fig_athlete_history.update_layout(yaxis_tickformat="%H:%M")
     fig_athlete_history.update_traces(textposition="top right")
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -205,6 +224,7 @@ if len(athlete)>0:
     ### Time by Age
 
     fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Time", title = "Times by Age", markers = "True", color="Athlete")
+    fig_athlete_history.update_layout(yaxis_tickformat="%H:%M")
     fig_athlete_history.update_traces(textposition="top right")
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
