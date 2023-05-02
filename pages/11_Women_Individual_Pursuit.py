@@ -164,9 +164,8 @@ df_athleteHistory = df_orig.query(
 )
 
 if len(athlete)>0:
-    df_athleteHistory['Time']= pd.to_datetime(df_athleteHistory['Time'])
     st.dataframe(df_athleteHistory,use_container_width=True)
-
+    df_athleteHistory['Time']= pd.to_datetime(df_athleteHistory['Time'])
     
     #DOWNLOAD BUTTONS
     csvah = convert_to_csv(df_athleteHistory)
@@ -214,7 +213,7 @@ if len(athlete)>0:
 
 
     #FIRST FIGURE -- FINAL TIME PROGRESSION
-    df_athleteHistory.Time
+  
     fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", color="Athlete")
     fig_athlete_history.update_layout(yaxis_tickformat="%H:%M")
     fig_athlete_history.update_traces(textposition="top right")
