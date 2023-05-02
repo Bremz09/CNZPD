@@ -21,13 +21,13 @@ import io
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s Sprint')
+st.header('Women\'s Sprint')
 st.subheader('All results')
 
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Sprint',
         skiprows=0,
@@ -40,11 +40,9 @@ def get_data_from_excel():
 df= get_data_from_excel()
 df_orig=df
 
-
-
 def get_trueskill_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Sprint_Trueskill',
         skiprows=0,
@@ -162,7 +160,7 @@ if len(athlete)!=0:
         )
     ##Download buttons complete
 
-    fig_athlete_history = px.line(df_athleteHistory, x="Date", y = ["200m"], title = "Times by Date", markers = "True", text = "Location", color="Athlete")
+    fig_athlete_history = px.line(df_athleteHistory, x="Date", y = ["Time"], title = "Times by Date", markers = "True", text = "Location", color="Athlete")
     fig_athlete_history.update_traces(textposition="top right")
 
     st.plotly_chart(fig_athlete_history, use_container_width=True)
@@ -172,7 +170,7 @@ if len(athlete)!=0:
 
     st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-    fig_athlete_history = px.line(df_athleteHistory, x="Age", y = ["200m"], title = "Times by Age", markers = "True", color="Athlete")
+    fig_athlete_history = px.line(df_athleteHistory, x="Age", y = ["Time"], title = "Times by Age", markers = "True", color="Athlete")
     fig_athlete_history.update_traces(textposition="top right")
 
     st.plotly_chart(fig_athlete_history, use_container_width=True)
@@ -206,6 +204,10 @@ with c1:
     ath1 = st.selectbox("Select Athlete 1:", df_TS["Athlete"].sort_values(), key="df_TS")
 with c2:
     ath2 = st.selectbox("Select Athlete 2:", df_TS["Athlete"].sort_values(), key="df_TS_2")
+    
+#x-axis ranges from -3 and 3 with .001 steps
+x = np.arange(0, 50, 0.001)
+trials=10000
 if ath1!=ath2:
     ind1 = df_TS.index[df_TS['Athlete'] == ath1]
     ind2 = df_TS.index[df_TS['Athlete'] == ath2]
@@ -215,14 +217,13 @@ if ath1!=ath2:
     mu2 = df_TS["Mu"][ind2].item()
     name1 = df_TS["Athlete"][ind1].item()
     name2 = df_TS["Athlete"][ind2].item()
-    trials=10000
+    
     ### -TESTING
 
 
 
 
-    #x-axis ranges from -3 and 3 with .001 steps
-    x = np.arange(0, 50, 0.001)
+
 
     #plot normal distribution with mean 0 and standard deviation 1
     plt.plot(x, norm.pdf(x, mu1, sig1), label=df_TS["Athlete"][ind1].iloc[0])
@@ -299,7 +300,7 @@ if len(aths)>1:
     i=1      
 
     for i in range(len(aths)):
-        exec(f'st.write(aths[i]+ " has average rank " + str(round(sum(ranks{i})/len(ranks{i}),2)))')
+        exec(f'st.subheader(aths[i]+ " has average rank " + str(round(sum(ranks{i})/len(ranks{i}),2)))')
         for j in range(len(aths)):
             exec(f'st.write("His likelihood of gaining rank " + str(j+1) + " is "+ str(round(ranks{i}.count(j+1)/len(ranks{i}),3)))')
         st.write("")

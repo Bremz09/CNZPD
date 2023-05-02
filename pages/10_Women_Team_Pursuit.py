@@ -18,7 +18,7 @@ st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide",
                   )
-st.header('Men\'s Team Pursuit')
+st.header('Women\'s Team Pursuit')
 st.subheader('All results')
 
 marker = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
@@ -27,7 +27,7 @@ format_dict = {'Date': '{:%d-%m-%y}', 'Age1': '{0:,.2f}', 'Age2': '{0:,.2f}'}
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Team Pursuit',
         skiprows=0,
@@ -163,8 +163,8 @@ with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
 df_splits_tt = pd.DataFrame()
 df_splits_tt["Marker"] = marker
 for i in range(len(df_topten)):
-    var = str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-    df_splits_tt[f"{var}"]=df_topten.iloc[i][16:48].values
+    var = str(i+1)+ " " +str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+    df_splits_tt[f"{var}"]=df_topten.iloc[i][17:49].values
 
     
 fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten")
@@ -233,9 +233,9 @@ if len(country)>0:
     df_worm_CH = pd.DataFrame()
     df_worm_CH["Marker"] = marker
     for i in range(len(df_countryHistory)):
-        var = str(i)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])
-        df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][16:48].values
-        df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][16:48].values.cumsum()
+        var = str(i+1)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])
+        df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values
+        df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values.cumsum()
 
 
     fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
@@ -245,12 +245,10 @@ if len(country)>0:
 
     fig_event_CH = px.line(df_worm_CH, x="Marker", y = df_worm_CH.columns, title="The Worm")
     st.plotly_chart(fig_event_CH, use_container_width=True)
-
+    
     #Fourth Figure - Ranges
-   
     fig_ranges_CH = px.line(df_countryHistory, x=df_splits_CH.columns[1:], y = marker, title="The Ranges",markers=True)
     st.plotly_chart(fig_ranges_CH, use_container_width=True)
-
 
     
 #Race Analaysis Tool
@@ -299,8 +297,8 @@ df_splits["Marker"],df_worm["Marker"] = marker,marker
 # df_worm["Marker"] = marker
 for i in range(len(df_an)):
     var = str(df_an["Rank"].iloc[i])+" "+str(df_an["Country"].iloc[i])
-    df_splits[f"{var}"]=df_an.iloc[i][16:48].values
-    df_worm[f"{var}"]=df_an.iloc[i][16:48].values.cumsum()
+    df_splits[f"{var}"]=df_an.iloc[i][17:49].values
+    df_worm[f"{var}"]=df_an.iloc[i][17:49].values.cumsum()
 fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
 st.plotly_chart(fig_event, use_container_width=True)
 
@@ -310,7 +308,7 @@ st.plotly_chart(fig_event, use_container_width=True)
 
 
 ###The Ranges
-fig_event = px.line(df_an, y=marker, x = "Country", title="The Ranges", markers=True)
+fig_event = px.line(df_an, y=marker, x = df_splits.columns[1:], title="The Ranges", markers=True)
 st.plotly_chart(fig_event, use_container_width=True)
 
 

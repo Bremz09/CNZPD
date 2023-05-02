@@ -20,13 +20,13 @@ import io
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s Keirin')
+st.header('Women\'s Keirin')
 st.subheader('All results')
 
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Keirin_Trueskill',
         skiprows=0,
@@ -35,7 +35,7 @@ def get_data_from_excel():
         )
     df = df.replace(',','')
     df['Date'] = pd.to_datetime(df['Date']).dt.date
-    df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
+    #df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
     return df
 df= get_data_from_excel()
 
@@ -150,7 +150,7 @@ if len(athlete)!=0:
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
 
-    fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Trueskill by Date", markers = "True", color="Athlete")
+    fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final CSE", title = "Trueskill by Date", markers = "True", color="Athlete")
     fig_athlete_history.update_traces(textposition="top right")
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -160,7 +160,7 @@ if len(athlete)!=0:
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
 
-    fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Trueskill by Age", markers = "True", color="Athlete")
+    fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final CSE", title = "Trueskill by Age", markers = "True", color="Athlete")
 
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -180,6 +180,9 @@ with c1:
     ath1 = st.selectbox("Select Athlete 1:", df_TS["Athlete"].sort_values(), key="df_TS")
 with c2:
     ath2 = st.selectbox("Select Athlete 2:", df_TS["Athlete"].sort_values(), key="df_TS_2")
+trials=10000
+#x-axis ranges from -3 and 3 with .001 steps
+x = np.arange(0, 50, 0.001)
 if ath1!=ath2:
 
     ind1 = df_TS.index[df_TS['Athlete'] == ath1]
@@ -190,14 +193,8 @@ if ath1!=ath2:
     mu2 = df_TS["Mu"][ind2].item()
     name1 = df_TS["Athlete"][ind1].item()
     name2 = df_TS["Athlete"][ind2].item()
-    trials=10000
-    ### -TESTING
+    
 
-
-
-
-    #x-axis ranges from -3 and 3 with .001 steps
-    x = np.arange(0, 50, 0.001)
 
     #plot normal distribution with mean 0 and standard deviation 1
     plt.plot(x, norm.pdf(x, mu1, sig1), label=df_TS["Athlete"][ind1].iloc[0])

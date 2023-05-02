@@ -16,13 +16,13 @@ import io
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s Omnium')
+st.header('Women\'s Omnium')
 st.subheader('All results')
 
 @st.cache_data
 def get_points_data_from_excel():
     df_points = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='OM-Points',
         skiprows=0,
@@ -36,7 +36,7 @@ df_points= get_points_data_from_excel()
 @st.cache_data
 def get_scracth_data_from_excel():
     df_scratch = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='OM-Scratch',
         skiprows=0,
@@ -50,7 +50,7 @@ df_scratch= get_scracth_data_from_excel()
 @st.cache_data
 def get_tempo_data_from_excel():
     df_tempo = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='OM-Tempo',
         skiprows=0,
@@ -63,7 +63,7 @@ df_tempo= get_tempo_data_from_excel()
 @st.cache_data
 def get_elimination_data_from_excel():
     df_elim = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='OM-Elimination',
         skiprows=0,
@@ -162,7 +162,7 @@ else:
 st.subheader('Summary & Points Race')
 
 ##Defining colouring functions for dataframes
-format_dict = {'Scratch':'{0:,.0f}', 'Date': '{:%d-%m-%y}', 'Age': '{0:,.2f}', 'Avg Speed': '{0:,.3f}'}
+format_dict = {'Scratch':'{0:,.0f}', 'Date': '{:%d-%m-%y}', 'Age': '{0:,.2f}', 'Sub Total': '{0:,.0f}', 'Avg Speed': '{0:,.3f}'}
 def color_points(val):
     if val == 5:
         background_color = 'darkgoldenrod'    
@@ -215,8 +215,8 @@ def tempo_color_wins(val):
 ##Displaying all dataframes, some styled
 df_points_styled = (df_points
                     .style
-                    .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
-                    .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                    .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                    .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
                     .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
                     .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                     .format(format_dict))
@@ -270,7 +270,7 @@ st.subheader('Tempo Race')
 df_tempo_styled = (df_tempo
                    .style
                    .format(format_dict)
-                   .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
+                   .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]]
                   )
                    .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
                   )
@@ -341,9 +341,9 @@ if len(name)>0:
     df_countryHistory = df_countryHistory.sort_values("Date",ascending=False)
     df_countryHistory_styled = (df_countryHistory
                                  .style
-                                 .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
+                                 .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
                                  .format(format_dict)
-                                 .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                                 .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
                                  .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
                                  .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                      )
@@ -377,17 +377,17 @@ if len(name)>0:
 
     ##Overall Scoring Summary
 
-    df_summ=df_countryHistory_short.drop(["Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"],axis=1)
-    df_summ.insert(9, 'Points', df_summ["Final"]-df_summ["Sub Total"])
+    df_summ=df_countryHistory_short.drop(["Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8"],axis=1)
+    df_summ.insert(10, 'Points', df_summ["Final"]-df_summ["Sub Total"])
     df_summ_trans = pd.DataFrame()
     df_summ_trans["Race"] = ["Scratch","Tempo","Elimination","Points"]
     df_ch_Trans = pd.DataFrame()
-    df_ch_Trans["Sprint"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"]
+    df_ch_Trans["Sprint"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8"]
     for i in range(len(df_summ)):
         var = str(i+1)+" "+str(df_summ["Name"].iloc[i])+" " +str(df_summ["Location"].iloc[i])+" " +str(df_summ["Event"].iloc[i])+" " +str(df_summ["Year"].iloc[i])
         df_summ_trans[f"{var}"]=df_summ.iloc[i][7:11].values
-        df_ch_Trans[f"{var}"]=df_countryHistory_short.iloc[i][12:22].values
-
+        df_ch_Trans[f"{var}"]=df_countryHistory_short.iloc[i][12:20].values
+    st.dataframe(df_summ_trans)
     fig_event_mean = px.line(df_summ_trans, x="Race", y = df_summ_trans.columns[1:], title="Overall Scoring", markers=True)
     st.plotly_chart(fig_event_mean,use_container_width=True)
 
@@ -413,18 +413,18 @@ if len(name)>0:
     ##Tempo distribution by date
     df_tempo_hist = df_tempo_hist[(df_tempo_hist.Rank != "DSQ") & (df_points_orig.Rank != "DNF")]
     df_tempo_hist = df_tempo_hist.sort_values("Date",ascending=False)
-    df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+    df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
                   ).applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                   )
     st.dataframe(df_tempo_hist_styled)
 
     df_tempo_trans = pd.DataFrame()
-    df_tempo_trans["Sprint"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]
+    df_tempo_trans["Sprint"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]
     for i in range(len(df_tempo_hist)):
         var =str(df_tempo_hist["Name"].iloc[i])+" "+str(df_tempo_hist["Location"].iloc[i])+" "+str(df_tempo_hist["Event"].iloc[i])+" "+str(df_tempo_hist["Year"].iloc[i])
-        df_tempo_trans[f"{var}"]=df_tempo_hist.iloc[i][8:44].values
+        df_tempo_trans[f"{var}"]=df_tempo_hist.iloc[i][8:34].values
 
-    fig_event = px.line(df_tempo_trans, x="Sprint", y = df_tempo_trans.columns, title="Tempo Distribution by date", markers=True)
+    fig_event = px.line(df_tempo_trans, x="Sprint", y = df_tempo_trans.columns, title="Tempo Distribution by Date", markers=True)
     st.plotly_chart(fig_event,use_container_width=True)
 
     ##Elimination totals by date
@@ -472,14 +472,14 @@ df_an = df_an_year_location.query(
 
 df_an_styled = (df_an
                     .style
-                    .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
-                    .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                    .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                    .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
                     .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
                     .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                     .format(format_dict))
 st.dataframe(df_an_styled)
 
-df_summary = df_an.drop(["Year","Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Country","Event","Date","Year","Location"],axis=1)
+df_summary = df_an.drop(["Year","Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Nat","Event","Date","Year","Location"],axis=1)
 df_summary = df_summary[(df_summary.Rank != "DSQ") & (df_summary.Rank != "DNF")&(df_summary.Final != "DSQ") & (df_summary.Final != "DNF")]
 df_summary.insert(5, 'Points', df_summary["Final"]-df_summary["Sub Total"])
 
@@ -510,10 +510,10 @@ st.plotly_chart(fig_worm,use_container_width=True)
 ### Splits dataframe and plot
 
 df_splits = pd.DataFrame()
-df_splits["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"]
+df_splits["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8"]
 for i in range(len(df_an)):
     var = str(df_an["Name"].iloc[i])
-    df_splits[f"{var}"]=df_an.iloc[i][12:22].values
+    df_splits[f"{var}"]=df_an.iloc[i][12:20].values
 
 
 fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Points Race Sprint Points", markers=True)
@@ -523,10 +523,10 @@ st.plotly_chart(fig_event,use_container_width=True)
 ### Worm 
 
 df_worm = pd.DataFrame()
-df_worm["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"]
+df_worm["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8"]
 for i in range(len(df_an)):
     var = str(df_an["Name"].iloc[i])
-    df_worm[f"{var}"]=df_an.iloc[i][12:22].values.cumsum()
+    df_worm[f"{var}"]=df_an.iloc[i][12:20].values.cumsum()
 
 fig_worm = px.line(df_worm, x="Marker", y = df_worm.columns, title="Points Race Worm")
 st.plotly_chart(fig_worm,use_container_width=True)
@@ -538,10 +538,10 @@ df_tempo_an = df_tempo_orig.query(
 )
 
 df_tempo_an_trans = pd.DataFrame()
-df_tempo_an_trans["Sprint"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]
+df_tempo_an_trans["Sprint"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]
 for i in range(len(df_tempo_an)):
     var =str(df_tempo_an["Name"].iloc[i])
-    df_tempo_an_trans[f"{var}"]=df_tempo_an.iloc[i][8:44].values
+    df_tempo_an_trans[f"{var}"]=df_tempo_an.iloc[i][8:34].values
 
 fig_event = px.line(df_tempo_an_trans, x="Sprint", y = df_tempo_an_trans.columns, title="Tempo Distribution", markers=True)
 st.plotly_chart(fig_event,use_container_width=True)
@@ -549,7 +549,7 @@ st.plotly_chart(fig_event,use_container_width=True)
 ###The Ranges
 
 
-fig_event = px.line(df_an, y=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"], x = "Name", title="The Ranges", markers=True)
+fig_event = px.line(df_an, y=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8"], x = "Name", title="Points race Ranges", markers=True)
 #fig_event.update_layout(legend_title="legend")
 st.plotly_chart(fig_event,use_container_width=True)
 
@@ -560,7 +560,7 @@ st.header("Dataset Averages")
 
 df_mean_points = df_points_orig.groupby('Name', as_index=False).mean()
 df_mean_tempo = df_tempo_orig.groupby('Name', as_index=False).mean()
-df_mean_points=df_mean_points.drop(['Year','Age','Scratch','Lap +','Lap -','Avg Speed'],axis=1)
+df_mean_points=df_mean_points.drop(['Year','Age','Lap +','Lap -','Avg Speed'],axis=1)
 df_mean_total = df_points_orig[(df_points_orig.Final != "DSQ") & (df_points_orig.Final != "DNF")]
 
 
@@ -582,24 +582,26 @@ if len(riders_avg) !=0:
     df_mean_total.Final = pd.to_numeric(df_mean_total.Final)
     df_mean_total.Tempo = pd.to_numeric(df_mean_total.Tempo)
     df_mean_total.Elimination = pd.to_numeric(df_mean_total.Elimination)
+    df_mean_total.Scratch = pd.to_numeric(df_mean_total.Scratch)
     df_mean_total["Sub Total"] = pd.to_numeric(df_mean_total["Sub Total"])
     df_mean_total["Points"] = df_mean_total["Final"]-df_mean_total["Sub Total"]
-    df_mean_total=df_mean_total.drop(["Year","Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sub Total","Final"],axis=1)
+    df_mean_total=df_mean_total.drop(["Year","Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sub Total","Final"],axis=1)
     df_mean_total = df_mean_total.groupby('Name', as_index=False).mean()
     
 
 
     df_mean_points_transpose = pd.DataFrame()
-    df_mean_points_transpose["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"]
+    df_mean_points_transpose["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8"]
     df_mean_tempo_transpose = pd.DataFrame()
-    df_mean_tempo_transpose["Marker"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]
+    df_mean_tempo_transpose["Marker"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]
     df_mean_total_transpose = pd.DataFrame()
     df_mean_total_transpose["Marker"] = ["Scratch","Tempo","Elimination","Points"]
+
     for i in range(len(df_mean_points)):
         var = str(df_mean_points["Name"].iloc[i])
-        df_mean_points_transpose[f"{var}"]=df_mean_points.iloc[i][1:12].values
+        df_mean_points_transpose[f"{var}"]=df_mean_points.iloc[i][2:10].values
         df_mean_total_transpose[f"{var}"]=df_mean_total.iloc[i][1:5].values
-        df_mean_tempo_transpose[f"{var}"]=df_mean_tempo.iloc[i][3:39].values
+        df_mean_tempo_transpose[f"{var}"]=df_mean_tempo.iloc[i][3:29].values
         
     ##Points scoring average plot
     fig_point_mean = px.line(df_mean_points_transpose, x="Marker", y = df_mean_points_transpose.columns[1:], title="Points Scoring Average", markers=True)

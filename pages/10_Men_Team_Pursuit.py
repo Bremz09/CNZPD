@@ -163,8 +163,8 @@ with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
 df_splits_tt = pd.DataFrame()
 df_splits_tt["Marker"] = marker
 for i in range(len(df_topten)):
-    var = str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-    df_splits_tt[f"{var}"]=df_topten.iloc[i][16:48].values
+    var = str(i+1)+" " +str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+    df_splits_tt[f"{var}"]=df_topten.iloc[i][17:49].values
 
     
 fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten")
@@ -233,9 +233,9 @@ if len(country)>0:
     df_worm_CH = pd.DataFrame()
     df_worm_CH["Marker"] = marker
     for i in range(len(df_countryHistory)):
-        var = str(i)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])
-        df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][16:48].values
-        df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][16:48].values.cumsum()
+        var = str(i+1)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])
+        df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values
+        df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values.cumsum()
 
 
     fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
@@ -245,9 +245,8 @@ if len(country)>0:
 
     fig_event_CH = px.line(df_worm_CH, x="Marker", y = df_worm_CH.columns, title="The Worm")
     st.plotly_chart(fig_event_CH, use_container_width=True)
-
+    
     #Fourth Figure - Ranges
-   
     fig_ranges_CH = px.line(df_countryHistory, x=df_splits_CH.columns[1:], y = marker, title="The Ranges",markers=True)
     st.plotly_chart(fig_ranges_CH, use_container_width=True)
 
@@ -295,12 +294,10 @@ st.dataframe(df_an)
 ### Splits dataframe and plot
 df_splits,df_worm = pd.DataFrame(),pd.DataFrame()
 df_splits["Marker"],df_worm["Marker"] = marker,marker
-# df_worm = pd.DataFrame()
-# df_worm["Marker"] = marker
 for i in range(len(df_an)):
     var = str(df_an["Rank"].iloc[i])+" "+str(df_an["Country"].iloc[i])
-    df_splits[f"{var}"]=df_an.iloc[i][16:48].values
-    df_worm[f"{var}"]=df_an.iloc[i][16:48].values.cumsum()
+    df_splits[f"{var}"]=df_an.iloc[i][17:49].values
+    df_worm[f"{var}"]=df_an.iloc[i][17:49].values.cumsum()
 fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
 st.plotly_chart(fig_event, use_container_width=True)
 

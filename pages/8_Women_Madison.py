@@ -16,17 +16,17 @@ import io
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s Madison')
+st.header('Women\'s Madison')
 st.subheader('All results')
-all_sprints=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"]
+all_sprints=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12"]
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Madison',
         skiprows=0,
-        usecols='A:AI',
+        usecols='A:AA',
         nrows=2000
         )
     df = df.replace(',','')
@@ -128,8 +128,8 @@ else:
 
 df_styled = (df
                     .style
-                    .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
-                    .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
+                    .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
+                    .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
                     .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
                     .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                     .format(format_dict))
@@ -170,8 +170,8 @@ if len(country)>0:
     df_countryHistory = df_countryHistory.sort_values("Date", ascending=False)
     df_countryHistory_styled = (df_countryHistory
                         .style
-                        .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
-                        .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
+                        .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
+                        .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
                         .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
                         .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                         .format(format_dict))
@@ -209,8 +209,8 @@ if len(country)>0:
     
     for i in range(len(df_countryHistory)):
         var = str(i+1)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i])+" " +str(df_countryHistory["Event"].iloc[i])+" "+str(df_countryHistory["Stage"].iloc[i])+" " +str(df_countryHistory["Year"].iloc[i])
-        df_ch_trans[f"{var}"]=df_countryHistory.iloc[i][12:32].values
-        df_ch_worm[f"{var}"]=df_countryHistory.iloc[i][12:32].values.cumsum()
+        df_ch_trans[f"{var}"]=df_countryHistory.iloc[i][10:22].values
+        df_ch_worm[f"{var}"]=df_countryHistory.iloc[i][10:22].values.cumsum()
 
     fig_event_mean = px.line(df_ch_trans, x="Sprints", y = df_ch_trans.columns[1:], title="All races Summary", markers=True)
     st.plotly_chart(fig_event_mean,use_container_width=True)
@@ -220,7 +220,7 @@ if len(country)>0:
     st.plotly_chart(fig_worm,use_container_width=True)
 
     ##The Ranges
-    fig_ranges = px.line(df_countryHistory, x=df_ch_worm.columns[1:], y = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"], title="The Ranges")
+    fig_ranges = px.line(df_countryHistory, x=df_ch_worm.columns[1:], y = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12"], title="The Ranges", markers=True)
 
     st.plotly_chart(fig_ranges,use_container_width=True)
 
@@ -276,10 +276,10 @@ st.dataframe(df_an,use_container_width=True)
 ### Splits dataframe and plot
 
 df_splits = pd.DataFrame()
-df_splits["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"]
+df_splits["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12"]
 for i in range(len(df_an)):
     var = str(df_an["Country"].iloc[i])
-    df_splits[f"{var}"]=df_an.iloc[i][12:32].values
+    df_splits[f"{var}"]=df_an.iloc[i][10:22].values
 
 
 
@@ -290,10 +290,10 @@ st.plotly_chart(fig_event,use_container_width=True)
 ### Worm dataframe and plot
 st.write("Running Time")
 df_worm = pd.DataFrame()
-df_worm["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"]
+df_worm["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12"]
 for i in range(len(df_an)):
     var = str(df_an["Country"].iloc[i])
-    df_worm[f"{var}"]=df_an.iloc[i][12:32].values.cumsum()
+    df_worm[f"{var}"]=df_an.iloc[i][10:22].values.cumsum()
 
 
 fig_worm = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
@@ -303,7 +303,7 @@ st.plotly_chart(fig_worm,use_container_width=True)
 
 ###Markers Dataframe and plot
 
-fig_event = px.line(df_an, y=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"], x = "Country", title="The Ranges", markers=True)
+fig_event = px.line(df_an, y=["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12"], x = "Country", title="The Ranges", markers=True)
 #fig_event.update_layout(legend_title="legend")
 st.plotly_chart(fig_event,use_container_width=True)
 
@@ -314,10 +314,10 @@ df_mean = df_orig.groupby('Country', as_index=False).mean()
 
 st.write("Points Average")
 df_splits_mean = pd.DataFrame()
-df_splits_mean["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19","Sprint 20"]
+df_splits_mean["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12"]
 for i in range(len(df_mean)):
     var = str(df_mean["Country"].iloc[i])
-    df_splits_mean[f"{var}"]=df_mean.iloc[i][4:24].values
+    df_splits_mean[f"{var}"]=df_mean.iloc[i][2:14].values
 
 st.dataframe(df_splits_mean,use_container_width=True)
 

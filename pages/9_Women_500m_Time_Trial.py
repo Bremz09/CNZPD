@@ -16,18 +16,18 @@ import io
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s 1k Time Trial')
+st.header('Women\'s 500m Time Trial')
 st.subheader('All results')
-marker=["125m","250m","375m","500m","625m","750m","875m","1000m"]
+marker=["125m","250m","375m","500m"]
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
-        sheet_name='1k TT',
+        sheet_name='500m Time Trial',
         skiprows=0,
-        usecols='A:S',
-        nrows=1000
+        usecols='A:O',
+        nrows=2000
         )
     df = df.replace(',','')
     return df
@@ -134,11 +134,11 @@ with pd.ExcelWriter(buffertt, engine='xlsxwriter') as writer:
 df_splits_tt = pd.DataFrame()
 df_splits_tt["Marker"] = marker
 for i in range(len(df_topten)):
-    var = str(i+1)+" "+str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-    df_splits_tt[f"{var}"]=df_topten.iloc[i][9:17].values
+    var = str(i+1)+" "+str(df_topten["Athlete"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+    df_splits_tt[f"{var}"]=df_topten.iloc[i][10:14].values
 
     
-fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten")
+fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten", markers=True)
 
 st.plotly_chart(fig_tt, use_container_width=True)
 
@@ -182,14 +182,14 @@ if len(athlete)>0:
     df_ah_Trans["Distance"],df_ch_worm["Distance"] = marker,marker
     for i in range(len(df_athleteHistory_sh)):
         var =str(i+1)+" "+str(df_athleteHistory_sh["Athlete"].iloc[i])+" "+str(df_athleteHistory_sh["Location"].iloc[i])+" "+str(df_athleteHistory_sh["Event"].iloc[i])+" "+str(df_athleteHistory_sh["Stage"].iloc[i])+" "+str(df_athleteHistory_sh["Year"].iloc[i])
-        df_ah_Trans[f"{var}"]=df_athleteHistory_sh.iloc[i][9:17].values
-        df_ch_worm[f"{var}"]=df_athleteHistory_sh.iloc[i][9:17].values.cumsum()
+        df_ah_Trans[f"{var}"]=df_athleteHistory_sh.iloc[i][10:14].values
+        df_ch_worm[f"{var}"]=df_athleteHistory_sh.iloc[i][10:14].values.cumsum()
 
     fig_event = px.line(df_ah_Trans, x="Distance", y = df_ah_Trans.columns, title="All races", markers=True)
     st.plotly_chart(fig_event,use_container_width=True)
     ##Second Figure -- The Worm
     
-    fig_event_CH = px.line(df_ch_worm, x="Distance", y = df_ch_worm.columns, title="The Worm")
+    fig_event_CH = px.line(df_ch_worm, x="Distance", y = df_ch_worm.columns, title="The Worm", markers=True)
     st.plotly_chart(fig_event_CH, use_container_width=True)
     
     #Third Figure -- Ranges
@@ -211,9 +211,9 @@ if len(athlete)>0:
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
 
-    df_athleteHistory["Half"] = df_athleteHistory["125m"]+df_athleteHistory["250m"]+df_athleteHistory["375m"]+df_athleteHistory["500m"]
+    df_athleteHistory["Half"] = df_athleteHistory["125m"]+df_athleteHistory["250m"]
 
-    fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Half", title = "500m Times by Age", markers = "True", color="Athlete")
+    fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Half", title = "250m Times by Age", markers = "True", color="Athlete")
 
 
     st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -263,34 +263,34 @@ df_an = df_an_year_location_event.query(
 
 st.dataframe(df_an,use_container_width=True)
 df_splits = pd.DataFrame()
-df_splits["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m"]
+df_splits["Marker"] = ["125m","250m","375m","500m"]
 for i in range(len(df_an)):
     var = str(df_an["Athlete"].iloc[i])
-    df_splits[f"{var}"]=df_an.iloc[i][9:17].values
+    df_splits[f"{var}"]=df_an.iloc[i][10:14].values
 
-fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
+fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits", markers=True)
 
 st.plotly_chart(fig_event, use_container_width=True)    
     
 ### Worm dataframe and plot
 # st.write("Running Time")
 df_worm = pd.DataFrame()
-df_worm["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m"]
+df_worm["Marker"] = ["125m","250m","375m","500m"]
 
 for i in range(len(df_an)):
     var = str(df_an["Athlete"].iloc[i])
-    df_worm[f"{var}"]=df_an.iloc[i][9:17].values.cumsum()
+    df_worm[f"{var}"]=df_an.iloc[i][10:14].values.cumsum()
 
 
 
-fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
+fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm", markers=True)
 
 st.plotly_chart(fig_event,use_container_width=True)
 
 
 
 
-fig_event = px.line(df_an, y=["125m","250m","375m","500m","625m","750m","875m","1000m"], x = "Athlete", title="The Ranges")
+fig_event = px.line(df_an, y=["125m","250m","375m","500m"], x = "Athlete", title="The Ranges", markers=True)
 
 st.plotly_chart(fig_event,use_container_width=True)
 

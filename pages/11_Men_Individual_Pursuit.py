@@ -148,72 +148,72 @@ df_athleteHistory = df_orig.query(
     "Athlete == @athlete"
 )
 
-
-st.dataframe(df_athleteHistory,use_container_width=True)
-#DOWNLOAD BUTTONS
-csvah = convert_to_csv(df_athleteHistory)
-buffertt = io.BytesIO()
-download1 = st.download_button(
-    label="Download Athlete History as CSV",
-    data=csvah,
-    file_name='IP_Athlete_History_Data.csv',
-    mime='text/csv',
-    key="IPah1"
-)
-with pd.ExcelWriter(buffertt, engine='xlsxwriter') as writer:
-    df_athleteHistory.to_excel(writer, sheet_name='Sheet1', index=False)
-    writer.save()
-    download2 = st.download_button(
-        label="Download Athlete History as Excel",
-        data=buffertt,
-        file_name='IP_Athlete_History_Data.xlsx',
-        mime='application/vnd.ms-excel',
-        key="IPah2"
+if len(athlete)>0:
+    st.dataframe(df_athleteHistory,use_container_width=True)
+    #DOWNLOAD BUTTONS
+    csvah = convert_to_csv(df_athleteHistory)
+    buffertt = io.BytesIO()
+    download1 = st.download_button(
+        label="Download Athlete History as CSV",
+        data=csvah,
+        file_name='IP_Athlete_History_Data.csv',
+        mime='text/csv',
+        key="IPah1"
     )
-##Download buttons complete
+    with pd.ExcelWriter(buffertt, engine='xlsxwriter') as writer:
+        df_athleteHistory.to_excel(writer, sheet_name='Sheet1', index=False)
+        writer.save()
+        download2 = st.download_button(
+            label="Download Athlete History as Excel",
+            data=buffertt,
+            file_name='IP_Athlete_History_Data.xlsx',
+            mime='application/vnd.ms-excel',
+            key="IPah2"
+        )
+    ##Download buttons complete
 
-df_splits_CH = pd.DataFrame()
-df_splits_CH["Marker"] = marker
-df_worm_CH = pd.DataFrame()
-df_worm_CH["Marker"] = marker
-for i in range(len(df_athleteHistory)):
-    var = str(i)+" "+str(df_athleteHistory["Athlete"].iloc[i])+" "+str(df_athleteHistory["Location"].iloc[i]) + " " + str(df_athleteHistory["Year"].iloc[i]) + " " +str(df_athleteHistory["Event"].iloc[i]) + " " +str(df_athleteHistory["Stage"].iloc[i])
-    df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values
-    df_worm_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values.cumsum()
-
-
-fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
-st.plotly_chart(fig_CH, use_container_width=True)
-
-#Third Figure - Worm
-
-fig_event_CH = px.line(df_worm_CH, x="Marker", y = df_worm_CH.columns, title="The Worm")
-st.plotly_chart(fig_event_CH, use_container_width=True)
-
-#Fourth Figure - Ranges
-fig_ranges_CH = px.line(df_athleteHistory, x=df_splits_CH.columns[1:], y = markerx, title="The Ranges",markers=True)
-st.plotly_chart(fig_ranges_CH, use_container_width=True)
+    df_splits_CH = pd.DataFrame()
+    df_splits_CH["Marker"] = marker
+    df_worm_CH = pd.DataFrame()
+    df_worm_CH["Marker"] = marker
+    for i in range(len(df_athleteHistory)):
+        var = str(i+1)+" "+str(df_athleteHistory["Athlete"].iloc[i])+" "+str(df_athleteHistory["Location"].iloc[i]) + " " + str(df_athleteHistory["Year"].iloc[i]) + " " +str(df_athleteHistory["Event"].iloc[i]) + " " +str(df_athleteHistory["Stage"].iloc[i])
+        df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values
+        df_worm_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values.cumsum()
 
 
-#FIRST FIGURE -- FINAL TIME PROGRESSION
+    fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
+    st.plotly_chart(fig_CH, use_container_width=True)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", color="Athlete")
-fig_athlete_history.update_traces(textposition="top right")
+    #Third Figure - Worm
 
-st.plotly_chart(fig_athlete_history,use_container_width=True)
+    fig_event_CH = px.line(df_worm_CH, x="Marker", y = df_worm_CH.columns, title="The Worm")
+    st.plotly_chart(fig_event_CH, use_container_width=True)
 
-### Time by Age
+    #Fourth Figure - Ranges
+    fig_ranges_CH = px.line(df_athleteHistory, x=df_splits_CH.columns[1:], y = markerx, title="The Ranges",markers=True)
+    st.plotly_chart(fig_ranges_CH, use_container_width=True)
 
-fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Time", title = "Times by Age", markers = "True", color="Athlete")
-fig_athlete_history.update_traces(textposition="top right")
 
-st.plotly_chart(fig_athlete_history,use_container_width=True)
+    #FIRST FIGURE -- FINAL TIME PROGRESSION
+
+    fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", color="Athlete")
+    fig_athlete_history.update_traces(textposition="top right")
+
+    st.plotly_chart(fig_athlete_history,use_container_width=True)
+
+    ### Time by Age
+
+    fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Time", title = "Times by Age", markers = "True", color="Athlete")
+    fig_athlete_history.update_traces(textposition="top right")
+
+    st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 
 
 
 st.markdown("---")
-    
+
 st.title(":mag_right: Race Analysis Tool")
 uniqueYear = df_orig['Year'].drop_duplicates().sort_values(ascending=False)
 
@@ -259,7 +259,7 @@ st.dataframe(df_an)
 df_splits,df_worm = pd.DataFrame(),pd.DataFrame()
 df_splits["Marker"],df_worm["Marker"] = marker,marker
 for i in range(len(df_an)):
-    var = str(df_an["Athlete"].iloc[i])
+    var = str(df_an["Rank"].iloc[i])+ " "+ str(df_an["Athlete"].iloc[i])
     df_splits[f"{var}"]=df_an.iloc[i][9:41].values
     df_worm[f"{var}"]=df_an.iloc[i][9:41].values.cumsum()
 

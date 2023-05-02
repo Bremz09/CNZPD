@@ -30,6 +30,7 @@ def get_data_from_excel():
         nrows=520
         )
     df = df.replace(',','', regex=True)
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
 #     for i in range(len(df)):
 #         df["Date"][i] = df["Date"][i].date()
         #if df["125m"][i] != "NULL":

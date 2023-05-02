@@ -16,13 +16,13 @@ import io
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-st.header('Men\'s Team Sprint')
+st.header('Women\'s Team Sprint')
 st.subheader('All results')
 marker = ["125m","250m","375m","500m","625m","750m"]
 @st.cache_data
 def get_data_from_excel():
     df = pd.read_excel(
-        io='pages/MensRaceResults.xlsm',
+        io='pages/WomensRaceResults.xlsm',
         engine ='openpyxl',
         sheet_name='Team Sprint',
         skiprows=0,
@@ -30,6 +30,7 @@ def get_data_from_excel():
         nrows=520
         )
     df = df.replace(',','', regex=True)
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
 #     for i in range(len(df)):
 #         df["Date"][i] = df["Date"][i].date()
         #if df["125m"][i] != "NULL":
@@ -136,7 +137,7 @@ df_splits_tt = pd.DataFrame()
 df_splits_tt["Marker"] = ["125m","250m","375m","500m","625m","750m"]
 for i in range(len(df_topten)):
     var = str(i+1)+" "+str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-    df_splits_tt[f"{var}"]=df_topten.iloc[i][14:20].values
+    df_splits_tt[f"{var}"]=df_topten.iloc[i][15:21].values
 
     
 fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten")
@@ -206,8 +207,8 @@ if len(country)>0:
     df_splits_CH["Marker"],df_worm_CH["Marker"] = marker,marker
     for i in range(len(df_countryHistory)):
         var = str(i+1)+" " +str(df_countryHistory["Country"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])+ " " +str(df_countryHistory["Rider1"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider2"].iloc[i].split(" ")[0])+ " " +str(df_countryHistory["Rider3"].iloc[i].split(" ")[0])
-        df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][14:20].values
-        df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][14:20].values.cumsum()
+        df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][15:21].values
+        df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][15:21].values.cumsum()
 
 
     fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="All Rides")
@@ -275,8 +276,8 @@ df_splits,df_worm = pd.DataFrame(),pd.DataFrame()
 df_splits["Marker"],df_worm["Marker"] = marker,marker
 for i in range(len(df_an)):
     var = str(df_an["Rank"].iloc[i])+" "+str(df_an["Country"].iloc[i])
-    df_splits[f"{var}"]=df_an.iloc[i][14:20].values
-    df_worm[f"{var}"]=df_an.iloc[i][14:20].values.cumsum()
+    df_splits[f"{var}"]=df_an.iloc[i][15:21].values
+    df_worm[f"{var}"]=df_an.iloc[i][15:21].values.cumsum()
 st.dataframe(df_an, use_container_width=True)
 
 fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
@@ -290,7 +291,7 @@ st.plotly_chart(fig_event, use_container_width=True)
 
 ###Ranges
 
-fig_event = px.line(df_an, y=[125,250,375,500,625,750], x = df_worm.columns[1:], title="Splits Breakdown", markers=True)
+fig_event = px.line(df_an, y=[125,250,375,500,625,750], x = df_worm.columns[1:], title="The Ranges", markers=True)
 st.plotly_chart(fig_event, use_container_width=True)
 
 
