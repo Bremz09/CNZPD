@@ -93,7 +93,7 @@ def get_WK_points_data_from_excel():
 df_WK = get_WK_points_data_from_excel()
 
 s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
-dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(hour=12)
+dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(hours=12)
 s1 = dt_m.strftime("%d/%m/%Y")
 st.subheader("Last updated on "+ str(s1))
 
