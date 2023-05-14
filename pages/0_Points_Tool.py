@@ -13,8 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 import os
-
-
+import pytz
 
 
 
@@ -22,8 +21,9 @@ st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
 st.header('Points Tool')
-update = datetime.date.today()+ pd.DateOffset(1)
 
+update = datetime.date.today()+ pd.DateOffset(hour=12)
+st.write(update)
 
 #@st.cache_data
 
@@ -93,7 +93,7 @@ def get_WK_points_data_from_excel():
 df_WK = get_WK_points_data_from_excel()
 
 s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
-dt_m = datetime.date.fromtimestamp(s)
+dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(hour=12)
 s1 = dt_m.strftime("%d/%m/%Y")
 st.subheader("Last updated on "+ str(s1))
 
