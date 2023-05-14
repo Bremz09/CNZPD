@@ -93,10 +93,10 @@ def get_WK_points_data_from_excel():
 df_WK = get_WK_points_data_from_excel()
 
 s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
-dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(days=0.5)
+dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(days=1)
 s1 = dt_m.strftime("%d/%m/%Y")
+st.write(s1)
 st.subheader("Last updated on "+ str(s1))
-
 Events = ["Men's Sprint","Men's Kierin", "Women's Sprint", "Women's Kierin"]
 
 Event = st.selectbox("Select Event:", Events, key="Event_selector")
