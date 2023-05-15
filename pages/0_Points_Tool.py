@@ -23,7 +23,7 @@ st.set_page_config(page_title='CNZ Performance Database',
 st.header('Points Tool')
 
 update = datetime.date.today()+ pd.DateOffset(hour=12)
-st.write(update)
+
 
 #@st.cache_data
 
@@ -95,7 +95,6 @@ df_WK = get_WK_points_data_from_excel()
 s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
 dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(days=1)
 s1 = dt_m.strftime("%d/%m/%Y")
-st.write(s1)
 st.subheader("Last updated on "+ str(s1))
 Events = ["Men's Sprint","Men's Kierin", "Women's Sprint", "Women's Kierin"]
 
@@ -166,7 +165,9 @@ col_one, col_two, col_three, col_four = st.columns(4)
 with col_one:
     options = ["All athletes","Top two from each Nation"]
     Max_Ath = st.selectbox("Athletes shown:", options, key="Max Athletes")
-
+with col_two:
+    kiwisOnly = ["No","Yes"]
+    JustKiwis = st.selectbox("Show Kiwis Only?:", kiwisOnly, key="kiwis only")
 
 if Max_Ath=="Top two from each Nation":
     max_athletes = 2
@@ -255,6 +256,8 @@ Points = {'Name': allowed_athletes,
 df_points=pd.DataFrame(Points).sort_values('Total',ascending=False)
 Rank = list(range(1,len(allowed_athletes)+1))
 df_points.insert(loc=0, column='Rank', value=Rank)
+if JustKiwis == "Yes":
+    df_points = df_points.loc[(df_points.Country == "NZL")]
 df_points
 
 
