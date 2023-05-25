@@ -57,40 +57,48 @@ st.set_page_config(page_title='CNZ Performance Database',
 ##This bit is the historical visualiser
 
 st.header("View/compare efforts from master file")
-master_file=st.file_uploader("Select master file")
-if master_file:
-    df_master = pd.read_excel(master_file)
-    df_master
 
-    selections = st.multiselect(
-    "Select past effort(s):",
-    options=df_master["Title"].unique()
-    )   
+# own_master=st.file_uploader("Select master file")
+# if own_master:
+#     df_master = pd.read_excel(own_master)
+#     df_master
+
+#     selections = st.multiselect(
+#     "Select past effort(s):",
+#     options=df_master["Title"].unique()
+#     )   
+# else:
+df_master = pd.read_excel(f'C:\\Users\\SamB\\CNZPD\\pages\\TP_Master.xlsx')
+df_master
+
+selections = st.multiselect(
+"Select past effort(s):",
+options=df_master["Title"].unique()
+) 
 
 
 
-
-    if len(selections) !=0:
-        df_combine = pd.DataFrame()
-        for i in range(len(selections)):
-            col_1,col_2=st.columns(2)
-            with col_1:
-                df_temp = df_master.loc[df_master['Title'] == selections[i]]
-                df_combine = pd.concat([df_combine, df_temp], axis=0)
-                df_temp
-            with col_2:
-                fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
-                fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
-                fig.update_layout(
-                title={
-                    'text': df_temp.Title.iloc[0],
-                    'y':0.9,
-                    'x':0.5,
-                    'xanchor': 'center',
-                    'yanchor': 'top',
-                    'font':dict(size=25)})
-                #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
-                st.plotly_chart(fig, use_container_width=True)
+if len(selections) !=0:
+    df_combine = pd.DataFrame()
+    for i in range(len(selections)):
+        col_1,col_2=st.columns(2)
+        with col_1:
+            df_temp = df_master.loc[df_master['Title'] == selections[i]]
+            df_combine = pd.concat([df_combine, df_temp], axis=0)
+            df_temp
+        with col_2:
+            fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
+            fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
+            fig.update_layout(
+            title={
+                'text': df_temp.Title.iloc[0],
+                'y':0.9,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font':dict(size=25)})
+            #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
+            st.plotly_chart(fig, use_container_width=True)
             
 
 #     df_total = pd.DataFrame()
@@ -99,32 +107,41 @@ if master_file:
 #         var = str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
 #         df_splits_tt[f"{var}"]=df_topten.iloc[i][16:48].values
 
-
+    col_one, col_two, col_three, col_four = st.columns(4)
+    with col_one:
+        show_names = ["No","Yes"]
+        Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
+    if Names == "Yes":
+        fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",text="Front",markers="Front")
+    else:
         fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
 
-        st.plotly_chart(fig_tt, use_container_width=True)
+    st.plotly_chart(fig_tt, use_container_width=True)
         
-        if len(selections) >1:
-        
-            df_zero = df_combine
-            df_zero = df_zero.reset_index(drop=True)
-            length = df_zero.Title.value_counts()[selections[0]]
-            
-            for j in range(length,len(selections)*length):
-                df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                df_zero.Split[j-length]=0
-                
-                    
-                    
-           
-            
-            fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+    if len(selections) >1:
 
-            st.plotly_chart(fig_zero, use_container_width=True)
-            
+        df_zero = df_combine
+        df_zero = df_zero.reset_index(drop=True)
+        length = df_zero.Title.value_counts()[selections[0]]
+        
+        for j in range(length,len(selections)*length):
+            df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+            df_zero.Split[j-length]=0
+
+
+
+
+        if Names == "Yes":
+            fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Front",markers="Front")
+        else:
+            fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+        st.plotly_chart(fig_zero, use_container_width=True)
+        if Names=="Yes":
+            fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+        if Names=="No":
             fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
 
-            st.plotly_chart(fig_worm, use_container_width=True)
+        st.plotly_chart(fig_worm, use_container_width=True)
                            
                        
             
@@ -160,10 +177,11 @@ uploaded_file = st.file_uploader("Choose a file",key="uploader")
 
 if uploaded_file is not None:
     st.markdown("---")
+    
     st.header("Editor")
-    df = pd.read_excel(uploaded_file)
+    df = pd.read_csv(uploaded_file)
+    df=df.sort_values("Start time", ascending=True)
     col_one, col_two, col_three = st.columns(3)
-
     with col_one:
         rider1 = st.text_input("Select Rider 1:")
         rider2 = st.text_input("Select Rider 2:")
@@ -175,7 +193,11 @@ if uploaded_file is not None:
     del_speeds=[]
     speeds=[0]
     r=0
-    df.Time = df.Time - df.Time[0]
+    df["Time"] = df["Start time"] - df["Start time"].iloc[0]
+    df["Distance"] = np.linspace(0, 4000, num=65)
+    df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
+  axis='columns', inplace=True)
+    
     #df = df.dropna(axis=0, subset=['Time'])
 
     with col_two:
@@ -185,16 +207,24 @@ if uploaded_file is not None:
         
 
     with col_three:
+        num_riders=4
         for i in range(len(df)-1):
             splits.append(round(df.Time[i+1]-df.Time[i],3))
             speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
-            if df.Change[i]=="n":
-                front.append(eval(f'rider{r%4 +1}'))
+
+            if df["Row"][i]=="No Change" or df["Row"][i]=="Start/Finish":
+                front.append(eval(f'rider{r%num_riders +1}'))
                 del_speeds.append(speeds[i])
-            else:
+            elif df["Row"][i]=="Change":
                 r+=1
-                front.append(eval(f'rider{r%4 +1}'))
+                front.append(eval(f'rider{r%num_riders+1}'))
                 del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
+            elif df["Row"][i]=="Drop":
+                rider2=rider1
+                r+=1
+                front.append(eval(f'rider{r%num_riders+1}'))
+                del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
+                
         del_speeds.append(speeds[len(speeds)-1])
 #         for j in range(len(df)):
 #             if df.Change[j]=="n":
@@ -205,6 +235,11 @@ if uploaded_file is not None:
         df["Avg_Speed"]=speeds
         df["Split"]=splits
         df["Front"]=front
+        df.drop('Start time',
+  axis='columns', inplace=True)
+        df.rename(columns = {'Row':'Action'}, inplace = True)
+        df.drop(index=df.index[0], axis=0, inplace=True)
+        #df = df.dropna(axis=0, subset=['Time'])
         st.write(df)
         
 
