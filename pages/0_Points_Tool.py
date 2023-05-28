@@ -92,11 +92,25 @@ def get_WK_points_data_from_excel():
     return df_WK
 df_WK = get_WK_points_data_from_excel()
 
+def get_WTT_points_data_from_excel():
+    df_WTT = pd.read_excel(
+        io='pages/Time_Trial_Points_Women.xlsx',
+        engine ='openpyxl',
+        sheet_name='Time_Trial_Points_Women',
+        skiprows=0,
+        usecols='A:J',
+        nrows=3000
+        )
+    df_WTT = df_WTT.replace(',','')
+    df_WTT['Date'] = pd.to_datetime(df_WTT['Date']).dt.date
+    return df_WTT
+df_WTT = get_WTT_points_data_from_excel()
+
 s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
 dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(days=1)
 s1 = dt_m.strftime("%d/%m/%Y")
 st.subheader("Last updated on "+ str(s1))
-Events = ["Men's Sprint","Men's Kierin", "Women's Sprint", "Women's Kierin"]
+Events = ["Men's Sprint","Men's Kierin", "Women's Sprint", "Women's Kierin","Women's 500 Time Trial"]
 
 Event = st.selectbox("Select Event:", Events, key="Event_selector")
 
@@ -106,8 +120,10 @@ elif Event == Events[1]:
     df=df_MK
 elif Event == Events[2]:
     df=df_WS
-else:
+elif Event == Events[3]:
     df=df_WK
+else:
+    df=df_WTT
     
 df_orig=df
 

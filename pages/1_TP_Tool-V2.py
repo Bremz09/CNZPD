@@ -69,7 +69,7 @@ st.header("View/compare efforts from master file")
 #     )   
 # else:
 df_master = pd.read_excel(f'C:\\Users\\SamB\\CNZPD\\pages\\TP_Master.xlsx')
-df_master
+df_master 
 
 selections = st.multiselect(
 "Select past effort(s):",
