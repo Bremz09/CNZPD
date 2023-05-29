@@ -111,8 +111,10 @@ if len(selections) !=0:
     with col_one:
         show_names = ["No","Yes"]
         Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
+        df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
     if Names == "Yes":
-        fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",text="Front",markers="Front")
+        fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",text="Initial",markers="Front")
+        fig_tt.update_traces(textposition='top center')
     else:
         fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
 
@@ -130,12 +132,14 @@ if len(selections) !=0:
 
 
         if Names == "Yes":
-            fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Front",markers="Front")
+            fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
+            fig_zero.update_traces(textposition='top center')
         else:
             fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
         st.plotly_chart(fig_zero, use_container_width=True)
         if Names=="Yes":
-            fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+            fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
+            fig_worm.update_traces(textposition='top center')
         if Names=="No":
             fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
 
@@ -155,6 +159,7 @@ if len(selections) !=0:
 
         if Names=="Yes":
             fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+            fig_worm.update_traces(textposition='top center')
         if Names=="No":
             fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
 
