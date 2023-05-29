@@ -110,7 +110,7 @@ s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
 dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(days=1)
 s1 = dt_m.strftime("%d/%m/%Y")
 st.subheader("Last updated on "+ str(s1))
-Events = ["Men's Sprint","Men's Kierin", "Women's Sprint", "Women's Kierin","Women's 500 Time Trial"]
+Events = ["Men's Sprint","Men's Keirin", "Women's Sprint", "Women's Keirin","Women's 500 Time Trial"]
 
 Event = st.selectbox("Select Event:", Events, key="Event_selector")
 
