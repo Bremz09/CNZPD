@@ -68,7 +68,7 @@ st.header("View/compare efforts from master file")
 #     options=df_master["Title"].unique()
 #     )   
 # else:
-df_master = pd.read_excel(f'C:\\Users\\SamB\\CNZPD\\pages\\TP_Master.xlsx')
+df_master = pd.read_excel(f'pages/TP_Master.xlsx')
 df_master 
 
 selections = st.multiselect(
