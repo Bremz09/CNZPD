@@ -99,7 +99,7 @@ def convert_to_csv(df):
     return df.to_csv(index=False,sep = ",").encode('utf-32')
 csv = convert_to_csv(df)
 download1 = st.download_button(
-    label="Download All Environmental data as CSV",
+    label="Download Environmental data as CSV",
     data=csv,
     file_name='Enviro_Data.csv',
     mime='text/csv'
