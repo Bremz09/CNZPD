@@ -38,7 +38,8 @@ st.header("View/compare efforts from master file")
 #     )   
 # else:
 df_master = pd.read_excel(f'pages/TP_Master.xlsx')
-df_master 
+df_small = df_master.drop(columns=["Save_Date","Action","Video"])
+df_small
 c1,c2=st.columns(2)
 with c1:
     selections = st.multiselect(
@@ -53,11 +54,12 @@ with c2:
 if len(selections) !=0:
     df_combine = pd.DataFrame()
     for i in range(len(selections)):
-        col_1,col_2=st.columns(2)
+        col_1,col_2,col_3=st.columns(3)
         with col_1:
             df_temp = df_master.loc[df_master['Title'] == selections[i]]
             df_combine = pd.concat([df_combine, df_temp], axis=0)
-            df_temp
+            df_small = df_temp.drop(columns=["Save_Date","Action","Video"])
+            df_small
         with col_2:
             fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
             fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
@@ -71,13 +73,15 @@ if len(selections) !=0:
                 'font':dict(size=25)})
             #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
             st.plotly_chart(fig, use_container_width=True)
-        if Videos == "Yes":
-            video_name = df_temp["Title"].iloc[0]
-            st.header(video_name)
-            if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
-                video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-                video_bytes = video_file.read()
-                st.video(video_bytes)
+        with col_3:
+            if Videos == "Yes":
+                video_name = df_temp["Video"].iloc[0]
+                st.header(df_temp["Title"].iloc[0])
+                #if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
+                #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
+                #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
+                #video_bytes = video_file.read()
+                st.video(f"{video_name}")
 
 
     col_one, col_two, col_three, col_four = st.columns(4)
