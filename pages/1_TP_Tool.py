@@ -76,13 +76,18 @@ if len(selections) !=0:
         if Videos == "Yes":
             c1,c2=st.columns(2)
             with c1:
-                video_name = df_temp["Video"].iloc[0]
-                st.header(df_temp["Title"].iloc[0])
-                #if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
-                #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-                #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-                #video_bytes = video_file.read()
-                st.video(f"{video_name}")
+                if pd.isnull(df_temp["Video"].iloc[0]):
+                    st.header("No video available")
+                else:
+                    video_name = df_temp["Video"].iloc[0]
+                    st.header(df_temp["Title"].iloc[0])
+                    #if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
+                    #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
+                    #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
+                    #video_bytes = video_file.read()
+                    st.video(f"{video_name}")
+        st.markdown("---")
+          
 
 
     col_one, col_two, col_three, col_four = st.columns(4)
@@ -198,19 +203,30 @@ if uploaded_file is not None:
 
     with col_three:
         num_riders=4
+        dropped=''
         for i in range(len(df)-1):
             splits.append(round(df.Time[i+1]-df.Time[i],3))
             speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
-
+#             st.write(str(i+1) + ' current rider is ' + eval(f'rider{r%num_riders+1}'))
+#             st.write(dropped + ' has been dropped')
+#             st.write("Next is " + eval(f'rider{r%num_riders+2}'))
+            skip=1
+            if dropped == eval(f'rider{r%num_riders+1}'):
+                
+                st.write("next rider is " + eval(f'rider{r%num_riders+1}'))
+                r+=1
+                st.write("lets instead use " + eval(f'rider{r%num_riders+1}'))
+                skip=0
             if df["Row"][i]=="No Change" or df["Row"][i]=="Start/Finish":
                 front.append(eval(f'rider{r%num_riders +1}'))
                 del_speeds.append(speeds[i])
             elif df["Row"][i]=="Change":
-                r+=1
+                r+=skip            
                 front.append(eval(f'rider{r%num_riders+1}'))
-                del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
+                del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))                
             elif df["Row"][i]=="Drop":
-                rider2=rider1
+                dropped = eval(f'rider{r%num_riders+1}')
+                st.write(str(i) + " " +dropped + " has been dropped")
                 r+=1
                 front.append(eval(f'rider{r%num_riders+1}'))
                 del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
