@@ -54,7 +54,7 @@ with c2:
 if len(selections) !=0:
     df_combine = pd.DataFrame()
     for i in range(len(selections)):
-        col_1,col_2,col_3=st.columns(3)
+        col_1,col_2=st.columns(2)
         with col_1:
             df_temp = df_master.loc[df_master['Title'] == selections[i]]
             df_combine = pd.concat([df_combine, df_temp], axis=0)
@@ -73,8 +73,9 @@ if len(selections) !=0:
                 'font':dict(size=25)})
             #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
             st.plotly_chart(fig, use_container_width=True)
-        with col_3:
-            if Videos == "Yes":
+        if Videos == "Yes":
+            c1,c2=st.columns(2)
+            with c1:
                 video_name = df_temp["Video"].iloc[0]
                 st.header(df_temp["Title"].iloc[0])
                 #if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
