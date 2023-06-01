@@ -15,44 +15,13 @@ from plotly.subplots import make_subplots
 import xlwings as xw
 import datetime
 import io
-
+import os.path
 
 
 
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
-
-
-# def get_data_from_excel():
-#     df_master = pd.read_excel(
-#         io='pages/TP_Master.xlsx',
-#         engine ='openpyxl',
-#         sheet_name='Sheet1',
-#         skiprows=0,
-#         usecols='A:I',
-#         nrows=8000
-#         )
-#     #df = df.replace(',','', regex=True)
-#     #for i in range(len(df)):
-#         #df["Date"][i] = df["Date"][i].date()
-#         #if df["125m"][i] != "NULL":
-#             #df["125m"][i] = df["125m"][i].strftime("%M:%S.%f")
-#     return df_master
-# df_master= get_data_from_excel()
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ##This bit is the historical visualiser
 
@@ -70,12 +39,15 @@ st.header("View/compare efforts from master file")
 # else:
 df_master = pd.read_excel(f'pages/TP_Master.xlsx')
 df_master 
-
-selections = st.multiselect(
-"Select past effort(s):",
-options=df_master["Title"].unique()
-) 
-
+c1,c2=st.columns(2)
+with c1:
+    selections = st.multiselect(
+    "Select past effort(s):",
+    options=df_master["Title"].unique()
+    ) 
+with c2:
+    show_vids = ["No","Yes"]
+    Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
 
 
 if len(selections) !=0:
@@ -99,13 +71,14 @@ if len(selections) !=0:
                 'font':dict(size=25)})
             #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
             st.plotly_chart(fig, use_container_width=True)
-            
+        if Videos == "Yes":
+            video_name = df_temp["Title"].iloc[0]
+            st.header(video_name)
+            if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
+                video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
+                video_bytes = video_file.read()
+                st.video(video_bytes)
 
-#     df_total = pd.DataFrame()
-#     df_total["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
-#     for i in range(len(df_combine)):
-#         var = str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-#         df_splits_tt[f"{var}"]=df_topten.iloc[i][16:48].values
 
     col_one, col_two, col_three, col_four = st.columns(4)
     with col_one:
@@ -166,19 +139,7 @@ if len(selections) !=0:
         st.plotly_chart(fig_worm, use_container_width=True)
                            
                        
-            
-            
-            
-
-            
-            
-            
-            
-            
-            
-            
-            
-            
+           
             
             
             
@@ -339,34 +300,6 @@ if uploaded_file is not None:
             )
         
         
-        
-        
-        
-#         df_save
-#         st.write("Saved to Database")
-
-
-
-#         master=xw.Book(f'{master_path}')
-#         master_sheets=master.sheets
-#         sheet=master_sheets[0]
-#         if sheet.range('A1').end('down').row > 1000000:
-#             index=2
-#         else:
-#             index=sheet.range('A1').end('down').row+1
-#         for i in range(len(df)):
-#             sheet[f'A{index}'].value = df_save.iloc[i][0]
-#             sheet[f'B{index}'].value = df_save.iloc[i][1]
-#             sheet[f'C{index}'].value = df_save.iloc[i][2]
-#             sheet[f'D{index}'].value = df_save.iloc[i][3]
-#             sheet[f'E{index}'].value = df_save.iloc[i][4]
-#             sheet[f'F{index}'].value = df_save.iloc[i][5]
-#             sheet[f'G{index}'].value = df_save.iloc[i][6]
-#             sheet[f'H{index}'].value = df_save.iloc[i][7]
-#             sheet[f'I{index}'].value = df_save.iloc[i][8]
-#             index+=1
-#         master.save()
-#         master.close()
 
 
 
