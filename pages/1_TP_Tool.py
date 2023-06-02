@@ -61,6 +61,7 @@ if len(selections) !=0:
             df_small = df_temp.drop(columns=["Save_Date","Action","Video"])
             df_small
         with col_2:
+            average = df_small.Split.iloc[4:].mean()
             fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
             fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
             fig.update_layout(
@@ -71,7 +72,7 @@ if len(selections) !=0:
                 'xanchor': 'center',
                 'yanchor': 'top',
                 'font':dict(size=25)})
-            #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
+            fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="white",annotation_text="Avg after first lap = " +str(round(average*4,2)))
             st.plotly_chart(fig, use_container_width=True)
         if Videos == "Yes":
             c1,c2=st.columns(2)
