@@ -1,30 +1,27 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import pickle
+
 from pathlib import Path
 import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 from PIL import Image
-import streamlit_authenticator as stauth 
+ 
 
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
                   layout="wide")
 
 # --- USER AUTHENTICATION ---
-names = ["CNZ"]
-usernames = ["CNZ"]
-
+import streamlit_authenticator as stauth 
+import pickle
 # load hashed passwords
 with open("hashed_pw.pkl","rb") as file:
     hashed_passwords = pickle.load(file)
 
-# authenticator = stauth.Authenticate(names, usernames, hashed_passwords,"Cycling_New_Zealand_Performance_Database", "abcdef")
 
-# name, authentication_status, username = authenticator.login("Login", "main")
 
 usernames = ['CNZ']
 names = ['CNZ']
