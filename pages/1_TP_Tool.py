@@ -97,10 +97,12 @@ if authentication_status:
                 r2WS = [0.612]
                 r3WS = [0.495]
                 r4WS = [0.459]
+                speed_diff=[df_small["Del_Speed"][0]]
+
                 no_riders=4
                 drag_feel = [0,0.971,0.612,0.495,0.459]
                 for j in range(1,len(df_small)):
-                    
+                    speed_diff.append(df_small["Del_Speed"][j]-df_small["Del_Speed"][j-1])
                     if df_small["Action"][j-1] == "Change":
                         r1.append(r1[j-1]-1)
                         r2.append(r2[j-1]-1)
@@ -149,10 +151,12 @@ if authentication_status:
                 df_small["Rider2"]=r2
                 df_small["Rider3"]=r3
                 df_small["Rider4"]=r4
-                df_small["Rider1WS"]=r1WS*df_small["Del_Speed"]
-                df_small["Rider2WS"]=r2WS*df_small["Del_Speed"]
-                df_small["Rider3WS"]=r3WS*df_small["Del_Speed"]
-                df_small["Rider4WS"]=r4WS*df_small["Del_Speed"]
+                df_small["Speed_Diff"]=speed_diff
+                df_small["Rider1WS"]=r1WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
+                df_small["Rider2WS"]=r2WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
+                df_small["Rider3WS"]=r3WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
+                df_small["Rider4WS"]=r4WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
+                
                 
                 #df = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action"])
                 df_small
@@ -172,7 +176,10 @@ if authentication_status:
                 st.plotly_chart(fig, use_container_width=True)
             c1,c2=st.columns(2)
             with c1:
-                
+                st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = df(delivery_speed + speed_change)")
+                st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
+                st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
+                st.write("We then sum all values to get the Wind_Score shown below:")
                 unq_riders = df_small["Front"].unique()
                 df_summ=pd.DataFrame(unq_riders)
                 df_summ.columns=["Rider"]
