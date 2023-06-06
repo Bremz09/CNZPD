@@ -87,7 +87,74 @@ if authentication_status:
             with col_1:
                 df_temp = df_master.loc[df_master['Title'] == selections[i]]
                 df_combine = pd.concat([df_combine, df_temp], axis=0)
-                df_small = df_temp.drop(columns=["Save_Date","Action","Video"])
+                df_small = df_temp.drop(columns=["Save_Date","Video"])
+                df_small=df_small.reset_index(drop="True")
+                r1 = [1]
+                r2 = [2]
+                r3 = [3]
+                r4 = [4]
+                r1WS = [0.971]
+                r2WS = [0.612]
+                r3WS = [0.495]
+                r4WS = [0.459]
+                no_riders=4
+                drag_feel = [0,0.971,0.612,0.495,0.459]
+                for j in range(1,len(df_small)):
+                    
+                    if df_small["Action"][j-1] == "Change":
+                        r1.append(r1[j-1]-1)
+                        r2.append(r2[j-1]-1)
+                        r3.append(r3[j-1]-1)
+                        r4.append(r4[j-1]-1)
+                    elif df_small["Action"][j-1] == "Drop":
+                        no_riders = 3
+                        drag_feel = [0,0.972,0.617,0.517]
+                        r1.append(r1[j-1]-1)
+                        r2.append(r2[j-1]-1)
+                        r3.append(r3[j-1]-1)
+                        r4.append(r4[j-1]-1)
+                    else:
+                        r1.append(r1[j-1])
+                        r2.append(r2[j-1])
+                        r3.append(r3[j-1])
+                        r4.append(r4[j-1])
+                    if r1[j]==0:
+                        r1[j]=no_riders
+                    if r2[j]==0:
+                        r2[j]=no_riders
+                    if r3[j]==0:
+                        r3[j]=no_riders
+                    if r4[j]==0:
+                        r4[j]=no_riders
+                    r1WS.append(drag_feel[r1[j]])
+                    r2WS.append(drag_feel[r2[j]])
+                    r3WS.append(drag_feel[r3[j]])
+                    r4WS.append(drag_feel[r4[j]])
+                if "Drop" in df_small["Action"].unique():        
+                    ind = df_small.index[df_small['Action'] == "Drop"][0]
+                    
+                    if r1[ind]==1:
+                        r1[ind+1:]=[0]*(len(df_small)-ind-1)
+                        r1WS[ind+1:]=[0]*(len(df_small)-ind-1)
+                    if r2[ind]==1:
+                        r2[ind+1:]=[0]*(len(df_small)-ind-1)
+                        r2WS[ind+1:]=[0]*(len(df_small)-ind-1)
+                    if r3[ind]==1:
+                        r3[ind+1:]=[0]*(len(df_small)-ind-1)
+                        r3WS[ind+1:]=[0]*(len(df_small)-ind-1)
+                    if r4[ind]==1:
+                        r4[ind+1:]=[0]*(len(df_small)-ind-1)
+                        r4WS[ind+1:]=[0]*(len(df_small)-ind-1)
+                df_small["Rider1"]=r1
+                df_small["Rider2"]=r2
+                df_small["Rider3"]=r3
+                df_small["Rider4"]=r4
+                df_small["Rider1WS"]=r1WS*df_small["Del_Speed"]
+                df_small["Rider2WS"]=r2WS*df_small["Del_Speed"]
+                df_small["Rider3WS"]=r3WS*df_small["Del_Speed"]
+                df_small["Rider4WS"]=r4WS*df_small["Del_Speed"]
+                
+                #df = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action"])
                 df_small
             with col_2:
                 average = df_small.Split.iloc[4:].mean()
@@ -103,9 +170,31 @@ if authentication_status:
                     'font':dict(size=25)})
                 fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="white",annotation_text="Avg after first lap = " +str(round(average*4,2)))
                 st.plotly_chart(fig, use_container_width=True)
+            c1,c2=st.columns(2)
+            with c1:
+                
+                unq_riders = df_small["Front"].unique()
+                df_summ=pd.DataFrame(unq_riders)
+                df_summ.columns=["Rider"]
+                df_summ=df_summ.dropna(axis=0)
+                front=[]
+                front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][0]]))
+                front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][1]]))
+                front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][2]]))
+                front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][3]]))
+                wind_scores = []
+                df_small['Rider1WS'].fillna(0)
+                wind_scores.append(round(sum(df_small['Rider1WS'].fillna(0),1)))
+                wind_scores.append(round(sum(df_small['Rider2WS'].fillna(0),1)))
+                wind_scores.append(round(sum(df_small['Rider3WS'].fillna(0),1)))
+                wind_scores.append(round(sum(df_small['Rider4WS'].fillna(0),1)))
+                df_summ["Front"]=front
+                df_summ["Wind_Score"] = wind_scores
+                df_summ
+                
+              
             if Videos == "Yes":
-                c1,c2=st.columns(2)
-                with c1:
+                with c2:
                     if pd.isnull(df_temp["Video"].iloc[0]):
                         st.header("No video available")
                     else:
