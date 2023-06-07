@@ -92,7 +92,9 @@ if authentication_status:
             datetime.date(int(splits[0]),int(splits[1]),int(day)))
 
     start=pd.to_datetime(start)
-    end=pd.to_datetime(end)
+    
+    end=pd.to_datetime(finish)+datetime.timedelta(days=1)
+   
     mask = (df_master['Time'] > start) & (df_master['Time'] <= end)
     df = df_master.loc[mask]
     df
@@ -119,7 +121,7 @@ if authentication_status:
         )
     ##Download buttons complete
 
-    fig = px.scatter(df, x="Time", y = "Temperature(C)", title="Temperature")
+    fig = px.scatter(df, x="Time", y = "Temperature(C)", title="Temperature(C)")
     st.plotly_chart(fig, use_container_width=True)
 
     fig = px.scatter(df, x="Time", y = "Relative_Humidity(%)", title="Relative Humidity (%)")
