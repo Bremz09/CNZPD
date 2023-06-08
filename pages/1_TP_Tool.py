@@ -147,6 +147,59 @@ if authentication_status:
                     if r4[ind]==1:
                         r4[ind+1:]=[0]*(len(df_small)-ind-1)
                         r4WS[ind+1:]=[0]*(len(df_small)-ind-1)
+                one_turn_1=0
+                two_turn_1=0
+                three_turn_1=0
+                four_turn_1=0
+                one_turn_2=0
+                two_turn_2=0
+                three_turn_2=0
+                four_turn_2=0
+                one_turn_3=0
+                two_turn_3=0
+                three_turn_3=0
+                four_turn_3=0
+                j=0
+                
+                while r1[j] == 1:
+                    one_turn_1+=1
+                    j+=1
+                while r2[j] == 1:
+                    two_turn_1+=1
+                    j+=1
+                while r3[j] == 1:
+                    three_turn_1+=1
+                    j+=1
+                while r4[j] == 1:
+                    four_turn_1+=1
+                    j+=1
+                while j<64 and r1[j] == 1:
+                    one_turn_2+=1
+                    j+=1
+                while j<64 and r2[j] == 1:
+                    two_turn_2+=1
+                    j+=1
+                while j<64 and r3[j] == 1:
+                    three_turn_2+=1
+                    j+=1
+                while j <64 and r4[j] == 1:
+                    four_turn_2+=1
+                    j+=1
+                while j <64 and r1[j] == 1:
+                    one_turn_3+=1
+                    j+=1
+                while j <64 and r2[j] == 1:
+                    two_turn_3+=1
+                    j+=1
+                while j<64 and r3[j] == 1:
+                    three_turn_3+=1
+                    j+=1
+                while j <64 and r4[j] == 1:
+                    four_turn_3+=1
+                    j+=1
+                first_turns=[one_turn_1,two_turn_1,three_turn_1,four_turn_1]
+                second_turns=[one_turn_2,two_turn_2,three_turn_2,four_turn_2]
+                third_turns=[one_turn_3,two_turn_3,three_turn_3,four_turn_3]
                 df_small["Rider1"]=r1
                 df_small["Rider2"]=r2
                 df_small["Rider3"]=r3
@@ -158,8 +211,8 @@ if authentication_status:
                 df_small["Rider4WS"]=r4WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
                 
                 
-                #df = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action"])
-                df_small
+                df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
+                df_main
             with col_2:
                 average = df_small.Split.iloc[4:].mean()
                 fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
@@ -172,14 +225,14 @@ if authentication_status:
                     'xanchor': 'center',
                     'yanchor': 'top',
                     'font':dict(size=25)})
-                fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="white",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
                 st.plotly_chart(fig, use_container_width=True)
             c1,c2=st.columns(2)
             with c1:
-                st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = df(delivery_speed + speed_change)")
-                st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
-                st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
-                st.write("We then sum all values to get the Wind_Score shown below:")
+                #st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
+                #st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
+                #st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
+                #st.write("We then sum all values to get the Wind_Score shown below:")
                 unq_riders = df_small["Front"].unique()
                 df_summ=pd.DataFrame(unq_riders)
                 df_summ.columns=["Rider"]
@@ -196,10 +249,25 @@ if authentication_status:
                 wind_scores.append(round(sum(df_small['Rider3WS'].fillna(0),1)))
                 wind_scores.append(round(sum(df_small['Rider4WS'].fillna(0),1)))
                 df_summ["Front"]=front
+                df_summ["Turn_1"]=first_turns
+                df_summ["Turn_2"]=second_turns
+                df_summ["Turn_3"]=third_turns
                 df_summ["Wind_Score"] = wind_scores
+                st.subheader("Rider Info")
                 df_summ
-                
-              
+                st.subheader("Start Splits")
+                df_start=pd.DataFrame(df_small["Distance"][0:4])
+                df_start["Split"]=df_small["Split"][0:4]
+                df_start["Total"]=df_small["Split"][0:4].cumsum()
+                df_start
+                st.subheader("Kilo Splits")
+                df_kilos=pd.DataFrame(["1k","2k","3k","4k"])
+                df_kilos.columns=["Distance"]
+                kilo_split = [sum(df_small["Split"][0:16]),sum(df_small["Split"][16:32]),sum(df_small["Split"][32:48]),sum(df_small["Split"][48:64])]
+                df_kilos["Split"]=kilo_split
+                df_kilos["Total"]=df_kilos["Split"].cumsum()
+                df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
+                df_kilos
             if Videos == "Yes":
                 with c2:
                     if pd.isnull(df_temp["Video"].iloc[0]):
