@@ -56,69 +56,68 @@ if authentication_status:
     ##This bit is the historical visualiser
 
     st.header("View/compare efforts from master file")
-    master_file_mado=st.file_uploader("Select master file")
-    if master_file_mado:
-        df_master = pd.read_excel(master_file_mado)
-        df_master
 
-        selections = st.multiselect(
-        "Select past effort(s):",
-        options=df_master["Title"].unique()
+    df_master = pd.read_csv(f'pages/Jakarta_Mado_W.csv')
+    df_master
+
+    selections = st.multiselect(
+    "Select past effort(s):",
+    options=df_master["Title"].unique()
         )   
 
 
 
 
-        if len(selections) !=0:
-            df_combine = pd.DataFrame()
-            for i in range(len(selections)):
-                col_1,col_2=st.columns(2)
-                with col_1:
-                    df_temp = df_master.loc[df_master['Title'] == selections[i]]
-                    df_combine = pd.concat([df_combine, df_temp], axis=0)
-                    df_temp
-                with col_2:
-                    fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
-                    fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
-                    fig.update_layout(
-                    title={
-                        'text': df_temp.Title.iloc[0],
-                        'y':0.9,
-                        'x':0.5,
-                        'xanchor': 'center',
-                        'yanchor': 'top',
-                        'font':dict(size=25)})
-                    #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
-                    st.plotly_chart(fig, use_container_width=True)
+    if len(selections) !=0:
+        df_combine = pd.DataFrame()
+        for i in range(len(selections)):
+            col_1,col_2=st.columns(2)
+            with col_1:
+                df_temp = df_master.loc[df_master['Title'] == selections[i]]
+                df_combine = pd.concat([df_combine, df_temp], axis=0)
+                df_temp
+            with col_2:
+                fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
+                fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
+                fig.update_layout(
+                title={
+                    'text': df_temp.Title.iloc[0],
+                    'y':0.9,
+                    'x':0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top',
+                    'font':dict(size=25)})
+                #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
+                st.plotly_chart(fig, use_container_width=True)
 
 
 
-            fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
+        fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
 
-            st.plotly_chart(fig_tt, use_container_width=True)
+        st.plotly_chart(fig_tt, use_container_width=True)
 
-            if len(selections) >1:
+        if len(selections) >1:
 
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                st.write(len(selections))
-                length = df_zero.Title.value_counts()[selections[0]]
+            df_zero = df_combine
+            df_zero = df_zero.reset_index(drop=True)
+            st.write(len(selections))
+            length = df_zero.Title.value_counts()[selections[0]]
 
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
-
-
+            for j in range(length,len(selections)*length):
+                df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+                df_zero.Split[j-length]=0
 
 
 
-                fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
 
-                st.plotly_chart(fig_zero, use_container_width=True)
 
-                fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+            fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
 
-                st.plotly_chart(fig_worm, use_container_width=True)
+            st.plotly_chart(fig_zero, use_container_width=True)
+
+            fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+            st.plotly_chart(fig_worm, use_container_width=True)
 
 
 
@@ -155,71 +154,53 @@ if authentication_status:
     if uploaded_file is not None:
         st.markdown("---")
         st.header("Editor")
-        df = pd.read_excel(uploaded_file)
-        col_one, col_two, col_three = st.columns(3)
-
+        df = pd.read_csv(uploaded_file)
+        rider0 = st.text_input("Select Rider 1:")
+        rider1 = st.text_input("Select Rider 2:")
+        col_one, col_two,c3 = st.columns(3)
+        
         with col_one:
-            rider1 = st.text_input("Select Rider 1:")
-            rider2 = st.text_input("Select Rider 2:")
-            rider3 = st.text_input("Select Rider 3:")
-            rider4 = st.text_input("Select Rider 4:")
+            
 
-        front=[rider1]
-        splits=[0]
-        del_speeds=[]
-        speeds=[0]
-        r=0
-        df.Time = df.Time - df.Time[0]
-        #df = df.dropna(axis=0, subset=['Time'])
-
-        with col_two:
-            offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
-            schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
-            Title = st.text_input("Plot Title:")
-
-
-        with col_three:
-            for i in range(len(df)-1):
-                splits.append(round(df.Time[i+1]-df.Time[i],3))
-                speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
-                if df.Change[i]=="n":
-                    front.append(eval(f'rider{r%4 +1}'))
-                    del_speeds.append(speeds[i])
+            #down=[rider1]
+            splits=[0]
+            del_speeds=[]
+            speeds=[0]
+            r=0
+            df.Time = df.Time - df.Time[0]
+            down=[]
+            #df = df.dropna(axis=0, subset=['Time'])
+            down_tick=0
+            tick=0
+            for i in range(len(df)):
+                if df.Action[i] == "Gap":
+                    down.append(eval(f'rider{down_tick}'))
                 else:
-                    r+=1
-                    front.append(eval(f'rider{r%4 +1}'))
-                    del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
-            del_speeds.append(speeds[len(speeds)-1])
-    #         for j in range(len(df)):
-    #             if df.Change[j]=="n":
-    #                 del_speeds.append(speeds[j])
-    #             else:
-    #                 del_speeds.append(speeds[j]*splits[j]/(splits[j]-offset))
-            df["Del_Speed"]=del_speeds
-            df["Avg_Speed"]=speeds
-            df["Split"]=splits
-            df["Front"]=front
-            st.write(df)
+                    tick+=1
+                    down_tick=tick%2
+                    down.append(eval(f'rider{down_tick}'))
+            df["In"]=down
+            df
+            
+        with col_two:
+            df_gaps=pd.DataFrame(df.loc[df['Action'] == "Gap"]).reset_index(drop=True)
+            df_gaps
+            x_gaps = np.linspace(0, len(df_gaps)-1, num=len(df_gaps))
+        fig_gaps = px.line(df_gaps, x=x_gaps, y = "Duration", title="Gap behind leader at the end of each lap",markers="In")
 
+        st.plotly_chart(fig_gaps, use_container_width=True)
+        with c3:
+            df_pos=pd.DataFrame(df.loc[df['Action'] != "Gap"]).reset_index(drop=True)
+            df_pos
+            x_pos = np.linspace(0, len(df_pos)-1, num=len(df_pos))
+        fig_pos = px.line(df_pos, x=x_pos, y = "Action", title="Position at Handover",markers="In")
 
-        fig = px.bar(df, x='Distance', y='Avg_Speed',color=df.Front,hover_data=[df.Split, df.Avg_Speed,df.Del_Speed])
-        fig.add_trace(go.Scatter(x=df['Distance'][1:], y=df['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
-        fig.update_layout(
-        title={
-            'text': Title,
-            'y':0.9,
-            'x':0.5,
-            'xanchor': 'center',
-            'yanchor': 'top',
-            'font':dict(size=25)})
-        fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
-        st.plotly_chart(fig, use_container_width=True)
-
-
-
-
-
-
+        st.plotly_chart(fig_pos, use_container_width=True)
+            
+            
+            
+            
+            
         #master_path=st.text_input("Add path to master file:",key="prompt")
         if st.button("Append this effort to master",key="upload"):
 
@@ -277,31 +258,7 @@ if authentication_status:
 
 
 
-    #         df_save
-    #         st.write("Saved to Database")
-
-
-
-    #         master=xw.Book(f'{master_path}')
-    #         master_sheets=master.sheets
-    #         sheet=master_sheets[0]
-    #         if sheet.range('A1').end('down').row > 1000000:
-    #             index=2
-    #         else:
-    #             index=sheet.range('A1').end('down').row+1
-    #         for i in range(len(df)):
-    #             sheet[f'A{index}'].value = df_save.iloc[i][0]
-    #             sheet[f'B{index}'].value = df_save.iloc[i][1]
-    #             sheet[f'C{index}'].value = df_save.iloc[i][2]
-    #             sheet[f'D{index}'].value = df_save.iloc[i][3]
-    #             sheet[f'E{index}'].value = df_save.iloc[i][4]
-    #             sheet[f'F{index}'].value = df_save.iloc[i][5]
-    #             sheet[f'G{index}'].value = df_save.iloc[i][6]
-    #             sheet[f'H{index}'].value = df_save.iloc[i][7]
-    #             sheet[f'I{index}'].value = df_save.iloc[i][8]
-    #             index+=1
-    #         master.save()
-    #         master.close()
+  
 
 
 
