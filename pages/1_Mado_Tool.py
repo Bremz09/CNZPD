@@ -57,13 +57,19 @@ if authentication_status:
 
     st.header("View/compare efforts from master file")
 
-    df_master = pd.read_csv(f'pages/Jakarta_Mado_W.csv')
+    df_master = pd.read_excel(f'pages/Mado_W_Master.xlsx')
     df_master
 
-    selections = st.multiselect(
-    "Select past effort(s):",
-    options=df_master["Title"].unique()
-        )   
+
+    c1,c2=st.columns(2)
+    with c1:
+        selections = st.multiselect(
+        "Select past effort(s):",
+        options=df_master["Title"].unique(),key="69"
+        ) 
+    with c2:
+        show_vids = ["No","Yes"]
+        Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
 
 
 
@@ -72,29 +78,63 @@ if authentication_status:
         df_combine = pd.DataFrame()
         for i in range(len(selections)):
             col_1,col_2=st.columns(2)
+            gap_splits=[0]
             with col_1:
-                df_temp = df_master.loc[df_master['Title'] == selections[i]]
-                df_combine = pd.concat([df_combine, df_temp], axis=0)
-                df_temp
+                df_gaps=pd.DataFrame(df_master.loc[df_master['Action'] == "Gap"]).reset_index(drop=True)
+            
+                for i in range(1,len(df_gaps)):
+                    gap_splits.append(df_gaps["Time"][i]-df_gaps["Time"][i-1])
+
+
+                df_gaps["Splits"]=gap_splits
+                x_gaps = np.linspace(1, len(df_gaps), num=len(df_gaps))
+                df_gaps=df_gaps.drop(columns=["Action","Save_Date"])
+                df_gaps.columns=["Title","First Wheel", "Gap Behind","In","Splits"]
+                st.subheader("Proximity to Leaders")
+                
+                df_gaps
+                
+                df_pos=pd.DataFrame(df_master.loc[df_master['Action'] != "Gap"]).reset_index(drop=True)
+                st.subheader("Position at Handover")
+                df_pos=df_pos.drop(columns=["Duration","Save_Date"])
+                pos_splits=[df_pos["Time"][0]]
+                
+                for i in range(1,len(df_pos)):
+                    pos_splits.append(df_pos["Time"][i]-df_pos["Time"][i-1])
+                df_pos["Time in"]=pos_splits
+                x_pos = np.linspace(1, len(df_pos), num=len(df_pos))
+                df_pos
             with col_2:
-                fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
-                fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
-                fig.update_layout(
-                title={
-                    'text': df_temp.Title.iloc[0],
-                    'y':0.9,
-                    'x':0.5,
-                    'xanchor': 'center',
-                    'yanchor': 'top',
-                    'font':dict(size=25)})
-                #fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
-                st.plotly_chart(fig, use_container_width=True)
+                fig_gaps = make_subplots(specs=[[{"secondary_y": True}]])
+                fig_gaps.add_trace(
+                go.Scatter(x=x_gaps, y=df_gaps["Gap Behind"], name="Gap behind front wheel",text=df_gaps["In"]),
+                secondary_y=True,
+                    )
+                fig_gaps.update_traces(textposition='top center')
+                #fig_gaps = px.line(df_gaps, x=x_gaps, y = "Duration", title="Gap behind leader at the end of each lap",markers="In")
+                fig_gaps.add_trace(
+                go.Scatter(x=x_gaps, y=df_gaps["Splits"], name="Lead lap split",text=df_gaps["In"]),
+                secondary_y=False
+                    )
+                # Add figure title
+                fig_gaps.update_layout(
+                    title_text="Lap Splits and Proximity to Leader"
+                )
 
+                # Set x-axis title
+                fig_gaps.update_xaxes(title_text="Lap")
 
+                # Set y-axes titles
+                fig_gaps.update_yaxes(title_text="Gap Behind First Wheel", secondary_y=False)
+                fig_gaps.update_yaxes(title_text="Leaders Lap Split", secondary_y=True)
+                st.plotly_chart(fig_gaps, use_container_width=True)
 
-        fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
+                fig_pos = px.line(df_pos, x=x_pos, y = "Action", title="Position at Handover",markers="In",text="In")
+                fig_pos.update_traces(textposition='top center')
+                fig_pos.update_xaxes(title_text="Changeover")
+                st.plotly_chart(fig_pos, use_container_width=True)
 
-        st.plotly_chart(fig_tt, use_container_width=True)
+                
 
         if len(selections) >1:
 
@@ -180,21 +220,51 @@ if authentication_status:
                     down_tick=tick%2
                     down.append(eval(f'rider{down_tick}'))
             df["In"]=down
+            df=df.drop(columns=["Instance number"])
             df
-            
+            gap_splits=[0]
         with col_two:
             df_gaps=pd.DataFrame(df.loc[df['Action'] == "Gap"]).reset_index(drop=True)
+            
+            for i in range(1,len(df_gaps)):
+                gap_splits.append(df_gaps["Time"][i]-df_gaps["Time"][i-1])
+                
+            
+            df_gaps["Splits"]=gap_splits
+            x_gaps = np.linspace(1, len(df_gaps), num=len(df_gaps))
+            df_gaps=df_gaps.drop(columns=["Action"])
+            df_gaps.columns=["Title","First Wheel", "Gap Behind","In","Splits"]
             df_gaps
-            x_gaps = np.linspace(0, len(df_gaps)-1, num=len(df_gaps))
-        fig_gaps = px.line(df_gaps, x=x_gaps, y = "Duration", title="Gap behind leader at the end of each lap",markers="In")
+        fig_gaps = make_subplots(specs=[[{"secondary_y": True}]])
+        fig_gaps.add_trace(
+        go.Scatter(x=x_gaps, y=df_gaps["Gap Behind"], name="Gap behind front wheel",text=df_gaps["In"]),
+        secondary_y=True,
+            )
+        fig_gaps.update_traces(textposition='top center')
+        #fig_gaps = px.line(df_gaps, x=x_gaps, y = "Duration", title="Gap behind leader at the end of each lap",markers="In")
+        fig_gaps.add_trace(
+        go.Scatter(x=x_gaps, y=df_gaps["Splits"], name="Lead lap split",text=df_gaps["In"]),
+        secondary_y=False
+            )
+        # Add figure title
+        fig_gaps.update_layout(
+            title_text="Lap Splits and Proximity to Leader"
+        )
 
+        # Set x-axis title
+        fig_gaps.update_xaxes(title_text="Lap")
+
+        # Set y-axes titles
+        fig_gaps.update_yaxes(title_text="Gap Behind First Wheel", secondary_y=False)
+        fig_gaps.update_yaxes(title_text="Leaders Lap Split", secondary_y=True)
         st.plotly_chart(fig_gaps, use_container_width=True)
+        
         with c3:
             df_pos=pd.DataFrame(df.loc[df['Action'] != "Gap"]).reset_index(drop=True)
             df_pos
-            x_pos = np.linspace(0, len(df_pos)-1, num=len(df_pos))
-        fig_pos = px.line(df_pos, x=x_pos, y = "Action", title="Position at Handover",markers="In")
-
+            x_pos = np.linspace(1, len(df_pos), num=len(df_pos))
+        fig_pos = px.line(df_pos, x=x_pos, y = "Action", title="Position at Handover",markers="In",text="In")
+        fig_pos.update_traces(textposition='top center')
         st.plotly_chart(fig_pos, use_container_width=True)
             
             
@@ -210,7 +280,7 @@ if authentication_status:
             df_save=df
             df_save.insert(0, 'Save_Date', datetime.date.today())
             df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
-            df_save.insert(0, 'Title', Title)
+            
             df = pd.concat([df_master, df_save], axis=0)
             df
 
@@ -236,7 +306,7 @@ if authentication_status:
             download1 = st.download_button(
                 label="Download new Master as CSV",
                 data=csv,
-                file_name='TP_Master.csv',
+                file_name='Mado_W_Master.csv',
                 mime='text/csv'
             )
 
@@ -250,7 +320,7 @@ if authentication_status:
                 download2 = st.download_button(
                     label="Download new Master as Excel",
                     data=buffer,
-                    file_name='TP_Master.xlsx',
+                    file_name='Mado_W_Master.xlsx',
                     mime='application/vnd.ms-excel'
                 )
 

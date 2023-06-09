@@ -56,16 +56,6 @@ if authentication_status:
 
     st.header("View/compare efforts from master file")
 
-    # own_master=st.file_uploader("Select master file")
-    # if own_master:
-    #     df_master = pd.read_excel(own_master)
-    #     df_master
-
-    #     selections = st.multiselect(
-    #     "Select past effort(s):",
-    #     options=df_master["Title"].unique()
-    #     )   
-    # else:
     df_master = pd.read_excel(f'pages/TP_Master.xlsx')
     df_small = df_master.drop(columns=["Save_Date","Action","Video"])
     df_small
