@@ -77,7 +77,7 @@ if authentication_status:
     
     Calc = st.selectbox("Select Calculator:", calcs, key="Calc_selector")
     st.subheader("Bike Specs")
-    c1,c2,c3,c4 =st.columns(4)
+    c1,c2,c3,c4,c5,c6 =st.columns(6)
     with c1:
         bike_stiffness = st.number_input("Bike Stiffness:", min_value=0.00, max_value=100.00,value=99.99)
     with c2:
@@ -86,6 +86,10 @@ if authentication_status:
         bearing_efficiency = st.number_input("Bearing Efficiency:", min_value=0.00, max_value=100.00,value=99.99)
     with c4:
         bike_weight = st.number_input("Bike Weight (kg):", min_value=0.00, max_value=20.00,value=8.50)
+    with c5:
+        wheel_radius = st.number_input("Wheel Radius (m):", min_value=0.00, max_value=1.00,value=0.40)
+    with c6:
+        seat_height = st.number_input("Seat Height (m):", min_value=0.00, max_value=2.00,value=1.00)
     st.subheader("Environment")
     #8 sections of the track, 4 sections where angle increases linearly from straight to bank angle (or vice versa)
     #Maybe add lengths of these sections in
