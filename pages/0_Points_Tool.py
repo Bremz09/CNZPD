@@ -159,7 +159,7 @@ if authentication_status:
 
     #st.subheader("Number of events for inclusion (shouldn't have to change these values)")
     today = datetime.date.today()
-    default_start = datetime.date(2022, 6, 22)
+    default_start = datetime.date(2022, 6, 21)
     # col_one, col_two, col_three, col_four, col_five = st.columns(5)
 
     ### This was when you could change the number of events etc
@@ -199,7 +199,7 @@ if authentication_status:
     TCLRR_events=5
     CONE_events=3
     start_date = default_start
-    end_date = datetime.date(2023, 6, 21)
+    end_date = datetime.date(2023, 6, 23)
     #max_athletes=2
 
 
