@@ -55,8 +55,11 @@ if authentication_status:
     ##This bit is the historical visualiser
 
     st.header("View/compare efforts from master file")
-
-    df_master = pd.read_excel(f'pages/TP_Master.xlsx')
+    racetype = st.selectbox(
+        "Select Race Type:",
+        options=["Women's TP", "Mens' Keirin"]
+        ) 
+    df_master = pd.read_excel(f'pages/video_analysis/TP_Master.xlsx')
     df_small = df_master.drop(columns=["Save_Date","Action","Video"])
     df_small
     c1,c2=st.columns(2)
