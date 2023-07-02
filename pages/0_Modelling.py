@@ -57,33 +57,33 @@ if authentication_status:
 
     #@st.cache_data
 
-#     def get_power_profile_from_excel():
-#         df_Dan = pd.read_excel(
-#             io='pages/Dan_power_profile.xlsx',
-#             engine ='openpyxl',
-#             sheet_name='Sheet1',
-#             skiprows=0,
-#             usecols='A:G',
-#             nrows=600
-#             )
-#         #df_MK = df_MK.replace(',','')
-#         #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
-#         return df_Dan
-#     df_Dan = get_power_profile_from_excel()
-    
     def get_power_profile_from_excel():
-        df_B = pd.read_excel(
-            io='pages/B_IP_Comms_22_Qual.xlsx',
+        df_Dan = pd.read_excel(
+            io='pages/Dan_power_profile.xlsx',
             engine ='openpyxl',
-            sheet_name='B Botha 2Hz',
+            sheet_name='Sheet1',
             skiprows=0,
-            usecols='A:C',
+            usecols='A:G',
             nrows=600
             )
         #df_MK = df_MK.replace(',','')
         #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
-        return df_B
-    df_B = get_power_profile_from_excel()
+        return df_Dan
+    df_Dan = get_power_profile_from_excel()
+    
+#     def get_power_profile_from_excel():
+#         df_B = pd.read_excel(
+#             io='pages/B_IP_Comms_22_Qual.xlsx',
+#             engine ='openpyxl',
+#             sheet_name='B Botha 2Hz',
+#             skiprows=0,
+#             usecols='A:C',
+#             nrows=600
+#             )
+#         #df_MK = df_MK.replace(',','')
+#         #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
+#         return df_B
+#     df_B = get_power_profile_from_excel()
 
     
     
@@ -184,12 +184,12 @@ if authentication_status:
         with c4:
             co2_def = st.number_input("O2 Deficit:", min_value=0.00, max_value=20.00,value=20.00)
         with c5:
-            max_torque = st.number_input("Max Torque (Nm):", min_value=0.00, max_value=400.00,value=250.00)
+            max_torque = st.number_input("Max Torque (Nm):", min_value=0.00, max_value=1000.00,value=250.00)
         submitted = st.form_submit_button("Update Specs")
         
         
         ###Power profile editor
-        
+   
     with st.form("my_2nd_form"):
         st.subheader("5 Minute Power Profile Editor")
         c1, c2 = st.columns([1, 3])
@@ -234,20 +234,20 @@ if authentication_status:
 
 
 
-    fig_Dan_power = px.line(df_B,x="time_in", y = "Power_true", title="Power Trace")
+    fig_Dan_power = px.line(df_Dan,x="time_in", y = "Power_true", title="Power Trace")
     #fig.update_xaxes(title="Seconds")
     #fig.update_yaxes(title="Power (W)")
     st.plotly_chart(fig_Dan_power, use_container_width=True)
     
-#     fig_Dan_w_speed = px.line(df_B,x="time_in", y = "w_speed_true_ms", title="Speed Trace")
-#     #fig.update_xaxes(title="Seconds")
-#     #fig.update_yaxes(title="Power (W)")
-#     st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
+    fig_Dan_w_speed = px.line(df_Dan,x="time_in", y = "w_speed_true_ms", title="Speed Trace")
+    #fig.update_xaxes(title="Seconds")
+    #fig.update_yaxes(title="Power (W)")
+    st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
 
-#     fig_Dan_w_speed = px.line(df_B,x="time_in", y = "Total_Dist", title="Distance V Time")
-#     #fig.update_xaxes(title="Seconds")
-#     #fig.update_yaxes(title="Power (W)")
-#     st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
+    fig_Dan_w_speed = px.line(df_Dan,x="time_in", y = "Total_Dist", title="Distance V Time")
+    #fig.update_xaxes(title="Seconds")
+    #fig.update_yaxes(title="Power (W)")
+    st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
 
 
          
@@ -257,7 +257,7 @@ if authentication_status:
    
     delta_S = 0.5
     k_s = 0.0072
-    @st.cache_data
+    #@st.cache_data
     def initial_accel():
         gear_ratio_f = gear_ratio/27
         f_w = 9.80665*(bike_weight+rider_weight)
@@ -279,13 +279,13 @@ if authentication_status:
         ###Use the (x,y) for the generic power profile editor, otherwise use proper values
 
     import scipy.interpolate
-    power_interp = scipy.interpolate.interp1d(x, y)
-    #power_interp = scipy.interpolate.interp1d(df_B["time_in"], df_B["Power_true"])
-    #interp_true_w_dist = scipy.interpolate.interp1d(df_B["time_in"], df_B["Total_Dist"])
+    #power_interp = scipy.interpolate.interp1d(x, y)
+    power_interp = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Power_true"])
+    interp_true_w_dist = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Total_Dist"])
     
     df=pd.DataFrame()
     
-    df["Wheel_Dist_in(m)"]= np.linspace(0, 3000-delta_S, num=int(3000/delta_S +1)).round(1)
+    df["Wheel_Dist_in(m)"]= np.linspace(0, 4000-delta_S, num=int(4000/delta_S +1)).round(1)
     df["true_w_dist"] = 0
     df["Section_in(m)"] = df["Wheel_Dist_in(m)"]%125.0
     df["Time_in(s)"]=0
@@ -310,13 +310,12 @@ if authentication_status:
     df["Wh_Speed_av"] = v_cm/2
     df["delta_t(s)"] = 2*delta_S/v_cm
     df["run_time"]=df["delta_t(s)"].cumsum()
-     
     
     for i in range(1,len(df)):
         df["Time_in(s)"][i]=df["run_time"][i-1]
         df["Speed_in"][i]=df["Speed_f"][i-1]
         df["Wh_Speed_in"][i]=df["Wh_Speed_f"][i-1]
-        #df["true_w_dist"][i]=interp_true_w_dist(df["Time_in(s)"][i])
+        df["true_w_dist"][i]=interp_true_w_dist(df["Time_in(s)"][i])
         if df["Time_in(s)"][i] >= 290:
             df["P_app_in"][i] = steady_power
         else:
@@ -429,7 +428,7 @@ if authentication_status:
     #fig.update_yaxes(title="Power (W)")
     st.plotly_chart(fig_Dist_comp, use_container_width=True)
     
-    fig_Dan_power = px.line(df_B,x="time_in", y = "Power_true", title="B's Power trace from Goldmine (2hz)")
+    fig_Dan_power = px.line(df_Dan,x="time_in", y = "Power_true", title="Dan's Power trace from Goldmine (2hz)")
     #fig.update_xaxes(title="Seconds")
     #fig.update_yaxes(title="Power (W)")
     st.plotly_chart(fig_Dan_power, use_container_width=True)
