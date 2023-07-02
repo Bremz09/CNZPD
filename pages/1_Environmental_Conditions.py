@@ -84,7 +84,8 @@ if authentication_status:
     with col1:
         start = st.date_input(
             "Select Start Date:",
-            datetime.date(2023, 5, 17),
+            datetime.date(int(splits[0]),int(splits[1]),int(day))
+            #datetime.date(2023, 5, 17),
             key="start")
     with col2:
         finish = st.date_input(
