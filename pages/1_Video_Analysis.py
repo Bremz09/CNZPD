@@ -54,7 +54,7 @@ if authentication_status == None:
 if authentication_status:
     ##This bit is the historical visualiser
 
-    st.header("View/compare efforts from master file")
+   
     racetype = st.selectbox(
         "Select Race Type:",
         options=["Women's TP", "Mens' Keirin","WTS Starts"]
@@ -507,27 +507,221 @@ if authentication_status:
                         file_name='TP_Master.xlsx',
                         mime='application/vnd.ms-excel'
                     )
+                    
+                    
+                    
+                    
+                    
+                    
     elif racetype == "Mens' Keirin":
-        st.header("Coming Soon...")
-        data_df = pd.DataFrame(
-            {
-                "widgets": ["st.selectbox", "st.number_input", "st.text_area", "st.button"],
-                "favorite": [False]*4,
-            }
-        )
-
-        st.data_editor(
-            data_df,
-            column_config={
-                "favorite": st.column_config.CheckboxColumn(
-                    "Your favorite?",
-                    help="Select your **favorite** widgets",
-                    default=False,
+        df_master = pd.read_csv(f'pages/video_analysis/Mens_Keirin.csv')
+        
+        #df_small = df_master.drop(columns=["Save_Date","Action","Video"])
+        df_select = df_master
+        c1,c2,c3,c4 = st.columns(4)
+        with c1:
+            with c1:
+                event = st.selectbox(
+                "Select Event(s):",
+                options=df_master["Event"].unique()
+                ) 
+                if event:
+                    df_select = df_master.query(
+                "Event == @event"
                 )
-            },
-            disabled=["widgets"],
-            hide_index=True,
+        with c2:
+            Round = st.selectbox(
+            "Select Round(s):",
+            options=df_select["Round"].unique()
+            )
+            if Round:
+                df_select = df_master.query(
+            "Round == @Round"
+            )
+        with c3:
+            Heat = st.selectbox(
+            "Select Heat(s):",
+            options=df_select["Heat"].unique()
+            )
+            if Heat:
+                df_select = df_select.query(
+            "Heat == @Heat"
+            )
+        with c4:
+            show_vids = ["No","Yes"]
+            Videos = st.selectbox("Show Race Video?", show_vids, key="Show_Vids")
+        df_select["Time"]=df_select["Start time"]-df_select["Start time"].iloc[0]
+        df_select=df_select.drop(columns=["Start time"])
+        #df_select    
+        
+        
+        
+        
+        df_gaps = pd.DataFrame()
+        df_gaps["To Go"] = ["3 Laps","2.5 Laps","2 Laps","1.5 Laps","1 Lap","0.5 Laps","15m"]
+        
+        for i in range(len(df_select["Name"].unique())):
+            var = str(df_select["Name"].unique()[i])
+           
+            df_gaps[f"{var}"]=df_select.loc[df_select["Name"]==var]["Time"].values
+        
+        cols = len(df_gaps.columns)
+        
+        df_splits=pd.DataFrame()
+        df_splits["Half"] = [1,2,3,4,5,6]
+        for i in range(1,cols):
+            x=[]
+            for j in range(1,7):
+                x.append(df_gaps[df_gaps.columns[i]][j]-df_gaps[df_gaps.columns[i]][j-1])
+            df_splits[df_gaps.columns[i]] = x
+
+        for i in range(1,7):
+            small = df_gaps.loc[i][1:].min()
+            
+            for j in range(1,cols):
+                df_gaps.loc[i,df_gaps.columns[j]]=df_gaps.loc[i,df_gaps.columns[j]]-small
+        st.subheader("Time Gap to Leader") 
+        c1,c2=st.columns([1,3])
+        with c1:
+            df_gaps 
+
+        fig_tt = px.line(df_gaps, x="To Go", y = df_gaps.columns, title="Time Gap to Leader")
+        with c2:
+            st.plotly_chart(fig_tt, use_container_width=True)
+        
+        
+        ###Splits
+        
+        
+#         df_splits = pd.DataFrame()
+#         df_splits["To Go"] = ["3 Laps","2.5 Laps","2 Laps","1.5 Laps","1 Lap","0.5 Laps","15m"]
+#         df_splits
+        
+            
+            
+            
+            
+        
+        st.subheader("Splits (Pursuit Lines)")
+        c1,c2=st.columns([1,3])
+        with c1:
+            df_splits
+        fig_tt = px.line(df_splits, x="Half", y = df_splits.columns, title="Splits")
+        with c2:
+            st.plotly_chart(fig_tt, use_container_width=True)
+        
+        if Videos=="Yes":
+            video_name=df_select["Video"].iloc[0]
+            c1,c2,c3=st.columns([1,2,1])
+            with c2:
+                st.video(f"{video_name}")
+            
+        
+        st.markdown("---")
+        st.header("Rider Analysis")
+        df_riders=df_master
+        c1,c2=st.columns([5,1])
+        with c1:
+            riders = st.multiselect(
+                "Select rider(s):",
+                options=df_master["Name"].unique()
+                ) 
+        with c2:
+            show_vids_2 = ["No","Yes"]
+            Videos_2 = st.selectbox("Show Race Video?", show_vids_2, key="Show_Vids_2")
+        if riders:
+            df_riders = df_master.query(
+        "Name == @riders"
         )
+        
+            df_riders=df_riders.sort_values(by=["Name","Start time"])
+            df_riders=df_riders.reset_index(drop=True)
+            df_riders["Initials"]=df_riders["Name"].apply(lambda x: ''.join(i[0] for i in x.split()))
+            df_riders
+
+    #         for Name in df_riders["Name"].unique():
+    #             for Event in df_riders.loc[df_riders["Name"]==Name]["Event"].unique():
+    #                 for Round in df_riders.loc[(df_riders["Name"]==Name)]["Round"].unique():
+    #                     for Heat in df_riders.loc[df_riders["Name"]==Name]["Heat"].unique():
+    #                         st.write(Name+" "+Event+" "+Round+" "+str(Heat))
+            tags=[]
+
+            Name=df_riders["Name"][0]
+            Event=df_riders["Event"][0]
+            Round=df_riders["Round"][0]
+            Heat=df_riders["Heat"][0]
+
+            tags.append(df_riders["Initials"][0]+" "+df_riders["Event"][0]+" "+df_riders["Round"][0]+" H"+str(df_riders["Heat"][0]))
+            count=0
+            tag_count=0
+            start=df_riders["Start time"][0]
+            videos=[df_riders["Video"][0]]
+            times=[df_riders["Start time"][0]-start]
+            df_worm=pd.DataFrame()
+            df_worm["To Go"]=["3 Laps","2.5 Laps","2 Laps","1.5 Laps","1 Lap","0.5 Laps","15m"]
+            for i in range(1,len(df_riders)):
+                if count<6:
+                    times.append(df_riders["Start time"][i]-start)
+                    count+=1
+                else:
+                    tags.append(df_riders["Initials"][i]+" "+df_riders["Event"][i]+" "+df_riders["Round"][i]+" H"+str(df_riders["Heat"][i]))
+
+                    df_worm[tags[tag_count]]=times
+                    count=0
+                    tag_count+=1
+                    times=[]
+                    start = df_riders["Start time"][i]
+                    times.append(df_riders["Start time"][i]-start)
+                    videos.append(df_riders["Video"][i])
+            df_worm[tags[tag_count]]=times
+
+            df_worm
+            
+            fig_worm = px.line(df_worm, x="To Go", y = df_worm.columns, title="Worms")
+
+            st.plotly_chart(fig_worm, use_container_width=True)
+
+
+
+
+            df_split=pd.DataFrame()
+            df_split["Half"] = [1,2,3,4,5,6]
+
+            for col in df_worm.columns[1:]:
+                x=[]
+                for i in range(1,7):
+                    x.append(df_worm[col][i]-df_worm[col][i-1])
+                df_split[col]=x
+                    
+            df_split
+            
+            
+            fig_splits = px.line(df_split, x="Half", y = df_split.columns, title="Splits")
+
+            st.plotly_chart(fig_splits, use_container_width=True)
+            
+            if Videos_2=="Yes":
+                count=0
+                for i in range(len(videos)):
+                    c1,c2=st.columns([1,2])
+                    with c1:
+                        st.subheader(df_riders["Name"][count])
+                        st.subheader(df_riders["Event"][count]+" "+df_riders["Round"][count]+" H"+str(df_riders["Heat"][count]))
+                        st.subheader("Half Lap Splits")
+                        df_split[["Half",df_split.columns[i+1]]]
+                        st.subheader("Running Time")
+                        df_worm[["To Go",df_worm.columns[i+1]]]
+                        count+=7
+                        
+                    with c2:
+                        video_name=videos[i]
+                        st.video(f"{video_name}")
+                    st.markdown('---')
+                            
+                        
+                    
+                        
+        
 
 
         ###   WTS Starts stuff
@@ -582,7 +776,7 @@ if authentication_status:
                 var = str(i+1)+" " +str(df_combine["Name"].iloc[i]) + " " + str(df_combine["Date"].iloc[i]) + " Set " +str(df_combine["Set"].iloc[i])+" Rep " +str(df_combine["Rep"].iloc[i]) + " " +str(df_combine["Team/Solo"].iloc[i])
                 df_splits[f"{var}"]=df_combine.iloc[i][8:17].values
 
-
+            
             fig_tt = px.line(df_splits, x="Mark", y = df_splits.columns, title="Reaction Time + Quarter Splits")
 
             st.plotly_chart(fig_tt, use_container_width=True)
