@@ -637,7 +637,7 @@ if authentication_status:
             df_riders=df_riders.sort_values(by=["Name","Start time"])
             df_riders=df_riders.reset_index(drop=True)
             df_riders["Initials"]=df_riders["Name"].apply(lambda x: ''.join(i[0] for i in x.split()))
-            df_riders
+            #df_riders
 
     #         for Name in df_riders["Name"].unique():
     #             for Event in df_riders.loc[df_riders["Name"]==Name]["Event"].unique():
