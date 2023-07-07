@@ -55,8 +55,14 @@ if authentication_status:
     update = datetime.date.today()+ pd.DateOffset(hour=12)
 
 
-    #@st.cache_data
-
+    
+    
+    
+    calcs = ["Power for Speed","Time for Power","CdA at Speed"]
+    
+    Calc = st.selectbox("Select Calculator:", calcs, key="Calc_selector")
+    
+    
     def get_power_profile_from_excel():
         df_Dan = pd.read_excel(
             io='pages/Dan_power_profile.xlsx',
@@ -71,67 +77,21 @@ if authentication_status:
         return df_Dan
     df_Dan = get_power_profile_from_excel()
     
-#     def get_power_profile_from_excel():
-#         df_B = pd.read_excel(
-#             io='pages/B_IP_Comms_22_Qual.xlsx',
-#             engine ='openpyxl',
-#             sheet_name='B Botha 2Hz',
-#             skiprows=0,
-#             usecols='A:C',
-#             nrows=600
-#             )
-#         #df_MK = df_MK.replace(',','')
-#         #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
-#         return df_B
-#     df_B = get_power_profile_from_excel()
-
+    def get_B_power_profile_from_excel():
+        df_B = pd.read_excel(
+            io='pages/B_IP_Comms_22_Qual.xlsx',
+            engine ='openpyxl',
+            sheet_name='B Botha 2Hz',
+            skiprows=0,
+            usecols='A:C',
+            nrows=600
+            )
+        #df_MK = df_MK.replace(',','')
+        #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
+        return df_B
+    df_B = get_B_power_profile_from_excel()
     
-    
-    
-    calcs = ["Power for Speed","Time for Power","CdA at Speed"]
-    
-    Calc = st.selectbox("Select Calculator:", calcs, key="Calc_selector")
-    
-#     st.title("Simple CSS Shape Generator")
 
-#     activity = ['Design','About',]
-#     choice = st.selectbox("Select Activity",activity)
-
-#     if choice == 'Design':
-#         st.subheader("Design")
-#         bgcolor = st.color_picker("Pick a Background color")
-#         fontcolor = st.color_picker("Pick a Font Color","#fff")
-
-#         html_temp = """
-#         <div style="background-color:{};padding:10px">
-#         <h1 style="color:{};text-align:center;">Streamlit Simple CSS Shape Generator </h1>
-#         </div>
-#         """
-#         st.markdown(html_temp.format(bgcolor,fontcolor),unsafe_allow_html=True)
-#         st.markdown("<div><p style='color:{}'>Hello Streamlit</p></div>".format(bgcolor),unsafe_allow_html=True)
-
-
-#         st.subheader("Modify Shape")
-#         bgcolor2 = st.color_picker("Pick a Bckground color")
-#         height = st.slider('Height Size',50,200,50)
-#         width = st.slider("Width Size",50,200,50)
-#         # border = st.slider("Border Radius",10,60,10)
-#         top_left_border = st.number_input('Top Left Border',10,50,10)
-#         top_right_border = st.number_input('Top Right Border',10,50,10)
-#         bottom_left_border = st.number_input('Bottom Left Border',10,50,10)
-#         bottom_right_border = st.number_input('Bottom Right Border',10,50,10)
-
-#         border_style = st.selectbox("Border Style",["dotted","dashed","solid","double","groove","ridge","inset","outset","none","hidden"])
-#         border_color = st.color_picker("Pick a Border Color","#654FEF")
-#         st.markdown(html_temp.format(height,width,bgcolor2,top_left_border,top_right_border,bottom_left_border,bottom_right_border,border_style,border_color),unsafe_allow_html=True)
-
-#     if st.checkbox("View Results"):
-#             st.subheader("Result")
-#             result_of_design = html_temp.format(height,width,bgcolor2,top_left_border,top_right_border,bottom_left_border,bottom_right_border,border_style,border_color)
-#             st.code(result_of_design)
-
-#     if choice =="About":
-#         st.subheader("About")
     
     with st.form("my_form"):
         st.subheader("Bike Specs")
@@ -194,13 +154,13 @@ if authentication_status:
         st.subheader("5 Minute Power Profile Editor")
         c1, c2 = st.columns([1, 3])
         with c1:
-            max_power = st.number_input("Max Power:", min_value=0.00, max_value=3000.00,value=1500.17,
+            max_power = st.number_input("Max Power:", min_value=0.00, max_value=3000.00,value=1295.00,
         step=1e-2, format="%.2f")
-            max_power_time = st.number_input("Time Max Power is Achieved:", min_value=0.00, max_value=60.00,value=10.17,
+            max_power_time = st.number_input("Time Max Power is Achieved:", min_value=0.00, max_value=60.00,value=9.50,
         step=1e-2, format="%.2f")
-            steady_power = st.number_input("Steady State Power:", min_value=0.00, max_value=800.00,value=450.17,
+            steady_power = st.number_input("Steady State Power:", min_value=0.00, max_value=800.00,value=465.50,
         step=1e-2, format="%.2f")
-            steady_power_time = st.number_input("Time Steady Power is Reached:", min_value=0.00, max_value=60.00,value=20.17,
+            steady_power_time = st.number_input("Time Steady Power is Reached:", min_value=0.00, max_value=60.00,value=31.00,
         step=1e-2, format="%.2f")
 
         with c2:
@@ -232,234 +192,685 @@ if authentication_status:
             st.plotly_chart(fig, use_container_width=True)
         submitted = st.form_submit_button("Update Power Profile")
 
-
-
-    fig_Dan_power = px.line(df_Dan,x="time_in", y = "Power_true", title="Power Trace")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_Dan_power, use_container_width=True)
+    p_type = ["Bryony Comm Games Qual","Dan Nationals","Editable Power Profile"]
     
-    fig_Dan_w_speed = px.line(df_Dan,x="time_in", y = "w_speed_true_ms", title="Speed Trace")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
+    Profile = st.selectbox("Select Power Profile:", p_type, key="Profile_Selector")
+    if Profile == "Dan Nationals":
+        fig_Dan_power = px.line(df_Dan,x="time_in", y = "Power_true", title="Dan's Actual 2Hz Power Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dan_power, use_container_width=True)
 
-    fig_Dan_w_speed = px.line(df_Dan,x="time_in", y = "Total_Dist", title="Distance V Time")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
+        fig_Dan_w_speed = px.line(df_Dan,x="time_in", y = "w_speed_true_ms", title="Dan's Actual Speed Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
+
+        fig_Dan_w_speed = px.line(df_Dan,x="time_in", y = "Total_Dist", title="Dan's Actual Distance V Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
 
 
-         
-    ###Modelling bit
-    bike_eff = bike_stiffness*chain_efficiency*bearing_efficiency/(1000000)
-    curve_rad = (track_circumference-(4*pl_to_trans))/(2*math.pi)
-   
-    delta_S = 0.5
-    k_s = 0.0072
-    #@st.cache_data
-    def initial_accel():
-        gear_ratio_f = gear_ratio/27
-        f_w = 9.80665*(bike_weight+rider_weight)
-        mu_s = 1 + straight_bank_angle*k_s
-        f_rr = f_w*mu_rr*mu_s
-        a_cm = ((max_torque/(gear_ratio_f*wheel_radius)) - f_rr)/(bike_weight+rider_weight)
-        if a_cm<0:
-            a_cm=0
-        v_cm = math.sqrt(2*a_cm*delta_S)
-        return a_cm,v_cm,f_w,f_rr
-    a_cm,v_cm,f_w,f_rr = initial_accel()
-#     accel_in=[a_cm]
-#     v_cm_in = [0]
-#     v_cm_f = [v_cm]
-#     v_cm_av = [v_cm/2]
-#     delta_t = [delta_S/v_cm_av[0]]
-#     run_time = [delta_t]
 
-        ###Use the (x,y) for the generic power profile editor, otherwise use proper values
+        ###Modelling bit
+        bike_eff = bike_stiffness*chain_efficiency*bearing_efficiency/(1000000)
+        curve_rad = (track_circumference-(4*pl_to_trans))/(2*math.pi)
 
-    import scipy.interpolate
-    #power_interp = scipy.interpolate.interp1d(x, y)
-    power_interp = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Power_true"])
-    interp_true_w_dist = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Total_Dist"])
-    
-    df=pd.DataFrame()
-    
-    df["Wheel_Dist_in(m)"]= np.linspace(0, 4000-delta_S, num=int(4000/delta_S +1)).round(1)
-    df["true_w_dist"] = 0
-    df["Section_in(m)"] = df["Wheel_Dist_in(m)"]%125.0
-    df["Time_in(s)"]=0
-    df["Speed_in"] = 0
-    df["Wh_Speed_in"] = 0
-    df["Bank_angle(deg)"] = straight_bank_angle
-    df["Lean_angle(deg)"]=0 
-    df["RC_wh"]=1
-    df["RC_cm"]=1
-    df["P_app_in"]=0
-    #df["P_app_f"]=power_interp(delta_t[0])
-    df["P_out_in"]=df["P_app_in"]*bike_eff
-    #df["P_out_f"]=df["P_app_f"]*bike_eff
-    df["F_d"]=0
-    df["F_c"]=0
-    df["F_rr"]=f_rr
-    df["Accel"] = a_cm
-    df["delta_S_cm"] = delta_S
-    df["Speed_f"] = v_cm
-    df["Wh_Speed_f"] = v_cm
-    df["Speed_av"] = v_cm/2
-    df["Wh_Speed_av"] = v_cm/2
-    df["delta_t(s)"] = 2*delta_S/v_cm
-    df["run_time"]=df["delta_t(s)"].cumsum()
-    
-    for i in range(1,len(df)):
-        df["Time_in(s)"][i]=df["run_time"][i-1]
-        df["Speed_in"][i]=df["Speed_f"][i-1]
-        df["Wh_Speed_in"][i]=df["Wh_Speed_f"][i-1]
-        df["true_w_dist"][i]=interp_true_w_dist(df["Time_in(s)"][i])
-        if df["Time_in(s)"][i] >= 290:
-            df["P_app_in"][i] = steady_power
-        else:
-            df["P_app_in"][i]=power_interp(df["Time_in(s)"][i])
+        delta_S = 0.5
+        k_s = 0.0072
+        #@st.cache_data
+        def initial_accel():
+            gear_ratio_f = gear_ratio/27
+            f_w = 9.80665*(bike_weight+rider_weight)
+            mu_s = 1 + straight_bank_angle*k_s
+            f_rr = f_w*mu_rr*mu_s
+            a_cm = ((max_torque/(gear_ratio_f*wheel_radius)) - f_rr)/(bike_weight+rider_weight)
+            if a_cm<0:
+                a_cm=0
+            v_cm = math.sqrt(2*a_cm*delta_S)
+            return a_cm,v_cm,f_w,f_rr
+        a_cm,v_cm,f_w,f_rr = initial_accel()
+    #     accel_in=[a_cm]
+    #     v_cm_in = [0]
+    #     v_cm_f = [v_cm]
+    #     v_cm_av = [v_cm/2]
+    #     delta_t = [delta_S/v_cm_av[0]]
+    #     run_time = [delta_t]
+
+            ###Use the (x,y) for the generic power profile editor, otherwise use proper values
+
+        import scipy.interpolate
+        #power_interp = scipy.interpolate.interp1d(x, y)
+        power_interp = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Power_true"])
+        interp_true_w_dist = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Total_Dist"])
+
+        df=pd.DataFrame()
+
+        df["Wheel_Dist_in(m)"]= np.linspace(0, 4000-delta_S, num=int(4000/delta_S +1)).round(1)
+        df["true_w_dist"] = 0
+        df["Section_in(m)"] = df["Wheel_Dist_in(m)"]%125.0
+        df["Time_in(s)"]=0
+        df["Speed_in"] = 0
+        df["Wh_Speed_in"] = 0
+        df["Bank_angle(deg)"] = straight_bank_angle
+        df["Lean_angle(deg)"]=0 
+        df["RC_wh"]=1
+        df["RC_cm"]=1
+        df["P_app_in"]=0
+        #df["P_app_f"]=power_interp(delta_t[0])
+        df["P_out_in"]=df["P_app_in"]*bike_eff
+        #df["P_out_f"]=df["P_app_f"]*bike_eff
+        df["F_d"]=0
+        df["F_c"]=0
+        df["F_rr"]=f_rr
+        df["Accel"] = a_cm
+        df["delta_S_cm"] = delta_S
+        df["Speed_f"] = v_cm
+        df["Wh_Speed_f"] = v_cm
+        df["Speed_av"] = v_cm/2
+        df["Wh_Speed_av"] = v_cm/2
+        df["delta_t(s)"] = 2*delta_S/v_cm
+        df["run_time"]=df["delta_t(s)"].cumsum()
+
+        for i in range(1,len(df)):
+            df["Time_in(s)"][i]=df["run_time"][i-1]
+            df["Speed_in"][i]=df["Speed_f"][i-1]
+            df["Wh_Speed_in"][i]=df["Wh_Speed_f"][i-1]
+            df["true_w_dist"][i]=interp_true_w_dist(df["Time_in(s)"][i])
+            if df["Time_in(s)"][i] >= 290:
+                df["P_app_in"][i] = steady_power
+            else:
+                df["P_app_in"][i]=power_interp(df["Time_in(s)"][i])
+
+            df["P_out_in"][i]=df["P_app_in"][i]*bike_eff
+
+            #First Transition
+            if (df["Section_in(m)"][i]>=pl_to_trans and df["Section_in(m)"][i]<=pl_to_trans+transition_length):
+                df["Bank_angle(deg)"][i] = straight_bank_angle + ((bend_bank_angle-straight_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-pl_to_trans)
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Corner
+            elif (df["Section_in(m)"][i]<=(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]>(pl_to_trans+transition_length)):
+                df["Bank_angle(deg)"][i] = bend_bank_angle
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Second Transition
+            elif (df["Section_in(m)"][i]>(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]<=(125-pl_to_trans)):
+                df["Bank_angle(deg)"][i] = bend_bank_angle + ((straight_bank_angle-bend_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-(125-pl_to_trans-transition_length))
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Updating rolling resistance and drag froces, and acceleration 
+            df["F_rr"][i]= math.sqrt(f_w**2 + (df["F_c"][i]**2))*math.cos(math.radians(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i]))*mu_rr*(1 + abs(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i])*k_s)
+
+            df["F_d"][i] = 0.5*air_density*cda*(df["Speed_in"][i]**2)
+
+            df["Accel"][i] = ((df["P_out_in"][i]/df["Speed_in"][i]) - df["F_d"][i] - (df["F_rr"][i]*df["RC_wh"][i]/df["RC_cm"][i]))/(bike_weight+rider_weight)
+
+            df["Speed_f"][i]= math.sqrt(df["Speed_in"][i]**2 + 2*df["Accel"][i]*df["delta_S_cm"][i])
+            df["Wh_Speed_f"][i]= math.sqrt(df["Wh_Speed_in"][i]**2 + 2*df["Accel"][i]*delta_S)
+            df["Speed_av"][i] =(df["Speed_in"][i]+df["Speed_f"][i])/2
+            df["Wh_Speed_av"][i] =(df["Wh_Speed_in"][i]+df["Wh_Speed_f"][i])/2
+            df["delta_t(s)"][i]= df["delta_S_cm"][i]/df["Speed_av"][i]
+            df["run_time"][i] = sum(df["delta_t(s)"][0:i+1])
+
+        st.subheader("Using Dan's Power profile as input to our model")
+        df
+        st.write("Wheel Distance travelled " + str((len(df)-1)*delta_S))
+        st.write("COM Distance travelled " + str(round(sum(df["delta_S_cm"]),2)))
+        ind_62_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==62.5]
+        ind_125 = df.index[df["Wheel_Dist_in(m)"]+delta_S==125]
+        ind_187_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==187.5]
+        ind_250 = df.index[df["Wheel_Dist_in(m)"]+delta_S==250]
+        st.write("First quarter in " + str(round(df["run_time"][ind_62_5[0]],2)))
+        st.write("First half in " + str(round(df["run_time"][ind_125[0]],2)))
+        st.write("First three quarter in " + str(round(df["run_time"][ind_187_5[0]],2)))
+        st.write("First lap in " + str(round(df["run_time"][ind_250[0]],2)))
+        time = str(pd.to_datetime(df["run_time"][len(df)-1],unit="s")).split(" ")[1]
+        st.write("Final Time " + str(time[3:12]))
+        st.write("Actual was 4:15.4")
+
+
+        ###PLOTS
+
+        fig_Dist_comp = px.line(df,x="Time_in(s)", y = ["Wheel_Dist_in(m)","true_w_dist"], title="Dist compare")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dist_comp, use_container_width=True)
+
+        fig_Dan_power = px.line(df_Dan,x="time_in", y = "Power_true", title="Dan's Power trace from Goldmine (2hz)")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dan_power, use_container_width=True)
+
+
+        fig_power_in = px.line(df,x="run_time", y = "P_app_in", title="Our power Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_power_in, use_container_width=True)
+
+        fig_speed = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_av", title="Our Speed Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed, use_container_width=True)
+
+        fig_speed_time = px.line(df,x="run_time", y = "Speed_av", title="Our COM Speed Trace over Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_time, use_container_width=True)
+
+        fig_speed_wh = px.line(df,x="run_time", y = "Wh_Speed_in", title="Our Wheel Speed Trace over Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_wh, use_container_width=True)
+
+        fig_speed_in = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_in", title="Our Initial COM Speed Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_in, use_container_width=True)
+
+        fig_dist = px.line(df,y="Wheel_Dist_in(m)", x = "run_time", title="Our Distance V Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_dist, use_container_width=True)
         
-        df["P_out_in"][i]=df["P_app_in"][i]*bike_eff
         
-        #First Transition
-        if (df["Section_in(m)"][i]>=pl_to_trans and df["Section_in(m)"][i]<=pl_to_trans+transition_length):
-            df["Bank_angle(deg)"][i] = straight_bank_angle + ((bend_bank_angle-straight_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-pl_to_trans)
-            
-            #Updating lean angle by iteration
-            alpha = math.radians(df["Lean_angle(deg)"][i-1])
-            alpha_1 = math.pi/2
-            while abs(alpha-alpha_1)>0.01:  
-                alpha=alpha_1
-                alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
-            df["Lean_angle(deg)"][i] = math.degrees(alpha)
-            
-            #Updating radius of curvature for COM
-            df["RC_wh"][i]= curve_rad 
-            df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
-            
-            #Updating Centripetal force (only felt in corners)
-            df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
-            
-            #Updating delta_S for COM
-            df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
-            
-        #Corner
-        elif (df["Section_in(m)"][i]<=(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]>(pl_to_trans+transition_length)):
-            df["Bank_angle(deg)"][i] = bend_bank_angle
-            
-            #Updating lean angle by iteration
-            alpha = math.radians(df["Lean_angle(deg)"][i-1])
-            alpha_1 = math.pi/2
-            while abs(alpha-alpha_1)>0.01:  
-                alpha=alpha_1
-                alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
-            df["Lean_angle(deg)"][i] = math.degrees(alpha)
-            
-            #Updating radius of curvature for COM
-            df["RC_wh"][i]= curve_rad 
-            df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
-            
-            #Updating Centripetal force (only felt in corners)
-            df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
-            
-            #Updating delta_S for COM
-            df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
-            
-        #Second Transition
-        elif (df["Section_in(m)"][i]>(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]<=(125-pl_to_trans)):
-            df["Bank_angle(deg)"][i] = bend_bank_angle + ((straight_bank_angle-bend_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-(125-pl_to_trans-transition_length))
-            
-            #Updating lean angle by iteration
-            alpha = math.radians(df["Lean_angle(deg)"][i-1])
-            alpha_1 = math.pi/2
-            while abs(alpha-alpha_1)>0.01:  
-                alpha=alpha_1
-                alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
-            df["Lean_angle(deg)"][i] = math.degrees(alpha)
-            
-            #Updating radius of curvature for COM
-            df["RC_wh"][i]= curve_rad 
-            df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
-            
-            #Updating Centripetal force (only felt in corners)
-            df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
-            
-            #Updating delta_S for COM
-            df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
-            
-        #Updating rolling resistance and drag froces, and acceleration 
-        df["F_rr"][i]= math.sqrt(f_w**2 + (df["F_c"][i]**2))*math.cos(math.radians(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i]))*mu_rr*(1 + abs(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i])*k_s)
         
-        df["F_d"][i] = 0.5*air_density*cda*(df["Speed_in"][i]**2)
         
-        df["Accel"][i] = ((df["P_out_in"][i]/df["Speed_in"][i]) - df["F_d"][i] - (df["F_rr"][i]*df["RC_wh"][i]/df["RC_cm"][i]))/(bike_weight+rider_weight)
         
-        df["Speed_f"][i]= math.sqrt(df["Speed_in"][i]**2 + 2*df["Accel"][i]*df["delta_S_cm"][i])
-        df["Wh_Speed_f"][i]= math.sqrt(df["Wh_Speed_in"][i]**2 + 2*df["Accel"][i]*delta_S)
-        df["Speed_av"][i] =(df["Speed_in"][i]+df["Speed_f"][i])/2
-        df["Wh_Speed_av"][i] =(df["Wh_Speed_in"][i]+df["Wh_Speed_f"][i])/2
-        df["delta_t(s)"][i]= df["delta_S_cm"][i]/df["Speed_av"][i]
-        df["run_time"][i] = sum(df["delta_t(s)"][0:i+1])
+        
+        
+        
+    if Profile == "Editable Power Profile":
+
+        ###Modelling bit
+        bike_eff = bike_stiffness*chain_efficiency*bearing_efficiency/(1000000)
+        curve_rad = (track_circumference-(4*pl_to_trans))/(2*math.pi)
+
+        delta_S = 0.5
+        k_s = 0.0072
+        #@st.cache_data
+        def initial_accel():
+            gear_ratio_f = gear_ratio/27
+            f_w = 9.80665*(bike_weight+rider_weight)
+            mu_s = 1 + straight_bank_angle*k_s
+            f_rr = f_w*mu_rr*mu_s
+            a_cm = ((max_torque/(gear_ratio_f*wheel_radius)) - f_rr)/(bike_weight+rider_weight)
+            if a_cm<0:
+                a_cm=0
+            v_cm = math.sqrt(2*a_cm*delta_S)
+            return a_cm,v_cm,f_w,f_rr
+        a_cm,v_cm,f_w,f_rr = initial_accel()
+    #     accel_in=[a_cm]
+    #     v_cm_in = [0]
+    #     v_cm_f = [v_cm]
+    #     v_cm_av = [v_cm/2]
+    #     delta_t = [delta_S/v_cm_av[0]]
+    #     run_time = [delta_t]
+
+            ###Use the (x,y) for the generic power profile editor, otherwise use proper values
+
+        import scipy.interpolate
+        power_interp = scipy.interpolate.interp1d(x, y)
+        #power_interp = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Power_true"])
+        #interp_true_w_dist = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Total_Dist"])
+
+        df=pd.DataFrame()
+
+        df["Wheel_Dist_in(m)"]= np.linspace(0, 4000-delta_S, num=int(4000/delta_S +1)).round(1)
+        #df["true_w_dist"] = 0
+        df["Section_in(m)"] = df["Wheel_Dist_in(m)"]%125.0
+        df["Time_in(s)"]=0
+        df["Speed_in"] = 0
+        df["Wh_Speed_in"] = 0
+        df["Bank_angle(deg)"] = straight_bank_angle
+        df["Lean_angle(deg)"]=0 
+        df["RC_wh"]=1
+        df["RC_cm"]=1
+        df["P_app_in"]=0
+        #df["P_app_f"]=power_interp(delta_t[0])
+        df["P_out_in"]=df["P_app_in"]*bike_eff
+        #df["P_out_f"]=df["P_app_f"]*bike_eff
+        df["F_d"]=0
+        df["F_c"]=0
+        df["F_rr"]=f_rr
+        df["Accel"] = a_cm
+        df["delta_S_cm"] = delta_S
+        df["Speed_f"] = v_cm
+        df["Wh_Speed_f"] = v_cm
+        df["Speed_av"] = v_cm/2
+        df["Wh_Speed_av"] = v_cm/2
+        df["delta_t(s)"] = 2*delta_S/v_cm
+        df["run_time"]=df["delta_t(s)"].cumsum()
+
+        for i in range(1,len(df)):
+            df["Time_in(s)"][i]=df["run_time"][i-1]
+            df["Speed_in"][i]=df["Speed_f"][i-1]
+            df["Wh_Speed_in"][i]=df["Wh_Speed_f"][i-1]
+            #df["true_w_dist"][i]=interp_true_w_dist(df["Time_in(s)"][i])
+            if df["Time_in(s)"][i] >= 290:
+                df["P_app_in"][i] = steady_power
+            else:
+                df["P_app_in"][i]=power_interp(df["Time_in(s)"][i])
+
+            df["P_out_in"][i]=df["P_app_in"][i]*bike_eff
+
+            #First Transition
+            if (df["Section_in(m)"][i]>=pl_to_trans and df["Section_in(m)"][i]<=pl_to_trans+transition_length):
+                df["Bank_angle(deg)"][i] = straight_bank_angle + ((bend_bank_angle-straight_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-pl_to_trans)
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Corner
+            elif (df["Section_in(m)"][i]<=(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]>(pl_to_trans+transition_length)):
+                df["Bank_angle(deg)"][i] = bend_bank_angle
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Second Transition
+            elif (df["Section_in(m)"][i]>(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]<=(125-pl_to_trans)):
+                df["Bank_angle(deg)"][i] = bend_bank_angle + ((straight_bank_angle-bend_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-(125-pl_to_trans-transition_length))
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Updating rolling resistance and drag froces, and acceleration 
+            df["F_rr"][i]= math.sqrt(f_w**2 + (df["F_c"][i]**2))*math.cos(math.radians(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i]))*mu_rr*(1 + abs(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i])*k_s)
+
+            df["F_d"][i] = 0.5*air_density*cda*(df["Speed_in"][i]**2)
+
+            df["Accel"][i] = ((df["P_out_in"][i]/df["Speed_in"][i]) - df["F_d"][i] - (df["F_rr"][i]*df["RC_wh"][i]/df["RC_cm"][i]))/(bike_weight+rider_weight)
+
+            df["Speed_f"][i]= math.sqrt(df["Speed_in"][i]**2 + 2*df["Accel"][i]*df["delta_S_cm"][i])
+            df["Wh_Speed_f"][i]= math.sqrt(df["Wh_Speed_in"][i]**2 + 2*df["Accel"][i]*delta_S)
+            df["Speed_av"][i] =(df["Speed_in"][i]+df["Speed_f"][i])/2
+            df["Wh_Speed_av"][i] =(df["Wh_Speed_in"][i]+df["Wh_Speed_f"][i])/2
+            df["delta_t(s)"][i]= df["delta_S_cm"][i]/df["Speed_av"][i]
+            df["run_time"][i] = sum(df["delta_t(s)"][0:i+1])
+
+        st.subheader("Using Editable Power Profile as input to our model")
+        df
+        st.write("Wheel Distance travelled " + str((len(df)-1)*delta_S))
+        st.write("COM Distance travelled " + str(round(sum(df["delta_S_cm"]),2)))
+        ind_62_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==62.5]
+        ind_125 = df.index[df["Wheel_Dist_in(m)"]+delta_S==125]
+        ind_187_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==187.5]
+        ind_250 = df.index[df["Wheel_Dist_in(m)"]+delta_S==250]
+        st.write("First quarter in " + str(round(df["run_time"][ind_62_5[0]],2)))
+        st.write("First half in " + str(round(df["run_time"][ind_125[0]],2)))
+        st.write("First three quarter in " + str(round(df["run_time"][ind_187_5[0]],2)))
+        st.write("First lap in " + str(round(df["run_time"][ind_250[0]],2)))
+        time = str(pd.to_datetime(df["run_time"][len(df)-1],unit="s")).split(" ")[1]
+        st.write("Final Time " + str(time[3:12]))
+        st.write("Actual was 4:15.4")
+
+   ###PLOTS
+
+        fig_Dist_comp = px.line(df,x="Time_in(s)", y = "Wheel_Dist_in(m)", title="Dist compare")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dist_comp, use_container_width=True)
+
         
 
-    df
-    st.write("Wheel Distance travelled " + str((len(df)-1)*delta_S))
-    st.write("COM Distance travelled " + str(round(sum(df["delta_S_cm"]),2)))
-    ind_62_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==62.5]
-    ind_125 = df.index[df["Wheel_Dist_in(m)"]+delta_S==125]
-    ind_187_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==187.5]
-    ind_250 = df.index[df["Wheel_Dist_in(m)"]+delta_S==250]
-    st.write("First quarter in " + str(round(df["run_time"][ind_62_5[0]],2)))
-    st.write("First half in " + str(round(df["run_time"][ind_125[0]],2)))
-    st.write("First three quarter in " + str(round(df["run_time"][ind_187_5[0]],2)))
-    st.write("First lap in " + str(round(df["run_time"][ind_250[0]],2)))
-    time = str(pd.to_datetime(df["run_time"][len(df)-1],unit="s")).split(" ")[1]
-    st.write("Final Time " + str(time[3:12]))
-    
+
+        fig_power_in = px.line(df,x="run_time", y = "P_app_in", title="Our power Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_power_in, use_container_width=True)
+
+        fig_speed = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_av", title="Our Speed Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed, use_container_width=True)
+
+        fig_speed_time = px.line(df,x="run_time", y = "Speed_av", title="Our COM Speed Trace over Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_time, use_container_width=True)
+
+        fig_speed_wh = px.line(df,x="run_time", y = "Wh_Speed_in", title="Our Wheel Speed Trace over Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_wh, use_container_width=True)
+
+        fig_speed_in = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_in", title="Our Initial COM Speed Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_in, use_container_width=True)
+
+        fig_dist = px.line(df,y="Wheel_Dist_in(m)", x = "run_time", title="Our Distance V Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_dist, use_container_width=True)
+        
+        
+        
+        
+        
+        
+        
+    if Profile == "Bryony Comm Games Qual":
+        fig_Dan_power = px.line(df_B,x="time_in", y = "Power_true", title="B's Actual 2Hz Power Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dan_power, use_container_width=True)
+
+        
+
+        fig_Dan_w_speed = px.line(df_B,x="time_in", y = "Total_Dist", title="B's Actual Distance V Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dan_w_speed, use_container_width=True)
 
 
-    
-    ###PLOTS
-    
-    fig_Dist_comp = px.line(df,x="Time_in(s)", y = ["Wheel_Dist_in(m)","true_w_dist"], title="Dist compare")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_Dist_comp, use_container_width=True)
-    
-    fig_Dan_power = px.line(df_Dan,x="time_in", y = "Power_true", title="Dan's Power trace from Goldmine (2hz)")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_Dan_power, use_container_width=True)
-    
-    
-    fig_power_in = px.line(df,x="run_time", y = "P_app_in", title="Our power Trace")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_power_in, use_container_width=True)
-    
-    fig_speed = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_av", title="Speed Trace")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_speed, use_container_width=True)
-    
-    fig_speed_time = px.line(df,x="run_time", y = "Speed_av", title="COM Speed Trace over Time")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_speed_time, use_container_width=True)
-    
-    fig_speed_wh = px.line(df,x="run_time", y = "Wh_Speed_in", title="Wheel Speed Trace over Time")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_speed_wh, use_container_width=True)
-    
-    fig_speed_in = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_in", title="Initial COM Speed Trace")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_speed_in, use_container_width=True)
-    
-    fig_dist = px.line(df,y="Wheel_Dist_in(m)", x = "run_time", title="Distance V Time")
-    #fig.update_xaxes(title="Seconds")
-    #fig.update_yaxes(title="Power (W)")
-    st.plotly_chart(fig_dist, use_container_width=True)
+
+        ###Modelling bit
+        bike_eff = bike_stiffness*chain_efficiency*bearing_efficiency/(1000000)
+        curve_rad = (track_circumference-(4*pl_to_trans))/(2*math.pi)
+
+        delta_S = 0.5
+        k_s = 0.0072
+        #@st.cache_data
+        def initial_accel():
+            gear_ratio_f = gear_ratio/27
+            f_w = 9.80665*(bike_weight+rider_weight)
+            mu_s = 1 + straight_bank_angle*k_s
+            f_rr = f_w*mu_rr*mu_s
+            a_cm = ((max_torque/(gear_ratio_f*wheel_radius)) - f_rr)/(bike_weight+rider_weight)
+            if a_cm<0:
+                a_cm=0
+            v_cm = math.sqrt(2*a_cm*delta_S)
+            return a_cm,v_cm,f_w,f_rr
+        a_cm,v_cm,f_w,f_rr = initial_accel()
+    #     accel_in=[a_cm]
+    #     v_cm_in = [0]
+    #     v_cm_f = [v_cm]
+    #     v_cm_av = [v_cm/2]
+    #     delta_t = [delta_S/v_cm_av[0]]
+    #     run_time = [delta_t]
+
+            ###Use the (x,y) for the generic power profile editor, otherwise use proper values
+
+        import scipy.interpolate
+        #power_interp = scipy.interpolate.interp1d(x, y)
+        power_interp = scipy.interpolate.interp1d(df_B["time_in"], df_B["Power_true"])
+        #interp_true_w_dist = scipy.interpolate.interp1d(df_Dan["time_in"], df_Dan["Total_Dist"])
+
+        df=pd.DataFrame()
+
+        df["Wheel_Dist_in(m)"]= np.linspace(0, 3000-delta_S, num=int(3000/delta_S +1)).round(1)
+        #df["true_w_dist"] = 0
+        df["Section_in(m)"] = df["Wheel_Dist_in(m)"]%125.0
+        df["Time_in(s)"]=0
+        df["Speed_in"] = 0
+        df["Wh_Speed_in"] = 0
+        df["Bank_angle(deg)"] = straight_bank_angle
+        df["Lean_angle(deg)"]=0 
+        df["RC_wh"]=1
+        df["RC_cm"]=1
+        df["P_app_in"]=0
+        #df["P_app_f"]=power_interp(delta_t[0])
+        df["P_out_in"]=df["P_app_in"]*bike_eff
+        #df["P_out_f"]=df["P_app_f"]*bike_eff
+        df["F_d"]=0
+        df["F_c"]=0
+        df["F_rr"]=f_rr
+        df["Accel"] = a_cm
+        df["delta_S_cm"] = delta_S
+        df["Speed_f"] = v_cm
+        df["Wh_Speed_f"] = v_cm
+        df["Speed_av"] = v_cm/2
+        df["Wh_Speed_av"] = v_cm/2
+        df["delta_t(s)"] = 2*delta_S/v_cm
+        df["run_time"]=df["delta_t(s)"].cumsum()
+
+        for i in range(1,len(df)):
+            df["Time_in(s)"][i]=df["run_time"][i-1]
+            df["Speed_in"][i]=df["Speed_f"][i-1]
+            df["Wh_Speed_in"][i]=df["Wh_Speed_f"][i-1]
+            #df["true_w_dist"][i]=interp_true_w_dist(df["Time_in(s)"][i])
+            if df["Time_in(s)"][i] >= 196:
+                df["P_app_in"][i] = 380
+            else:
+                df["P_app_in"][i]=power_interp(df["Time_in(s)"][i])
+
+            df["P_out_in"][i]=df["P_app_in"][i]*bike_eff
+
+            #First Transition
+            if (df["Section_in(m)"][i]>=pl_to_trans and df["Section_in(m)"][i]<=pl_to_trans+transition_length):
+                df["Bank_angle(deg)"][i] = straight_bank_angle + ((bend_bank_angle-straight_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-pl_to_trans)
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Corner
+            elif (df["Section_in(m)"][i]<=(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]>(pl_to_trans+transition_length)):
+                df["Bank_angle(deg)"][i] = bend_bank_angle
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Second Transition
+            elif (df["Section_in(m)"][i]>(125-(pl_to_trans+transition_length)) and df["Section_in(m)"][i]<=(125-pl_to_trans)):
+                df["Bank_angle(deg)"][i] = bend_bank_angle + ((straight_bank_angle-bend_bank_angle)/(transition_length))*(df["Section_in(m)"][i]-(125-pl_to_trans-transition_length))
+
+                #Updating lean angle by iteration
+                alpha = math.radians(df["Lean_angle(deg)"][i-1])
+                alpha_1 = math.pi/2
+                while abs(alpha-alpha_1)>0.01:  
+                    alpha=alpha_1
+                    alpha_1 = math.atan((df["Speed_in"][i]**2)/((curve_rad-(seat_height*math.sin(alpha)))*9.80665))
+                df["Lean_angle(deg)"][i] = math.degrees(alpha)
+
+                #Updating radius of curvature for COM
+                df["RC_wh"][i]= curve_rad 
+                df["RC_cm"][i] = curve_rad - (seat_height*math.sin(math.radians(df["Lean_angle(deg)"][i])))
+
+                #Updating Centripetal force (only felt in corners)
+                df["F_c"][i]=(bike_weight+rider_weight)*(df["Speed_in"][i]**2)/df["RC_cm"][i]
+
+                #Updating delta_S for COM
+                df["delta_S_cm"][i] = delta_S*df["RC_cm"][i]/df["RC_wh"][i]
+
+            #Updating rolling resistance and drag froces, and acceleration 
+            df["F_rr"][i]= math.sqrt(f_w**2 + (df["F_c"][i]**2))*math.cos(math.radians(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i]))*mu_rr*(1 + abs(df["Bank_angle(deg)"][i]-df["Lean_angle(deg)"][i])*k_s)
+
+            df["F_d"][i] = 0.5*air_density*cda*(df["Speed_in"][i]**2)
+
+            df["Accel"][i] = ((df["P_out_in"][i]/df["Speed_in"][i]) - df["F_d"][i] - (df["F_rr"][i]*df["RC_wh"][i]/df["RC_cm"][i]))/(bike_weight+rider_weight)
+
+            df["Speed_f"][i]= math.sqrt(df["Speed_in"][i]**2 + 2*df["Accel"][i]*df["delta_S_cm"][i])
+            df["Wh_Speed_f"][i]= math.sqrt(df["Wh_Speed_in"][i]**2 + 2*df["Accel"][i]*delta_S)
+            df["Speed_av"][i] =(df["Speed_in"][i]+df["Speed_f"][i])/2
+            df["Wh_Speed_av"][i] =(df["Wh_Speed_in"][i]+df["Wh_Speed_f"][i])/2
+            df["delta_t(s)"][i]= df["delta_S_cm"][i]/df["Speed_av"][i]
+            df["run_time"][i] = sum(df["delta_t(s)"][0:i+1])
+
+        st.subheader("Using B's Power profile as input to our model")
+        df
+        st.write("Wheel Distance travelled " + str((len(df)-1)*delta_S))
+        st.write("COM Distance travelled " + str(round(sum(df["delta_S_cm"]),2)))
+        ind_62_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==62.5]
+        ind_125 = df.index[df["Wheel_Dist_in(m)"]+delta_S==125]
+        ind_187_5 = df.index[df["Wheel_Dist_in(m)"]+delta_S==187.5]
+        ind_250 = df.index[df["Wheel_Dist_in(m)"]+delta_S==250]
+        st.write("First quarter in " + str(round(df["run_time"][ind_62_5[0]],2)))
+        st.write("First half in " + str(round(df["run_time"][ind_125[0]],2)))
+        st.write("First three quarter in " + str(round(df["run_time"][ind_187_5[0]],2)))
+        st.write("First lap in " + str(round(df["run_time"][ind_250[0]],2)))
+        time = str(pd.to_datetime(df["run_time"][len(df)-1],unit="s")).split(" ")[1]
+        st.write("Final Time " + str(time[3:12]))
+        st.write("Actual was 3:19.8")
+
+
+        ###PLOTS
+
+        fig_Dist_comp = px.line(df,x="Time_in(s)", y = "Wheel_Dist_in(m)", title="Dist Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dist_comp, use_container_width=True)
+
+        fig_Dan_power = px.line(df_B,x="time_in", y = "Power_true", title="B's Power trace from Goldmine (2hz)")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_Dan_power, use_container_width=True)
+
+
+        fig_power_in = px.line(df,x="run_time", y = "P_app_in", title="Our power Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_power_in, use_container_width=True)
+
+        fig_speed = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_av", title="Our Speed Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed, use_container_width=True)
+
+        fig_speed_time = px.line(df,x="run_time", y = "Speed_av", title="Our COM Speed Trace over Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_time, use_container_width=True)
+
+        fig_speed_wh = px.line(df,x="run_time", y = "Wh_Speed_in", title="Our Wheel Speed Trace over Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_wh, use_container_width=True)
+
+        fig_speed_in = px.line(df,x="Wheel_Dist_in(m)", y = "Speed_in", title="Our Initial COM Speed Trace")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_speed_in, use_container_width=True)
+
+        fig_dist = px.line(df,y="Wheel_Dist_in(m)", x = "run_time", title="Our Distance V Time")
+        #fig.update_xaxes(title="Seconds")
+        #fig.update_yaxes(title="Power (W)")
+        st.plotly_chart(fig_dist, use_container_width=True)
