@@ -401,9 +401,9 @@ if authentication_status:
                     skip=1
                     if dropped == eval(f'rider{r%num_riders+1}'):
 
-                        st.write("next rider is " + eval(f'rider{r%num_riders+1}'))
+                        #st.write("next rider is " + eval(f'rider{r%num_riders+1}'))
                         r+=1
-                        st.write("lets instead use " + eval(f'rider{r%num_riders+1}'))
+                        #st.write("lets instead use " + eval(f'rider{r%num_riders+1}'))
                         skip=0
                     if df["Row"][i]=="No Change" or df["Row"][i]=="Start/Finish":
                         front.append(eval(f'rider{r%num_riders +1}'))
@@ -414,7 +414,7 @@ if authentication_status:
                         del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))                
                     elif df["Row"][i]=="Drop":
                         dropped = eval(f'rider{r%num_riders+1}')
-                        st.write(str(i) + " " +dropped + " has been dropped")
+                        #st.write(str(i) + " " +dropped + " has been dropped")
                         r+=1
                         front.append(eval(f'rider{r%num_riders+1}'))
                         del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
