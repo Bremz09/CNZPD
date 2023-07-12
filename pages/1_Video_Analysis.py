@@ -57,10 +57,13 @@ if authentication_status:
    
     racetype = st.selectbox(
         "Select Race Type:",
-        options=["Women's TP", "Men's TP", "Mens' Keirin","WTS Starts"]
+        options=["Women's TP", "Men's TP", "Mens' Keirin","WTS Starts","Men's IP","Women's IP"]
         ) 
+    
+    ################################################ Women's Team Pursuit ##########################################################
+    
     if racetype == "Women's TP":
-        df_master = pd.read_excel(f'pages/video_analysis/TP_Master.xlsx')
+        df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Women.xlsx')
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
         df_small
         c1,c2=st.columns(2)
@@ -207,6 +210,8 @@ if authentication_status:
 
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
                     df_main
+                   
+                    
                 with col_2:
                     average = df_small.Split.iloc[4:].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
@@ -269,10 +274,7 @@ if authentication_status:
                         else:
                             video_name = df_temp["Video"].iloc[0]
                             st.header(df_temp["Title"].iloc[0])
-                            #if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
-                            #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-                            #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-                            #video_bytes = video_file.read()
+           
                             st.video(f"{video_name}")
                 st.markdown("---")
 
@@ -368,10 +370,15 @@ if authentication_status:
                 rider2 = st.text_input("Select Rider 2:")
                 rider3 = st.text_input("Select Rider 3:")
                 rider4 = st.text_input("Select Rider 4:")
-
+            riders=[rider1,rider2,rider3,rider4]*10
+            #riders
+            df["Avg_Speed"]=0
+            df["Del_Speed"]=0
+            df["Split"]=0
+            df["Front"]="HOLDER"
             front=[rider1]
             splits=[0]
-            del_speeds=[]
+            del_speeds=[0]
             speeds=[0]
             r=0
             df["Time"] = df["Start time"] - df["Start time"].iloc[0]
@@ -380,6 +387,8 @@ if authentication_status:
             df=df.reset_index(drop=True)
             df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
           axis='columns', inplace=True)
+            st.write("original df")
+            df
 
             #df = df.dropna(axis=0, subset=['Time'])
 
@@ -392,49 +401,35 @@ if authentication_status:
             with col_three:
                 num_riders=4
                 dropped=''
-                for i in range(len(df)-1):
-                    splits.append(round(df.Time[i+1]-df.Time[i],3))
-                    speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
-        #             st.write(str(i+1) + ' current rider is ' + eval(f'rider{r%num_riders+1}'))
-        #             st.write(dropped + ' has been dropped')
-        #             st.write("Next is " + eval(f'rider{r%num_riders+2}'))
-                    skip=1
-                    if dropped == eval(f'rider{r%num_riders+1}'):
-
-                        #st.write("next rider is " + eval(f'rider{r%num_riders+1}'))
-                        r+=1
-                        #st.write("lets instead use " + eval(f'rider{r%num_riders+1}'))
-                        skip=0
-                    if df["Row"][i]=="No Change" or df["Row"][i]=="Start/Finish":
-                        front.append(eval(f'rider{r%num_riders +1}'))
-                        del_speeds.append(speeds[i])
+                #df
+                rider_ind=0
+                for i in range(1,len(df)):
+                    df["Split"][i]=df["Time"][i]-df["Time"][i-1]
+                    df["Avg_Speed"][i] = 62.5*3.6/(df["Split"][i])
+                    if df["Row"][i] == "Change" or df["Row"][i] == "Drop":
+                        df["Del_Speed"][i]=round(df["Avg_Speed"][i]*df["Split"][i]/(df["Split"][i]-offset),2)
+                    else:
+                        df["Del_Speed"][i]=df["Avg_Speed"][i]
+                    if df["Row"][i]=="Drop":
+                        df["Front"][i]=riders[rider_ind]
+                        dropped=df["Front"][i]
+                        rider_ind+=1
                     elif df["Row"][i]=="Change":
-                        r+=skip            
-                        front.append(eval(f'rider{r%num_riders+1}'))
-                        del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))                
-                    elif df["Row"][i]=="Drop":
-                        dropped = eval(f'rider{r%num_riders+1}')
-                        #st.write(str(i) + " " +dropped + " has been dropped")
-                        r+=1
-                        front.append(eval(f'rider{r%num_riders+1}'))
-                        del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
-
-                del_speeds.append(speeds[len(speeds)-1])
-        #         for j in range(len(df)):
-        #             if df.Change[j]=="n":
-        #                 del_speeds.append(speeds[j])
-        #             else:
-        #                 del_speeds.append(speeds[j]*splits[j]/(splits[j]-offset))
-                df["Del_Speed"]=del_speeds
-                df["Avg_Speed"]=speeds
-                df["Split"]=splits
-                df["Front"]=front
+                        df["Front"][i]=riders[rider_ind]
+                        rider_ind+=1
+                        if riders[rider_ind] == dropped:
+                            rider_ind+=1
+                    else:
+                        df["Front"][i]=riders[rider_ind]
+                        
+                  
                 df.drop('Start time',
           axis='columns', inplace=True)
                 df.rename(columns = {'Row':'Action'}, inplace = True)
                 df.drop(index=df.index[0], axis=0, inplace=True)
                 #df = df.dropna(axis=0, subset=['Time'])
-                st.write(df)
+                st.write("final df")
+                df
 
 
             fig = px.bar(df, x='Distance', y='Avg_Speed',color=df.Front,hover_data=[df.Split, df.Avg_Speed,df.Del_Speed])
@@ -490,7 +485,7 @@ if authentication_status:
                 download1 = st.download_button(
                     label="Download new Master as CSV",
                     data=csv,
-                    file_name='TP_Master.csv',
+                    file_name='TP_Master_Women.csv',
                     mime='text/csv'
                 )
 
@@ -504,12 +499,12 @@ if authentication_status:
                     download2 = st.download_button(
                         label="Download new Master as Excel",
                         data=buffer,
-                        file_name='TP_Master.xlsx',
+                        file_name='TP_Master_Women.xlsx',
                         mime='application/vnd.ms-excel'
-                    )
+                    )  
                     
                     
-                    
+   ###################################################### Men's Team Pursuit #############################################                 
                     
     if racetype == "Men's TP":
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Men.xlsx')
@@ -659,6 +654,8 @@ if authentication_status:
 
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
                     df_main
+                   
+                    
                 with col_2:
                     average = df_small.Split.iloc[4:].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
@@ -721,10 +718,7 @@ if authentication_status:
                         else:
                             video_name = df_temp["Video"].iloc[0]
                             st.header(df_temp["Title"].iloc[0])
-                            #if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
-                            #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-                            #video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-                            #video_bytes = video_file.read()
+           
                             st.video(f"{video_name}")
                 st.markdown("---")
 
@@ -820,10 +814,15 @@ if authentication_status:
                 rider2 = st.text_input("Select Rider 2:")
                 rider3 = st.text_input("Select Rider 3:")
                 rider4 = st.text_input("Select Rider 4:")
-
+            riders=[rider1,rider2,rider3,rider4]*10
+            #riders
+            df["Avg_Speed"]=0
+            df["Del_Speed"]=0
+            df["Split"]=0
+            df["Front"]="HOLDER"
             front=[rider1]
             splits=[0]
-            del_speeds=[]
+            del_speeds=[0]
             speeds=[0]
             r=0
             df["Time"] = df["Start time"] - df["Start time"].iloc[0]
@@ -832,6 +831,8 @@ if authentication_status:
             df=df.reset_index(drop=True)
             df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
           axis='columns', inplace=True)
+            st.write("original df")
+            df
 
             #df = df.dropna(axis=0, subset=['Time'])
 
@@ -844,49 +845,35 @@ if authentication_status:
             with col_three:
                 num_riders=4
                 dropped=''
-                for i in range(len(df)-1):
-                    splits.append(round(df.Time[i+1]-df.Time[i],3))
-                    speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
-        #             st.write(str(i+1) + ' current rider is ' + eval(f'rider{r%num_riders+1}'))
-        #             st.write(dropped + ' has been dropped')
-        #             st.write("Next is " + eval(f'rider{r%num_riders+2}'))
-                    skip=1
-                    if dropped == eval(f'rider{r%num_riders+1}'):
-
-                        #st.write("next rider is " + eval(f'rider{r%num_riders+1}'))
-                        r+=1
-                        #st.write("lets instead use " + eval(f'rider{r%num_riders+1}'))
-                        skip=0
-                    if df["Row"][i]=="No Change" or df["Row"][i]=="Start/Finish":
-                        front.append(eval(f'rider{r%num_riders +1}'))
-                        del_speeds.append(speeds[i])
+                #df
+                rider_ind=0
+                for i in range(1,len(df)):
+                    df["Split"][i]=df["Time"][i]-df["Time"][i-1]
+                    df["Avg_Speed"][i] = 62.5*3.6/(df["Split"][i])
+                    if df["Row"][i] == "Change" or df["Row"][i] == "Drop":
+                        df["Del_Speed"][i]=round(df["Avg_Speed"][i]*df["Split"][i]/(df["Split"][i]-offset),2)
+                    else:
+                        df["Del_Speed"][i]=df["Avg_Speed"][i]
+                    if df["Row"][i]=="Drop":
+                        df["Front"][i]=riders[rider_ind]
+                        dropped=df["Front"][i]
+                        rider_ind+=1
                     elif df["Row"][i]=="Change":
-                        r+=skip            
-                        front.append(eval(f'rider{r%num_riders+1}'))
-                        del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))                
-                    elif df["Row"][i]=="Drop":
-                        dropped = eval(f'rider{r%num_riders+1}')
-                        #st.write(str(i) + " " +dropped + " has been dropped")
-                        r+=1
-                        front.append(eval(f'rider{r%num_riders+1}'))
-                        del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
-
-                del_speeds.append(speeds[len(speeds)-1])
-        #         for j in range(len(df)):
-        #             if df.Change[j]=="n":
-        #                 del_speeds.append(speeds[j])
-        #             else:
-        #                 del_speeds.append(speeds[j]*splits[j]/(splits[j]-offset))
-                df["Del_Speed"]=del_speeds
-                df["Avg_Speed"]=speeds
-                df["Split"]=splits
-                df["Front"]=front
+                        df["Front"][i]=riders[rider_ind]
+                        rider_ind+=1
+                        if riders[rider_ind] == dropped:
+                            rider_ind+=1
+                    else:
+                        df["Front"][i]=riders[rider_ind]
+                        
+                  
                 df.drop('Start time',
           axis='columns', inplace=True)
                 df.rename(columns = {'Row':'Action'}, inplace = True)
                 df.drop(index=df.index[0], axis=0, inplace=True)
                 #df = df.dropna(axis=0, subset=['Time'])
-                st.write(df)
+                st.write("hello")
+                df
 
 
             fig = px.bar(df, x='Distance', y='Avg_Speed',color=df.Front,hover_data=[df.Split, df.Avg_Speed,df.Del_Speed])
@@ -942,7 +929,7 @@ if authentication_status:
                 download1 = st.download_button(
                     label="Download new Master as CSV",
                     data=csv,
-                    file_name='TP_Master.csv',
+                    file_name='TP_Master_Men.csv',
                     mime='text/csv'
                 )
 
@@ -956,9 +943,11 @@ if authentication_status:
                     download2 = st.download_button(
                         label="Download new Master as Excel",
                         data=buffer,
-                        file_name='TP_Master.xlsx',
+                        file_name='TP_Master_Men.xlsx',
                         mime='application/vnd.ms-excel'
                     )                
+                    
+    ######################################## Men's Keirin ################################################################                
                     
     elif racetype == "Mens' Keirin":
         df_master = pd.read_csv(f'pages/video_analysis/Mens_Keirin.csv')
@@ -1171,9 +1160,9 @@ if authentication_status:
         
 
 
-        ###   WTS Starts stuff
+        #####################################   WTS Starts stuff   #############################################################
             
-    else:
+    elif racetype == "WTS Starts":
         df_master = pd.read_excel(f'pages/video_analysis/WTS_starts.xlsx')
         for i in range(len(df_master)):
             df_master["Date"][i] = df_master["Date"][i].date()
@@ -1242,6 +1231,7 @@ if authentication_status:
                             st.subheader("Set "+str(df_combine["Set"].iloc[i])+ ", Rep " +str(df_combine["Rep"].iloc[i]))
                             st.subheader(df_combine["Team/Solo"].iloc[i])
                             st.subheader("Position "+str(df_combine["Pos"].iloc[i]))
+                            st.subheader("Gear "+str(df_combine["Gear"].iloc[i]))
                             st.write("Reaction Time = "+str(round(df_combine["RT"].iloc[i],3)) + " Seconds")
                             st.write("First Quarter in = "+str(round(df_combine["Q1"].iloc[i],3)) + " Seconds, with a Moving Time of "+str(round(df_combine["Q1_MT"].iloc[i],3)) + " Seconds")
                             if pd.isnull(df_combine["Q2"].iloc[i])==False:
@@ -1251,248 +1241,535 @@ if authentication_status:
                             if pd.isnull(df_combine["Q4"].iloc[i])==False:
                                 st.write("Fourth Quarter in = "+str(round(df_combine["Q4"].iloc[i],3)) + " Seconds, giving a split of "+str(round(df_combine["H2"].iloc[i],3))+" with a Moving Time of "+str(round(df_combine["Lap_MT"].iloc[i],3)) + " Seconds")
                                 
-                            
-#                         if os.path.isfile(f'pages\\Videos\\{video_name}.mp4'):
-#                             video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-#                             video_file = open(f'pages\\Videos\\{video_name}.mp4', 'rb')
-#                             video_bytes = video_file.read()
+
                         with c2:
                             st.video(f"{video_name}")
                         st.markdown("---")
 
 
 
-#             col_one, col_two, col_three, col_four = st.columns(4)
-#             with col_one:
-#                 show_names = ["No","Yes"]
-#                 Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
-#                 df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
-#             if Names == "Yes":
-#                 fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",text="Initial",markers="Front")
-#                 fig_tt.update_traces(textposition='top center')
-#             else:
-#                 fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
-
-#             st.plotly_chart(fig_tt, use_container_width=True)
-
-#             if len(selections) ==2:
-
-#                 df_zero = df_combine
-#                 df_zero = df_zero.reset_index(drop=True)
-#                 length = df_zero.Title.value_counts()[selections[0]]
-#                 for j in range(length,len(selections)*length):
-#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-#                     df_zero.Split[j-length]=0
 
 
-
-#                 if Names == "Yes":
-#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
-#                     fig_zero.update_traces(textposition='top center')
-#                 else:
-#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
-#                 st.plotly_chart(fig_zero, use_container_width=True)
-#                 if Names=="Yes":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
-#                     fig_worm.update_traces(textposition='top center')
-#                 if Names=="No":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-#                 st.plotly_chart(fig_worm, use_container_width=True)
-
-#             elif len(selections) >2:
-
-#                 df_zero = df_combine
-#                 df_zero = df_zero.reset_index(drop=True)
-#                 length = df_zero.Title.value_counts()[selections[0]]
-#                 for j in range(length,len(selections)*length):
-#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-#                     df_zero.Split[j-length]=0
+###################################################### Men's Individual Pursuit #############################################                 
+                    
+    if racetype == "Men's IP":
+        df_master = pd.read_excel(f'pages/video_analysis/IP_Master_Men.xlsx')
+        df_small = df_master.drop(columns=["Save_Date","Action","Video"])
+        df_small
+        c1,c2=st.columns(2)
+        with c1:
+            selections = st.multiselect(
+            "Select past effort(s):",
+            options=df_master["Title"].unique()
+            ) 
+        with c2:
+            show_vids = ["No","Yes"]
+            Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
 
 
+        if len(selections) !=0:
+            df_combine = pd.DataFrame()
+            for i in range(len(selections)):
+                col_1,col_2=st.columns(2)
+                with col_1:
+                    df_temp = df_master.loc[df_master['Title'] == selections[i]]
+                    df_combine = pd.concat([df_combine, df_temp], axis=0)
+                    df_small = df_temp.drop(columns=["Save_Date","Video"])
+                    df_small=df_small.reset_index(drop="True")
+                  
+                       
+                        
 
 
-#                 if Names=="Yes":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
-#                     fig_worm.update_traces(textposition='top center')
-#                 if Names=="No":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+                    df_main = df_small.drop(columns=["Action"])
+                    df_main
+                with col_2:
+                    average = df_small.Split.iloc[4:].mean()
+                    fig = px.bar(df_temp, x='Distance', y='Avg_Speed',hover_data=[df_temp.Split, df_temp.Avg_Speed])
+                    
+                    fig.update_layout(
+                    title={
+                        'text': df_temp.Title.iloc[0],
+                        'y':0.9,
+                        'x':0.5,
+                        'xanchor': 'center',
+                        'yanchor': 'top',
+                        'font':dict(size=25)})
+                    fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    st.plotly_chart(fig, use_container_width=True)
+                c1,c2=st.columns(2)
+                with c1:
 
-#                 st.plotly_chart(fig_worm, use_container_width=True)
-
-
-
-
-
-
-#         st.markdown("---")            
-#         st.header('View, edit and upload a new effort')
-
-#         with open('pages/TP_demo.xlsx', "rb") as template_file:
-#                 template_byte = template_file.read()
-
-
-
-#         st.download_button(label="Click to Download Template File",
-#                             data=template_byte,
-#                             file_name="template.xlsx"
-#                           )
-
-#         uploaded_file = st.file_uploader("Choose a file",key="uploader")
-
-#         if uploaded_file is not None:
-#             st.markdown("---")
-
-#             st.header("Editor")
-#             df = pd.read_csv(uploaded_file)
-#             df=df.sort_values("Start time", ascending=True)
-#             col_one, col_two, col_three = st.columns(3)
-#             with col_one:
-#                 rider1 = st.text_input("Select Rider 1:")
-#                 rider2 = st.text_input("Select Rider 2:")
-#                 rider3 = st.text_input("Select Rider 3:")
-#                 rider4 = st.text_input("Select Rider 4:")
-
-#             front=[rider1]
-#             splits=[0]
-#             del_speeds=[]
-#             speeds=[0]
-#             r=0
-#             df["Time"] = df["Start time"] - df["Start time"].iloc[0]
-#             markers = len(df)
-#             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
-#             df=df.reset_index(drop=True)
-#             df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
-#           axis='columns', inplace=True)
-
-#             #df = df.dropna(axis=0, subset=['Time'])
-
-#             with col_two:
-#                 offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
-#                 schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
-#                 Title = st.text_input("Plot Title:")
+                    
+                    
+                    st.subheader("Start Splits")
+                    df_start=pd.DataFrame(df_small["Distance"][0:4])
+                    df_start["Split"]=df_small["Split"][0:4]
+                    df_start["Total"]=df_small["Split"][0:4].cumsum()
+                    df_start
+                    st.subheader("Kilo Splits")
+                    df_kilos=pd.DataFrame(["1k","2k","3k","4k"])
+                    df_kilos.columns=["Distance"]
+                    kilo_split = [sum(df_small["Split"][0:16]),sum(df_small["Split"][16:32]),sum(df_small["Split"][32:48]),sum(df_small["Split"][48:64])]
+                    df_kilos["Split"]=kilo_split
+                    df_kilos["Total"]=df_kilos["Split"].cumsum()
+                    df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    df_kilos
+                if Videos == "Yes":
+                    with c2:
+                        if pd.isnull(df_temp["Video"].iloc[0]):
+                            st.header("No video available")
+                        else:
+                            video_name = df_temp["Video"].iloc[0]
+                            st.header(df_temp["Title"].iloc[0])
+   
+                            st.video(f"{video_name}")
+                st.markdown("---")
 
 
-#             with col_three:
-#                 num_riders=4
-#                 dropped=''
-#                 for i in range(len(df)-1):
-#                     splits.append(round(df.Time[i+1]-df.Time[i],3))
-#                     speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
-#         #             st.write(str(i+1) + ' current rider is ' + eval(f'rider{r%num_riders+1}'))
-#         #             st.write(dropped + ' has been dropped')
-#         #             st.write("Next is " + eval(f'rider{r%num_riders+2}'))
-#                     skip=1
-#                     if dropped == eval(f'rider{r%num_riders+1}'):
 
-#                         st.write("next rider is " + eval(f'rider{r%num_riders+1}'))
-#                         r+=1
-#                         st.write("lets instead use " + eval(f'rider{r%num_riders+1}'))
-#                         skip=0
-#                     if df["Row"][i]=="No Change" or df["Row"][i]=="Start/Finish":
-#                         front.append(eval(f'rider{r%num_riders +1}'))
-#                         del_speeds.append(speeds[i])
-#                     elif df["Row"][i]=="Change":
-#                         r+=skip            
-#                         front.append(eval(f'rider{r%num_riders+1}'))
-#                         del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))                
-#                     elif df["Row"][i]=="Drop":
-#                         dropped = eval(f'rider{r%num_riders+1}')
-#                         st.write(str(i) + " " +dropped + " has been dropped")
-#                         r+=1
-#                         front.append(eval(f'rider{r%num_riders+1}'))
-#                         del_speeds.append(round(speeds[i]*splits[i]/(splits[i]-offset),2))
+            col_one, col_two, col_three, col_four = st.columns(4)
+            with col_one:
+           
+                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
 
-#                 del_speeds.append(speeds[len(speeds)-1])
-#         #         for j in range(len(df)):
-#         #             if df.Change[j]=="n":
-#         #                 del_speeds.append(speeds[j])
-#         #             else:
-#         #                 del_speeds.append(speeds[j]*splits[j]/(splits[j]-offset))
-#                 df["Del_Speed"]=del_speeds
-#                 df["Avg_Speed"]=speeds
-#                 df["Split"]=splits
-#                 df["Front"]=front
-#                 df.drop('Start time',
-#           axis='columns', inplace=True)
-#                 df.rename(columns = {'Row':'Action'}, inplace = True)
-#                 df.drop(index=df.index[0], axis=0, inplace=True)
-#                 #df = df.dropna(axis=0, subset=['Time'])
-#                 st.write(df)
+            st.plotly_chart(fig_tt, use_container_width=True)
+
+            if len(selections) ==2:
+
+                df_zero = df_combine
+                df_zero = df_zero.reset_index(drop=True)
+                length = df_zero.Title.value_counts()[selections[0]]
+                for j in range(length,len(selections)*length):
+                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+                    df_zero.Split[j-length]=0
 
 
-#             fig = px.bar(df, x='Distance', y='Avg_Speed',color=df.Front,hover_data=[df.Split, df.Avg_Speed,df.Del_Speed])
-#             fig.add_trace(go.Scatter(x=df['Distance'][1:], y=df['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
-#             fig.update_layout(
-#             title={
-#                 'text': Title,
-#                 'y':0.9,
-#                 'x':0.5,
-#                 'xanchor': 'center',
-#                 'yanchor': 'top',
-#                 'font':dict(size=25)})
-#             fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
-#             st.plotly_chart(fig, use_container_width=True)
+
+                fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+                st.plotly_chart(fig_zero, use_container_width=True)
+               
+                fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+                st.plotly_chart(fig_worm, use_container_width=True)
+
+            elif len(selections) >2:
+
+                df_zero = df_combine
+                df_zero = df_zero.reset_index(drop=True)
+                length = df_zero.Title.value_counts()[selections[0]]
+                for j in range(length,len(selections)*length):
+                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+                    df_zero.Split[j-length]=0
+
+
+
+
+                if Names=="Yes":
+                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+                    fig_worm.update_traces(textposition='top center')
+                if Names=="No":
+                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+                st.plotly_chart(fig_worm, use_container_width=True)
 
 
 
 
 
 
-#             #master_path=st.text_input("Add path to master file:",key="prompt")
-#             if st.button("Append this effort to master",key="upload"):
+        st.markdown("---")            
+        st.header('View, edit and upload a new effort')
+
+        with open('pages/TP_demo.xlsx', "rb") as template_file:
+                template_byte = template_file.read()
+
+
+
+        st.download_button(label="Click to Download Template File",
+                            data=template_byte,
+                            file_name="template.xlsx"
+                          )
+
+        uploaded_file = st.file_uploader("Choose a file",key="uploader")
+
+        if uploaded_file is not None:
+            st.markdown("---")
+
+            st.header("Editor")
+            df = pd.read_csv(uploaded_file)
+            df=df.sort_values("Start time", ascending=True)
+            col_one, col_two, col_three = st.columns(3)
+            with col_one:
+                rider = st.text_input("Select Rider:")
+
+            
+            splits=[0]
+            
+            speeds=[0]
+            r=0
+            df["Time"] = df["Start time"] - df["Start time"].iloc[0]
+            markers = len(df)
+            df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
+            df=df.reset_index(drop=True)
+            df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
+          axis='columns', inplace=True)
+
+            #df = df.dropna(axis=0, subset=['Time'])
+
+            with col_two:
+                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
+                schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
+                Title = st.text_input("Plot Title:")
+
+
+            with col_three:
+                
+                for i in range(len(df)-1):
+                    splits.append(round(df.Time[i+1]-df.Time[i],3))
+                    speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
+                    
+
+                df["Avg_Speed"]=speeds
+                df["Split"]=splits
+                df.drop('Start time',
+          axis='columns', inplace=True)
+                df.rename(columns = {'Row':'Action'}, inplace = True)
+                df.drop(index=df.index[0], axis=0, inplace=True)
+                #df = df.dropna(axis=0, subset=['Time'])
+                st.write(df)
+
+
+            fig = px.bar(df, x='Distance', y='Avg_Speed',hover_data=[df.Split, df.Avg_Speed])
+   
+            fig.update_layout(
+            title={
+                'text': Title,
+                'y':0.9,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font':dict(size=25)})
+            fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
+            st.plotly_chart(fig, use_container_width=True)
 
 
 
 
-#                 df_save=df
-#                 df_save.insert(0, 'Save_Date', datetime.date.today())
-#                 df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
-#                 df_save.insert(0, 'Title', Title)
-#                 df = pd.concat([df_master, df_save], axis=0)
-#                 df
-
-#                 ##Testing downloader
 
 
-#                 # buffer to use for excel writer
-#                 buffer = io.BytesIO()
-
-
-
-#                 @st.cache_data
-#                 def convert_to_csv(df):
-#                     # IMPORTANT: Cache the conversion to prevent computation on every rerun
-#                     return df.to_csv(index=False).encode('utf-8')
-
-#                 csv = convert_to_csv(df)
-
-#                 # display the dataframe on streamlit app
-#         #         st.write(df)
-
-#                 # download button 1 to download dataframe as csv
-#                 download1 = st.download_button(
-#                     label="Download new Master as CSV",
-#                     data=csv,
-#                     file_name='TP_Master.csv',
-#                     mime='text/csv'
-#                 )
-
-#                 # download button 2 to download dataframe as xlsx
-#                 with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-#                     # Write each dataframe to a different worksheet.
-#                     df.to_excel(writer, sheet_name='Sheet1', index=False)
-#                     # Close the Pandas Excel writer and output the Excel file to the buffer
-#                     writer.save()
-
-#                     download2 = st.download_button(
-#                         label="Download new Master as Excel",
-#                         data=buffer,
-#                         file_name='TP_Master.xlsx',
-#                         mime='application/vnd.ms-excel'
-#                     )
+            #master_path=st.text_input("Add path to master file:",key="prompt")
+            if st.button("Append this effort to master",key="upload"):
 
 
 
 
+                df_save=df
+                df_save.insert(0, 'Save_Date', datetime.date.today())
+                df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
+                df_save.insert(0, 'Title', Title)
+                df = pd.concat([df_master, df_save], axis=0)
+                df
 
+                ##Testing downloader
+
+
+                # buffer to use for excel writer
+                buffer = io.BytesIO()
+
+
+
+                @st.cache_data
+                def convert_to_csv(df):
+                    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+                    return df.to_csv(index=False).encode('utf-8')
+
+                csv = convert_to_csv(df)
+
+                # display the dataframe on streamlit app
+        #         st.write(df)
+
+                # download button 1 to download dataframe as csv
+                download1 = st.download_button(
+                    label="Download new Master as CSV",
+                    data=csv,
+                    file_name='IP_Master_Men.csv',
+                    mime='text/csv'
+                )
+
+                # download button 2 to download dataframe as xlsx
+                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                    # Write each dataframe to a different worksheet.
+                    df.to_excel(writer, sheet_name='Sheet1', index=False)
+                    # Close the Pandas Excel writer and output the Excel file to the buffer
+                    writer.save()
+
+                    download2 = st.download_button(
+                        label="Download new Master as Excel",
+                        data=buffer,
+                        file_name='IP_Master_Men.xlsx',
+                        mime='application/vnd.ms-excel'
+                    )                
+                    
+
+           ###################################################### Women's Individual Pursuit #############################################                 
+                    
+    if racetype == "Women's IP":
+        df_master = pd.read_excel(f'pages/video_analysis/IP_Master_Women.xlsx')
+        df_small = df_master.drop(columns=["Save_Date","Action","Video"])
+        df_small
+        c1,c2=st.columns(2)
+        with c1:
+            selections = st.multiselect(
+            "Select past effort(s):",
+            options=df_master["Title"].unique()
+            ) 
+        with c2:
+            show_vids = ["No","Yes"]
+            Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
+
+
+        if len(selections) !=0:
+            df_combine = pd.DataFrame()
+            for i in range(len(selections)):
+                col_1,col_2=st.columns(2)
+                with col_1:
+                    df_temp = df_master.loc[df_master['Title'] == selections[i]]
+                    df_combine = pd.concat([df_combine, df_temp], axis=0)
+                    df_small = df_temp.drop(columns=["Save_Date","Video"])
+                    df_small=df_small.reset_index(drop="True")
+                  
+                       
+                        
+
+
+                    df_main = df_small.drop(columns=["Action"])
+                    df_main
+                with col_2:
+                    average = df_small.Split.iloc[4:].mean()
+                    fig = px.bar(df_temp, x='Distance', y='Avg_Speed',hover_data=[df_temp.Split, df_temp.Avg_Speed])
+                    
+                    fig.update_layout(
+                    title={
+                        'text': df_temp.Title.iloc[0],
+                        'y':0.9,
+                        'x':0.5,
+                        'xanchor': 'center',
+                        'yanchor': 'top',
+                        'font':dict(size=25)})
+                    fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    st.plotly_chart(fig, use_container_width=True)
+                c1,c2=st.columns(2)
+                with c1:
+
+                    
+                    
+                    st.subheader("Start Splits")
+                    df_start=pd.DataFrame(df_small["Distance"][0:4])
+                    df_start["Split"]=df_small["Split"][0:4]
+                    df_start["Total"]=df_small["Split"][0:4].cumsum()
+                    df_start
+                    st.subheader("Kilo Splits")
+                    df_kilos=pd.DataFrame(["1k","2k","3k"])
+                    df_kilos.columns=["Distance"]
+                    kilo_split = [sum(df_small["Split"][0:16]),sum(df_small["Split"][16:32]),sum(df_small["Split"][32:48])]
+                    df_kilos["Split"]=kilo_split
+                    df_kilos["Total"]=df_kilos["Split"].cumsum()
+                    df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    df_kilos
+                if Videos == "Yes":
+                    with c2:
+                        if pd.isnull(df_temp["Video"].iloc[0]):
+                            st.header("No video available")
+                        else:
+                            video_name = df_temp["Video"].iloc[0]
+                            st.header(df_temp["Title"].iloc[0])
+   
+                            st.video(f"{video_name}")
+                st.markdown("---")
+
+
+
+            col_one, col_two, col_three, col_four = st.columns(4)
+            with col_one:
+           
+                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
+
+            st.plotly_chart(fig_tt, use_container_width=True)
+
+            if len(selections) ==2:
+
+                df_zero = df_combine
+                df_zero = df_zero.reset_index(drop=True)
+                length = df_zero.Title.value_counts()[selections[0]]
+                for j in range(length,len(selections)*length):
+                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+                    df_zero.Split[j-length]=0
+
+
+
+                fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+                st.plotly_chart(fig_zero, use_container_width=True)
+               
+                fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+                st.plotly_chart(fig_worm, use_container_width=True)
+
+            elif len(selections) >2:
+
+                df_zero = df_combine
+                df_zero = df_zero.reset_index(drop=True)
+                length = df_zero.Title.value_counts()[selections[0]]
+                for j in range(length,len(selections)*length):
+                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+                    df_zero.Split[j-length]=0
+
+
+
+
+                if Names=="Yes":
+                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+                    fig_worm.update_traces(textposition='top center')
+                if Names=="No":
+                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+                st.plotly_chart(fig_worm, use_container_width=True)
+
+
+
+
+
+
+        st.markdown("---")            
+        st.header('View, edit and upload a new effort')
+
+        with open('pages/TP_demo.xlsx', "rb") as template_file:
+                template_byte = template_file.read()
+
+
+
+        st.download_button(label="Click to Download Template File",
+                            data=template_byte,
+                            file_name="template.xlsx"
+                          )
+
+        uploaded_file = st.file_uploader("Choose a file",key="uploader")
+
+        if uploaded_file is not None:
+            st.markdown("---")
+
+            st.header("Editor")
+            df = pd.read_csv(uploaded_file)
+            df=df.sort_values("Start time", ascending=True)
+            col_one, col_two, col_three = st.columns(3)
+            with col_one:
+                rider = st.text_input("Select Rider:")
+
+            
+            splits=[0]
+            
+            speeds=[0]
+            r=0
+            df["Time"] = df["Start time"] - df["Start time"].iloc[0]
+            markers = len(df)
+            df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
+            df=df.reset_index(drop=True)
+            df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
+          axis='columns', inplace=True)
+
+            #df = df.dropna(axis=0, subset=['Time'])
+
+            with col_two:
+                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
+                schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
+                Title = st.text_input("Plot Title:")
+
+
+            with col_three:
+                
+                for i in range(len(df)-1):
+                    splits.append(round(df.Time[i+1]-df.Time[i],3))
+                    speeds.append(round((df.Distance[i+1]-df.Distance[i])*3.6/splits[i+1],2))
+                    
+
+                df["Avg_Speed"]=speeds
+                df["Split"]=splits
+                df.drop('Start time',
+          axis='columns', inplace=True)
+                df.rename(columns = {'Row':'Action'}, inplace = True)
+                df.drop(index=df.index[0], axis=0, inplace=True)
+                #df = df.dropna(axis=0, subset=['Time'])
+                st.write(df)
+
+
+            fig = px.bar(df, x='Distance', y='Avg_Speed',hover_data=[df.Split, df.Avg_Speed])
+   
+            fig.update_layout(
+            title={
+                'text': Title,
+                'y':0.9,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font':dict(size=25)})
+            fig.add_hline(y=250*3.6/schedule, line_dash="dash",line_color="white",annotation_text="Schedule = " +str(schedule))
+            st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
+
+            #master_path=st.text_input("Add path to master file:",key="prompt")
+            if st.button("Append this effort to master",key="upload"):
+
+
+
+
+                df_save=df
+                df_save.insert(0, 'Save_Date', datetime.date.today())
+                df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
+                df_save.insert(0, 'Title', Title)
+                df = pd.concat([df_master, df_save], axis=0)
+                df
+
+                ##Testing downloader
+
+
+                # buffer to use for excel writer
+                buffer = io.BytesIO()
+
+
+
+                @st.cache_data
+                def convert_to_csv(df):
+                    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+                    return df.to_csv(index=False).encode('utf-8')
+
+                csv = convert_to_csv(df)
+
+                # display the dataframe on streamlit app
+        #         st.write(df)
+
+                # download button 1 to download dataframe as csv
+                download1 = st.download_button(
+                    label="Download new Master as CSV",
+                    data=csv,
+                    file_name='IP_Master_Women.csv',
+                    mime='text/csv'
+                )
+
+                # download button 2 to download dataframe as xlsx
+                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                    # Write each dataframe to a different worksheet.
+                    df.to_excel(writer, sheet_name='Sheet1', index=False)
+                    # Close the Pandas Excel writer and output the Excel file to the buffer
+                    writer.save()
+
+                    download2 = st.download_button(
+                        label="Download new Master as Excel",
+                        data=buffer,
+                        file_name='IP_Master_Women.xlsx',
+                        mime='application/vnd.ms-excel'
+                    )                
+                    
