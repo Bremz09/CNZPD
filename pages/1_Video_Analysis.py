@@ -170,28 +170,28 @@ if authentication_status:
                     while r4[j] == 1:
                         four_turn_1+=1
                         j+=1
-                    while j<64 and r1[j] == 1:
+                    while j<len(df_small) and r1[j] == 1:
                         one_turn_2+=1
                         j+=1
-                    while j<64 and r2[j] == 1:
+                    while j<len(df_small) and r2[j] == 1:
                         two_turn_2+=1
                         j+=1
-                    while j<64 and r3[j] == 1:
+                    while j<len(df_small) and r3[j] == 1:
                         three_turn_2+=1
                         j+=1
-                    while j <64 and r4[j] == 1:
+                    while j <len(df_small) and r4[j] == 1:
                         four_turn_2+=1
                         j+=1
-                    while j <64 and r1[j] == 1:
+                    while j <len(df_small) and r1[j] == 1:
                         one_turn_3+=1
                         j+=1
-                    while j <64 and r2[j] == 1:
+                    while j <len(df_small) and r2[j] == 1:
                         two_turn_3+=1
                         j+=1
-                    while j<64 and r3[j] == 1:
+                    while j<len(df_small) and r3[j] == 1:
                         three_turn_3+=1
                         j+=1
-                    while j <64 and r4[j] == 1:
+                    while j <len(df_small) and r4[j] == 1:
                         four_turn_3+=1
                         j+=1
                     first_turns=[one_turn_1,two_turn_1,three_turn_1,four_turn_1]
@@ -293,50 +293,50 @@ if authentication_status:
 
             st.plotly_chart(fig_tt, use_container_width=True)
 
-            if len(selections) ==2:
+#             if len(selections) ==2:
 
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
-
-
-
-                if Names == "Yes":
-                    fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
-                    fig_zero.update_traces(textposition='top center')
-                else:
-                    fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
-                st.plotly_chart(fig_zero, use_container_width=True)
-                if Names=="Yes":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
-                    fig_worm.update_traces(textposition='top center')
-                if Names=="No":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-                st.plotly_chart(fig_worm, use_container_width=True)
-
-            elif len(selections) >2:
-
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
+#                 df_zero = df_combine
+#                 df_zero = df_zero.reset_index(drop=True)
+#                 length = df_zero.Title.value_counts()[selections[0]]
+#                 for j in range(length,len(selections)*length):
+#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+#                     df_zero.Split[j-length]=0
 
 
 
+#                 if Names == "Yes":
+#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
+#                     fig_zero.update_traces(textposition='top center')
+#                 else:
+#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+#                 st.plotly_chart(fig_zero, use_container_width=True)
+#                 if Names=="Yes":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
+#                     fig_worm.update_traces(textposition='top center')
+#                 if Names=="No":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
 
-                if Names=="Yes":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
-                    fig_worm.update_traces(textposition='top center')
-                if Names=="No":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+#                 st.plotly_chart(fig_worm, use_container_width=True)
 
-                st.plotly_chart(fig_worm, use_container_width=True)
+#             elif len(selections) >2:
+
+#                 df_zero = df_combine
+#                 df_zero = df_zero.reset_index(drop=True)
+#                 length = df_zero.Title.value_counts()[selections[0]]
+#                 for j in range(length,len(selections)*length):
+#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+#                     df_zero.Split[j-length]=0
+
+
+
+
+#                 if Names=="Yes":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+#                     fig_worm.update_traces(textposition='top center')
+#                 if Names=="No":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+#                 st.plotly_chart(fig_worm, use_container_width=True)
 
 
 
@@ -614,28 +614,28 @@ if authentication_status:
                     while r4[j] == 1:
                         four_turn_1+=1
                         j+=1
-                    while j<64 and r1[j] == 1:
+                    while j<len(df_small) and r1[j] == 1:
                         one_turn_2+=1
                         j+=1
-                    while j<64 and r2[j] == 1:
+                    while j<len(df_small) and r2[j] == 1:
                         two_turn_2+=1
                         j+=1
-                    while j<64 and r3[j] == 1:
+                    while j<len(df_small) and r3[j] == 1:
                         three_turn_2+=1
                         j+=1
-                    while j <64 and r4[j] == 1:
+                    while j <len(df_small) and r4[j] == 1:
                         four_turn_2+=1
                         j+=1
-                    while j <64 and r1[j] == 1:
+                    while j <len(df_small) and r1[j] == 1:
                         one_turn_3+=1
                         j+=1
-                    while j <64 and r2[j] == 1:
+                    while j <len(df_small) and r2[j] == 1:
                         two_turn_3+=1
                         j+=1
-                    while j<64 and r3[j] == 1:
+                    while j<len(df_small) and r3[j] == 1:
                         three_turn_3+=1
                         j+=1
-                    while j <64 and r4[j] == 1:
+                    while j <len(df_small) and r4[j] == 1:
                         four_turn_3+=1
                         j+=1
                     first_turns=[one_turn_1,two_turn_1,three_turn_1,four_turn_1]
@@ -729,6 +729,7 @@ if authentication_status:
                 show_names = ["No","Yes"]
                 Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
                 df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
+            
             if Names == "Yes":
                 fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",text="Initial",markers="Front")
                 fig_tt.update_traces(textposition='top center')
@@ -736,51 +737,59 @@ if authentication_status:
                 fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
 
             st.plotly_chart(fig_tt, use_container_width=True)
+            
+            ##This bit needs fixed for variable length df's
 
-            if len(selections) ==2:
+#             if len(selections) ==2:
 
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
+#                 df_zero = df_combine
+#                 df_zero = df_zero.reset_index(drop=True)
+#                 length = df_zero.Title.value_counts()[selections[0]]
+#                 for j in range(length,len(selections)*length):
+#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+#                     df_zero.Split[j-length]=0
+
+                
+
+#                 if Names == "Yes":
+#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
+#                     fig_zero.update_traces(textposition='top center')
+#                 else:
+#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+#                 st.plotly_chart(fig_zero, use_container_width=True)
+#                 if Names=="Yes":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
+#                     fig_worm.update_traces(textposition='top center')
+#                 if Names=="No":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+#                 st.plotly_chart(fig_worm, use_container_width=True)
+
+#             elif len(selections) >2:
+
+#                 df_zero = df_combine
+#                 df_zero = df_zero.reset_index(drop=True)
+#                 length = df_zero.Title.value_counts()[selections[0]]
+#                 tick=0
+
+                        
+                    
+                
+                
+#                 for j in range(length,len(selections)*length):
+#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+#                     df_zero.Split[j-length]=0
 
 
+                
 
-                if Names == "Yes":
-                    fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
-                    fig_zero.update_traces(textposition='top center')
-                else:
-                    fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
-                st.plotly_chart(fig_zero, use_container_width=True)
-                if Names=="Yes":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
-                    fig_worm.update_traces(textposition='top center')
-                if Names=="No":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+#                 if Names=="Yes":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+#                     fig_worm.update_traces(textposition='top center')
+#                 if Names=="No":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
 
-                st.plotly_chart(fig_worm, use_container_width=True)
-
-            elif len(selections) >2:
-
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
-
-
-
-
-                if Names=="Yes":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
-                    fig_worm.update_traces(textposition='top center')
-                if Names=="No":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-                st.plotly_chart(fig_worm, use_container_width=True)
+#                 st.plotly_chart(fig_worm, use_container_width=True)
 
 
 
