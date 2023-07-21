@@ -158,16 +158,16 @@ if authentication_status:
                     four_turn_3=0
                     j=0
 
-                    while r1[j] == 1:
+                    while j<len(df_small) and r1[j] == 1:
                         one_turn_1+=1
                         j+=1
-                    while r2[j] == 1:
+                    while j<len(df_small) and r2[j] == 1:
                         two_turn_1+=1
                         j+=1
-                    while r3[j] == 1:
+                    while j<len(df_small) and r3[j] == 1:
                         three_turn_1+=1
                         j+=1
-                    while r4[j] == 1:
+                    while j<len(df_small) and r4[j] == 1:
                         four_turn_1+=1
                         j+=1
                     while j<len(df_small) and r1[j] == 1:
@@ -602,16 +602,16 @@ if authentication_status:
                     four_turn_3=0
                     j=0
 
-                    while r1[j] == 1:
+                    while j<len(df_small) and r1[j] == 1:
                         one_turn_1+=1
                         j+=1
-                    while r2[j] == 1:
+                    while j<len(df_small) and r2[j] == 1:
                         two_turn_1+=1
                         j+=1
-                    while r3[j] == 1:
+                    while j<len(df_small) and r3[j] == 1:
                         three_turn_1+=1
                         j+=1
-                    while r4[j] == 1:
+                    while j<len(df_small) and r4[j] == 1:
                         four_turn_1+=1
                         j+=1
                     while j<len(df_small) and r1[j] == 1:
