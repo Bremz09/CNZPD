@@ -252,8 +252,16 @@ if authentication_status:
                     df_summ["Turn_2"]=second_turns
                     df_summ["Turn_3"]=third_turns
                     df_summ["Wind_Score"] = wind_scores
+                    
+                    # Calculating Splits based off delivery speeds - 900 is a conversion factor
+                    avg_splits=[round(900/(df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].mean()),2), round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].mean(),2)]
+                    df_summ["Avg_Del_Split"]=avg_splits
+                    
                     st.subheader("Rider Info")
                     df_summ
+                    
+                    
+                                 
                     st.subheader("Start Splits")
                     df_start=pd.DataFrame(df_small["Distance"][0:4])
                     df_start["Split"]=df_small["Split"][0:4]
@@ -696,6 +704,16 @@ if authentication_status:
                     df_summ["Turn_2"]=second_turns
                     df_summ["Turn_3"]=third_turns
                     df_summ["Wind_Score"] = wind_scores
+                    
+                    # Calculating Splits based off delivery speeds - 900 is a conversion factor
+                    avg_splits=[round(900/(df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].mean()),2), round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].mean(),2)]
+                    df_summ["Avg_Del_Split"]=avg_splits
+                    
+                    
+                    speed_var=[df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].max()-df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].min(),df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].max()-df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].min(),df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].max()-df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].min(),df_small[4:].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].max()-df_small[4:].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].min()]
+                    df_summ["Speed_Var"]=speed_var
+                    
+                    
                     st.subheader("Rider Info")
                     df_summ
                     st.subheader("Start Splits")
