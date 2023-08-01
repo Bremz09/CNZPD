@@ -95,8 +95,13 @@ if authentication_status:
         ##Download buttons complete
     with c2:
         ind = df_master.index[df_master["FileName"]==filename][0]
-        video_name = df_master["Video"].iloc[ind]
-        st.video(f"{video_name}")
+        if len(str(df_master["Video"].iloc[ind]))>4:
+        
+            video_name = df_master["Video"].iloc[ind]
+            
+            st.video(f"{video_name}")
+        else:
+            st.write("No Video")
     
         ##Now compare riders for tp etc. Another component which uses multiselect. If all videos match, show video. Also plot the 
         ##Powers etc for all riders on one plot.
@@ -116,14 +121,15 @@ if authentication_status:
     if len(selections)>1:
         df_comp = pd.read_csv(f'pages/Worlds_2023/{selections[0]}.csv')
         df_comp=df_comp.iloc[: , :-6]
-        init = selections[0].split('_')[3]
+        init = selections[0].split('_')[2]
         
         df_comp.rename(columns={'Cadence': f'{init} Cadence', 'Speed [km/h]': f'{init} Speed', 'Power [watt]': f'{init} Power'}, inplace=True)
         
         for i in range(1,len(selections)):
             df2 = pd.read_csv(f'pages/Worlds_2023/{selections[i]}.csv')
             df2=df2.iloc[: , :-6]
-            init = selections[i].split('_')[3]
+            init = selections[i].split('_')[2]
+            
             df2.rename(columns={'Cadence': f'{init} Cadence', 'Speed [km/h]': f'{init} Speed', 'Power [watt]': f'{init} Power'}, inplace=True)
             df_comp = pd.merge(df_comp,df2,on="Time", how="inner")
         c1,c2=st.columns((1,2))
@@ -155,10 +161,14 @@ if authentication_status:
         with c2:
             if len(df_comp)>0:
                 ind2 = df_master.index[df_master["FileName"]==selections[0]][0]
+                
                 video_name_2 = df_master["Video"].iloc[ind2]
-                st.video(f"{video_name_2}")
+                if len(str(df_master["Video"].iloc[ind2]))>4:
+                    st.video(f"{video_name_2}")
+                else:
+                    st.write("No Video")
         if len(df_comp)>0:
-            fig_comp = px.line(df_comp, x="Time", y = df_comp.columns, title="Cadence")
+            fig_comp = px.line(df_comp, x="Time", y = df_comp.columns, title="Comparison")
 
             st.plotly_chart(fig_comp, use_container_width=True)
     else:
