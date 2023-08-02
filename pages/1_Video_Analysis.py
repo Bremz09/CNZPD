@@ -225,6 +225,10 @@ if authentication_status:
                         'yanchor': 'top',
                         'font':dict(size=25)})
                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    
+                    yaxis_min = min(df_temp["Avg_Speed"][1:])-1
+                    yaxis_max = max(df_temp["Avg_Speed"])+1
+                    fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
                 c1,c2=st.columns(2)
                 with c1:
@@ -677,6 +681,9 @@ if authentication_status:
                         'yanchor': 'top',
                         'font':dict(size=25)})
                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    yaxis_min = min(df_temp["Avg_Speed"][1:])-1
+                    yaxis_max = max(df_temp["Avg_Speed"])+1
+                    fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
                 c1,c2=st.columns(2)
                 with c1:
@@ -1323,6 +1330,9 @@ if authentication_status:
                         'yanchor': 'top',
                         'font':dict(size=25)})
                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    yaxis_min = min(df_temp["Avg_Speed"][1:])-1
+                    yaxis_max = max(df_temp["Avg_Speed"])+1
+                    fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
                 c1,c2=st.columns(2)
                 with c1:
@@ -1359,7 +1369,7 @@ if authentication_status:
             with col_one:
            
                 fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
-
+                
             st.plotly_chart(fig_tt, use_container_width=True)
 
             if len(selections) ==2:
@@ -1585,6 +1595,9 @@ if authentication_status:
                         'yanchor': 'top',
                         'font':dict(size=25)})
                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    yaxis_min = min(df_temp["Avg_Speed"][1:])-1
+                    yaxis_max = max(df_temp["Avg_Speed"])+1
+                    fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
                 c1,c2=st.columns(2)
                 with c1:
