@@ -297,11 +297,12 @@ if authentication_status:
                 show_names = ["No","Yes"]
                 Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
                 df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
+                
             if Names == "Yes":
-                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",text="Initial",markers="Front")
+                fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",text="Initial",markers="Front")
                 fig_tt.update_traces(textposition='top center')
             else:
-                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
+                fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",markers="Front")
 
             st.plotly_chart(fig_tt, use_container_width=True)
 
@@ -756,10 +757,10 @@ if authentication_status:
                 df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
             
             if Names == "Yes":
-                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",text="Initial",markers="Front")
+                fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",text="Initial",markers="Front")
                 fig_tt.update_traces(textposition='top center')
             else:
-                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
+                fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",markers="Front")
 
             st.plotly_chart(fig_tt, use_container_width=True)
             
@@ -1366,9 +1367,10 @@ if authentication_status:
 
 
             col_one, col_two, col_three, col_four = st.columns(4)
+            
             with col_one:
            
-                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
+                fig_tt = px.line(df_combine, x="Distance", y = "Avg_Speed", title="Comparison",color="Title",markers="Front")
                 
             st.plotly_chart(fig_tt, use_container_width=True)
 
@@ -1383,7 +1385,7 @@ if authentication_status:
 
 
 
-                fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+                fig_zero = px.line(df_zero, x="Distance", y = "Avg_Speed", title="Zero",color="Title",markers="Front")
                 st.plotly_chart(fig_zero, use_container_width=True)
                
                 fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
@@ -1633,7 +1635,7 @@ if authentication_status:
             col_one, col_two, col_three, col_four = st.columns(4)
             with col_one:
            
-                fig_tt = px.line(df_combine, x="Distance", y = "Split", title="Comparison",color="Title",markers="Front")
+                fig_tt = px.line(df_combine, x="Distance", y = "Avg_Speed", title="Comparison",color="Title",markers="Front")
 
             st.plotly_chart(fig_tt, use_container_width=True)
 
