@@ -407,7 +407,7 @@ if authentication_status:
             #df = df.dropna(axis=0, subset=['Time'])
 
             with col_two:
-                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
+                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.12)
                 schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
                 Title = st.text_input("Plot Title:")
 
@@ -874,7 +874,7 @@ if authentication_status:
             #df = df.dropna(axis=0, subset=['Time'])
 
             with col_two:
-                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
+                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.12)
                 schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
                 Title = st.text_input("Plot Title:")
 
@@ -1460,7 +1460,7 @@ if authentication_status:
             #df = df.dropna(axis=0, subset=['Time'])
 
             with col_two:
-                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
+                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.12)
                 schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
                 Title = st.text_input("Plot Title:")
 
@@ -1726,7 +1726,7 @@ if authentication_status:
             #df = df.dropna(axis=0, subset=['Time'])
 
             with col_two:
-                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.08)
+                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.12)
                 schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
                 Title = st.text_input("Plot Title:")
 
