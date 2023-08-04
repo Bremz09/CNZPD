@@ -56,7 +56,7 @@ if authentication_status:
 
     df_master = pd.read_excel(f'pages/Worlds_2023/Master.xlsx')
     df_master = df_master.sort_values("FileName", ascending=False).reset_index(drop=True)
-    df_master
+    
     st.header("Single Rider SRM data and video")
    
     filename = st.selectbox(
