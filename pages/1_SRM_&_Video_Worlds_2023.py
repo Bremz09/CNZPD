@@ -55,6 +55,7 @@ if authentication_status:
     ##This bit is the historical visualiser
 
     df_master = pd.read_excel(f'pages/Worlds_2023/Master.xlsx')
+    df_master = df_master.sort_values("FileName", ascending=False)
     
     st.header("Single Rider SRM data and video")
    

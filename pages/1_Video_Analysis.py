@@ -64,6 +64,7 @@ if authentication_status:
     
     if racetype == "Women's TP":
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Women.xlsx')
+        df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
         df_small
         c1,c2=st.columns(2)
@@ -521,6 +522,7 @@ if authentication_status:
                     
     if racetype == "Men's TP":
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Men.xlsx')
+        df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
         df_small
         c1,c2=st.columns(2)
@@ -1289,6 +1291,7 @@ if authentication_status:
                     
     if racetype == "Men's IP":
         df_master = pd.read_excel(f'pages/video_analysis/IP_Master_Men.xlsx')
+        df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
         df_small
         c1,c2=st.columns(2)
@@ -1555,6 +1558,7 @@ if authentication_status:
                     
     if racetype == "Women's IP":
         df_master = pd.read_excel(f'pages/video_analysis/IP_Master_Women.xlsx')
+        df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
         df_small
         c1,c2=st.columns(2)
