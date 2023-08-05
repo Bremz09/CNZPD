@@ -272,6 +272,17 @@ if authentication_status:
                     df_start["Split"]=df_small["Split"][0:4]
                     df_start["Total"]=df_small["Split"][0:4].cumsum()
                     df_start
+                    
+                    
+                    st.subheader("Lap Splits")
+                    df_laps=pd.DataFrame(["Lap 1","Lap 2","Lap 3","Lap 4","Lap 5","Lap 6","Lap 7","Lap 8","Lap 9","Lap 10","Lap 11","Lap 12","Lap 13","Lap 14","Lap 15","Lap 16",])
+                    df_laps.columns=["Distance"]
+                    lap_split = [sum(df_small["Split"][0:4]),sum(df_small["Split"][4:8]),sum(df_small["Split"][8:12]),sum(df_small["Split"][12:16]),sum(df_small["Split"][16:20]),sum(df_small["Split"][20:24]),sum(df_small["Split"][24:28]),sum(df_small["Split"][28:32]),sum(df_small["Split"][32:36]),sum(df_small["Split"][36:40]),sum(df_small["Split"][40:44]),sum(df_small["Split"][44:48]),sum(df_small["Split"][48:52]),sum(df_small["Split"][52:56]),sum(df_small["Split"][56:60]),sum(df_small["Split"][60:64])]
+                    df_laps["Split"]=lap_split
+                    df_laps["Total"]=df_laps["Split"].cumsum()
+                    df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    df_laps
+                    
                     st.subheader("Kilo Splits")
                     df_kilos=pd.DataFrame(["1k","2k","3k","4k"])
                     df_kilos.columns=["Distance"]
@@ -731,6 +742,16 @@ if authentication_status:
                     df_start["Split"]=df_small["Split"][0:4]
                     df_start["Total"]=df_small["Split"][0:4].cumsum()
                     df_start
+                    
+                    st.subheader("Lap Splits")
+                    df_laps=pd.DataFrame(["Lap 1","Lap 2","Lap 3","Lap 4","Lap 5","Lap 6","Lap 7","Lap 8","Lap 9","Lap 10","Lap 11","Lap 12","Lap 13","Lap 14","Lap 15","Lap 16",])
+                    df_laps.columns=["Distance"]
+                    lap_split = [sum(df_small["Split"][0:4]),sum(df_small["Split"][4:8]),sum(df_small["Split"][8:12]),sum(df_small["Split"][12:16]),sum(df_small["Split"][16:20]),sum(df_small["Split"][20:24]),sum(df_small["Split"][24:28]),sum(df_small["Split"][28:32]),sum(df_small["Split"][32:36]),sum(df_small["Split"][36:40]),sum(df_small["Split"][40:44]),sum(df_small["Split"][44:48]),sum(df_small["Split"][48:52]),sum(df_small["Split"][52:56]),sum(df_small["Split"][56:60]),sum(df_small["Split"][60:64])]
+                    df_laps["Split"]=lap_split
+                    df_laps["Total"]=df_laps["Split"].cumsum()
+                    df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    df_laps
+                    
                     st.subheader("Kilo Splits")
                     df_kilos=pd.DataFrame(["1k","2k","3k","4k"])
                     df_kilos.columns=["Distance"]
@@ -1348,6 +1369,16 @@ if authentication_status:
                     df_start["Split"]=df_small["Split"][0:4]
                     df_start["Total"]=df_small["Split"][0:4].cumsum()
                     df_start
+                    
+                    st.subheader("Lap Splits")
+                    df_laps=pd.DataFrame(["Lap 1","Lap 2","Lap 3","Lap 4","Lap 5","Lap 6","Lap 7","Lap 8","Lap 9","Lap 10","Lap 11","Lap 12","Lap 13","Lap 14","Lap 15","Lap 16",])
+                    df_laps.columns=["Distance"]
+                    lap_split = [sum(df_small["Split"][0:4]),sum(df_small["Split"][4:8]),sum(df_small["Split"][8:12]),sum(df_small["Split"][12:16]),sum(df_small["Split"][16:20]),sum(df_small["Split"][20:24]),sum(df_small["Split"][24:28]),sum(df_small["Split"][28:32]),sum(df_small["Split"][32:36]),sum(df_small["Split"][36:40]),sum(df_small["Split"][40:44]),sum(df_small["Split"][44:48]),sum(df_small["Split"][48:52]),sum(df_small["Split"][52:56]),sum(df_small["Split"][56:60]),sum(df_small["Split"][60:64])]
+                    df_laps["Split"]=lap_split
+                    df_laps["Total"]=df_laps["Split"].cumsum()
+                    df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    df_laps
+                    
                     st.subheader("Kilo Splits")
                     df_kilos=pd.DataFrame(["1k","2k","3k","4k"])
                     df_kilos.columns=["Distance"]
@@ -1615,6 +1646,16 @@ if authentication_status:
                     df_start["Split"]=df_small["Split"][0:4]
                     df_start["Total"]=df_small["Split"][0:4].cumsum()
                     df_start
+                    
+                    st.subheader("Lap Splits")
+                    df_laps=pd.DataFrame(["Lap 1","Lap 2","Lap 3","Lap 4","Lap 5","Lap 6","Lap 7","Lap 8","Lap 9","Lap 10","Lap 11","Lap 12","Lap 13","Lap 14","Lap 15","Lap 16",])
+                    df_laps.columns=["Distance"]
+                    lap_split = [sum(df_small["Split"][0:4]),sum(df_small["Split"][4:8]),sum(df_small["Split"][8:12]),sum(df_small["Split"][12:16]),sum(df_small["Split"][16:20]),sum(df_small["Split"][20:24]),sum(df_small["Split"][24:28]),sum(df_small["Split"][28:32]),sum(df_small["Split"][32:36]),sum(df_small["Split"][36:40]),sum(df_small["Split"][40:44]),sum(df_small["Split"][44:48]),sum(df_small["Split"][48:52]),sum(df_small["Split"][52:56]),sum(df_small["Split"][56:60]),sum(df_small["Split"][60:64])]
+                    df_laps["Split"]=lap_split
+                    df_laps["Total"]=df_laps["Split"].cumsum()
+                    df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    df_laps
+                    
                     st.subheader("Kilo Splits")
                     df_kilos=pd.DataFrame(["1k","2k","3k"])
                     df_kilos.columns=["Distance"]

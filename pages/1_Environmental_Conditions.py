@@ -54,9 +54,13 @@ if authentication_status:
     st.header("All Data")
 
     df_master = pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx')
-
+    df_master["Time"]=df_master['Time'].astype(str)
+    df_master
+    df_master[['Date', 'Time']] = df_master['Time'].str.split(' ', 1, expand=True)
     ##Gross start/end date getting stuff
-
+    df_master=df_master[["Date","Time","Temperature(C)","Relative_Humidity(%)","Pressure(hPa)","Dew_Point(C)"]]
+    df_master['Time']=df_master['Time'].Series.replace('.000','')
+    df_master['Time'] = pd.to_datetime(df_master['Time'],format= '%H:%M:%S' ).dt.time 
     end = df_master["Time"][len(df_master)-1]
     date_time = end.strftime("%Y/%m/%d, %H:%M:%S")
     splits = date_time.split('/')
@@ -99,6 +103,21 @@ if authentication_status:
     mask = (df_master['Time'] > start) & (df_master['Time'] <= end)
     df = df_master.loc[mask]
     df
+    
+    st.header("Data Summary")
+    m_temp=round(df["Temperature(C)"].mean(),2)
+    sd_temp=round(df["Temperature(C)"].std(),4)
+    m_humid=round(df["Relative_Humidity(%)"].mean(),2)
+    sd_humid=round(df["Relative_Humidity(%)"].std(),4)
+    m_pressure=round(df["Pressure(hPa)"].mean(),2)
+    sd_pressure=round(df["Pressure(hPa)"].std(),4)
+    m_density=round(df["Air_Density(kg/m^3)"].mean(),2)
+    sd_density=round(df["Air_Density(kg/m^3)"].std(),4)
+    st.write(f"Mean Temperature is {m_temp} C with standard deviation {sd_temp} C")
+    st.write(f"Mean Relative Humidity is {m_humid}% with standard deviation {sd_humid}%")
+    st.write(f"Mean Pressure is {m_pressure} hPa with standard deviation {sd_pressure} hPa")
+    st.write(f"Mean Air Density is {m_density} kg/m^3 with standard deviation {sd_density} kg/m^3")
+    
     ##Download buttons
     @st.cache_data
     def convert_to_csv(df):
@@ -133,3 +152,6 @@ if authentication_status:
 
     fig = px.scatter(df, x="Time", y = "Air_Density(kg/m^3)", title="Air Density (kg/m^3)")
     st.plotly_chart(fig, use_container_width=True)
+    
+    
+    
