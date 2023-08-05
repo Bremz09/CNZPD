@@ -54,18 +54,22 @@ if authentication_status:
     st.header("All Data")
 
     df_master = pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx')
+    
+    
     df_master["Time"]=df_master['Time'].astype(str)
-    df_master
+    
     df_master[['Date', 'Time']] = df_master['Time'].str.split(' ', 1, expand=True)
     ##Gross start/end date getting stuff
     df_master=df_master[["Date","Time","Temperature(C)","Relative_Humidity(%)","Pressure(hPa)","Dew_Point(C)"]]
-    df_master['Time']=df_master['Time'].Series.replace('.000','')
-    df_master['Time'] = pd.to_datetime(df_master['Time'],format= '%H:%M:%S' ).dt.time 
-    end = df_master["Time"][len(df_master)-1]
+    #df_master['Time']=df_master['Time'].Series.replace('.000','')
+    df_master['Time'] = pd.to_datetime(df_master['Time'],format= '%H:%M:%S.%f' ).dt.time 
+    df_master['Date'] = pd.to_datetime(df_master['Date'],format= '%Y/%m/%d' ).dt.date
+    #df_master
+    end = df_master["Date"][len(df_master)-1]
     date_time = end.strftime("%Y/%m/%d, %H:%M:%S")
     splits = date_time.split('/')
     day=splits[2].split(',')[0]
-
+    
     ##Adding Air Density
     c0=0.99999683
     c1 = -0.90826951e-2
@@ -83,8 +87,8 @@ if authentication_status:
     df_master["Pwvp(Pa)"] = df_master["Relative_Humidity(%)"]*df_master["Es(T)"]
 
     df_master["Air_Density(kg/m^3)"] = (df_master["Pwvp(Pa)"])/(461.495*(df_master["Temperature(K)"])) + ((df_master["Pressure(hPa)"]*100) - df_master["Pwvp(Pa)"])/(287.05*(df_master["Temperature(K)"]))
-
-    col1,col2 = st.columns(2)
+   
+    col1,col2,c3,c4 = st.columns(4)
     with col1:
         start = st.date_input(
             "Select Start Date:",
@@ -94,14 +98,33 @@ if authentication_status:
     with col2:
         finish = st.date_input(
             "Select End Date:",
-            datetime.date(int(splits[0]),int(splits[1]),int(day)))
-
-    start=pd.to_datetime(start)
+            datetime.date(int(splits[0]),int(splits[1]),int(day)),key="fin_date")
     
-    end=pd.to_datetime(finish)+datetime.timedelta(days=1)
-   
-    mask = (df_master['Time'] > start) & (df_master['Time'] <= end)
+    
+    start=pd.to_datetime(start)-datetime.timedelta(days=1)
+    
+    end=pd.to_datetime(finish)
+    mask = (df_master['Date'] > start) & (df_master['Date'] <= end)
     df = df_master.loc[mask]
+    df=df.reset_index(drop=True)
+    
+    
+    with c3:
+        start_time = st.time_input(
+            "Refine Start Time:",
+            df["Time"][0],
+            key="start_time")
+    with c4:
+        finish_time = st.time_input(
+            "Refine End Time:",
+            df["Time"][len(df)-1],
+        key="fin_time")    
+        
+
+
+   
+    mask_time = (df['Time'] > start_time) & (df['Time'] <= finish_time)
+    df = df.loc[mask_time]
     df
     
     st.header("Data Summary")
