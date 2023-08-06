@@ -66,12 +66,45 @@ if authentication_status:
     
     df = pd.read_csv(f'pages/Worlds_2023/{filename}.csv')
     
+    avg_power = round(df["Power [watt]"].mean(),2)
+    max_power = round(df["Power [watt]"].max(),2)
+    min_power = round(df["Power [watt]"].min(),2)
+    std_power = round(df["Power [watt]"].std(),2)
+    df['Time'] = pd.to_datetime(df['Time'])
+    
+    
     #df=df.drop(columns=["Heartrate","L/R Balance(if available) [percentage of right Leg]","Altitude [m]","latitude","longitude"])
     df=df.iloc[: , :-6]
+    
+    ###Figure this out later 
+    
+#     c1,c2=st.columns(2)
+#     with c1:
+#         start_time = st.time_input(
+#             "Refine Start Time:",
+#             df["Time"][0],
+#             key="start_time")
+#     with c2:
+#         finish_time = st.time_input(
+#             "Refine End Time:",
+#             df["Time"][len(df)-1],
+#         key="fin_time")
+        
+
+
+#     start_time=pd.to_datetime(start_time)
+#     finish_time=pd.to_datetime(finish_time)
+#     mask_time = (df['Time'] > start_time) & (df['Time'] <= finish_time)
+#     df = df.loc[mask_time]
+#     df
     
     c1,c2=st.columns((1,2))
     with c1:
         df
+        st.write(f"Average Power is {avg_power}W")
+        st.write(f"Max {max_power}W")
+        st.write(f"Min {min_power}W")
+        st.write(f"Standard deviation {std_power}W")
         ##Download buttons
         @st.cache_data
         def convert_to_csv(df):
