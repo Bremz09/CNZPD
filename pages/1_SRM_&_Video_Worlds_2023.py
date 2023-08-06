@@ -70,7 +70,7 @@ if authentication_status:
     max_power = round(df["Power [watt]"].max(),2)
     min_power = round(df["Power [watt]"].min(),2)
     std_power = round(df["Power [watt]"].std(),2)
-    df['Time'] = pd.to_datetime(df['Time'])
+    #df['Time'] = pd.to_datetime(df['Time'])
     
     
     #df=df.drop(columns=["Heartrate","L/R Balance(if available) [percentage of right Leg]","Altitude [m]","latitude","longitude"])
