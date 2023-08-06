@@ -107,7 +107,7 @@ if authentication_status:
         ##Now compare riders for tp etc. Another component which uses multiselect. If all videos match, show video. Also plot the 
         ##Powers etc for all riders on one plot.
     
-    fig_all = px.line(df, x="Time", y = ["Cadence","Speed [km/h]","Power [watt]"], title="Cadence")
+    fig_all = px.line(df, x="Time", y = ["Cadence","Speed [km/h]","Power [watt]"], title="SRM Data")
 
     st.plotly_chart(fig_all, use_container_width=True)
     
