@@ -56,8 +56,7 @@ if authentication_status:
 
     df_master = pd.read_excel(f'pages/CdA Testing/Track CdA Testing.xlsx')
     
-    st.image("https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.searchenginejournal.com%2Fbest-image-search-engines%2F299963%2F&psig=AOvVaw01VD3L75czzGxif3e00nQu&ust=1692315357969000&source=images&cd=vfe&opi=89978449&ved=0CBAQjRxqFwoTCLjI_o-s4oADFQAAAAAdAAAAABAE")
-    
+
 
     df_master['Date'] = pd.to_datetime(df_master['Date'],format= '%Y/%m/%d' ).dt.date
     
