@@ -13,7 +13,7 @@ from plotly.subplots import make_subplots
 import xlwings as xw
 import datetime
 import io
-from st_aggrid import AgGrid
+
 
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
