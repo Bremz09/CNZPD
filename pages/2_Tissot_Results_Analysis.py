@@ -1671,7 +1671,7 @@ if authentication_status:
                 sheet_name='Team Sprint',
                 skiprows=0,
                 usecols='A:V',
-                nrows=520
+                nrows=1000
                 )
             df = df.replace(',','', regex=True)
             df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -3441,7 +3441,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Madison',
                 skiprows=0,
-                usecols='A:AI',
+                usecols='A:AK',
                 nrows=2000
                 )
             df = df.replace(',','')
@@ -3640,7 +3640,7 @@ if authentication_status:
             st.plotly_chart(fig_ranges,use_container_width=True)
 
             ## Ranks by Date -- DB and plot
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Rank", title = "Rank by Date", markers = "True", color="Country")
+            fig_country_history = px.line(df_countryHistory, x="Date", y = "Rank", title = "Rank by Date", markers=True, color="Country")
             #fig_country_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_country_history,use_container_width=True)
@@ -4316,7 +4316,7 @@ if authentication_status:
             var = str(df_an["Athlete"].iloc[i])
             df_splits[f"{var}"]=df_an.iloc[i][9:17].values
 
-        fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
+        fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, markers=True, title="Splits")
 
         st.plotly_chart(fig_event, use_container_width=True)    
 
@@ -4331,14 +4331,14 @@ if authentication_status:
 
 
 
-        fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
+        fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, markers=True,title="The Worm")
 
         st.plotly_chart(fig_event,use_container_width=True)
 
 
 
 
-        fig_event = px.line(df_an, y=["125m","250m","375m","500m","625m","750m","875m","1000m"], x = "Athlete", title="The Ranges")
+        fig_event = px.line(df_an, y=["125m","250m","375m","500m","625m","750m","875m","1000m"], x = "Athlete", markers=True,title="The Ranges")
 
         st.plotly_chart(fig_event,use_container_width=True)
         
