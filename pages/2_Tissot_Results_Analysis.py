@@ -905,7 +905,7 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[0]
+                default=df["Location"].unique()[-1]
             )
 
         if location:
@@ -918,7 +918,7 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=df["Event"].unique()[-1]
             )
 
         if event:
@@ -1442,7 +1442,7 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[0]
+                default=df["Location"].unique()[-1]
             )
 
         if location:
@@ -1455,7 +1455,7 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=df["Event"].unique()[-1]
             )
 
         if event:

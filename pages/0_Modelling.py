@@ -63,33 +63,33 @@ if authentication_status:
     Calc = st.selectbox("Select Calculator:", calcs, key="Calc_selector")
     
     
-    def get_power_profile_from_excel():
-        df_Dan = pd.read_excel(
-            io='pages/Dan_power_profile.xlsx',
-            engine ='openpyxl',
-            sheet_name='Sheet1',
-            skiprows=0,
-            usecols='A:G',
-            nrows=600
-            )
-        #df_MK = df_MK.replace(',','')
-        #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
-        return df_Dan
-    df_Dan = get_power_profile_from_excel()
+#     def get_power_profile_from_excel():
+#         df_Dan = pd.read_excel(
+#             io='pages/Dan_power_profile.xlsx',
+#             engine ='openpyxl',
+#             sheet_name='Sheet1',
+#             skiprows=0,
+#             usecols='A:G',
+#             nrows=600
+#             )
+#         #df_MK = df_MK.replace(',','')
+#         #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
+#         return df_Dan
+#     df_Dan = get_power_profile_from_excel()
     
-    def get_B_power_profile_from_excel():
-        df_B = pd.read_excel(
-            io='pages/B_IP_Comms_22_Qual.xlsx',
-            engine ='openpyxl',
-            sheet_name='B Botha 2Hz',
-            skiprows=0,
-            usecols='A:C',
-            nrows=600
-            )
-        #df_MK = df_MK.replace(',','')
-        #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
-        return df_B
-    df_B = get_B_power_profile_from_excel()
+#     def get_B_power_profile_from_excel():
+#         df_B = pd.read_excel(
+#             io='pages/B_IP_Comms_22_Qual.xlsx',
+#             engine ='openpyxl',
+#             sheet_name='B Botha 2Hz',
+#             skiprows=0,
+#             usecols='A:C',
+#             nrows=600
+#             )
+#         #df_MK = df_MK.replace(',','')
+#         #df_MK['Date'] = pd.to_datetime(df_MK['Date']).dt.date
+#         return df_B
+#     df_B = get_B_power_profile_from_excel()
     
 
     

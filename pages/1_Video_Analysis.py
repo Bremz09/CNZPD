@@ -387,7 +387,19 @@ if authentication_status:
             st.markdown("---")
 
             st.header("Editor")
-            df = pd.read_csv(uploaded_file)
+            df_full = pd.read_csv(uploaded_file)
+            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags','Distance','Effort Type'],
+          axis='columns', inplace=True)
+            df_full
+            c1,c2,c3=st.columns(3)
+            with c1:
+                start=st.number_input("Start Row (inclusive)", value=0)
+            with c2:
+                end=st.number_input("End Row (inclusive)", value=start+64)+1
+            
+            
+            df=df_full[start:end]
             df=df.sort_values("Start time", ascending=True)
             col_one, col_two, col_three = st.columns(3)
             with col_one:
@@ -409,11 +421,10 @@ if authentication_status:
             df["Time"] = df["Start time"] - df["Start time"].iloc[0]
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
+            
             df=df.reset_index(drop=True)
-            df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
-          axis='columns', inplace=True)
-            st.write("original df")
-            df
+            
+            
 
             #df = df.dropna(axis=0, subset=['Time'])
 
@@ -864,8 +875,22 @@ if authentication_status:
             st.markdown("---")
 
             st.header("Editor")
-            df = pd.read_csv(uploaded_file)
+            
+            df_full = pd.read_csv(uploaded_file)
+            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags','Distance','Effort Type'],
+          axis='columns', inplace=True)
+            df_full
+            c1,c2,c3=st.columns(3)
+            with c1:
+                start=st.number_input("Start Row (inclusive)", value=0)
+            with c2:
+                end=st.number_input("End Row (inclusive)", value=start+64)+1
+            
+            
+            df=df_full[start:end]
             df=df.sort_values("Start time", ascending=True)
+            
             col_one, col_two, col_three = st.columns(3)
             with col_one:
                 rider1 = st.text_input("Select Rider 1:")
@@ -887,8 +912,7 @@ if authentication_status:
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
             df=df.reset_index(drop=True)
-            df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
-          axis='columns', inplace=True)
+
             st.write("original df")
             df
 
@@ -930,7 +954,7 @@ if authentication_status:
                 df.rename(columns = {'Row':'Action'}, inplace = True)
                 df.drop(index=df.index[0], axis=0, inplace=True)
                 #df = df.dropna(axis=0, subset=['Time'])
-                st.write("hello")
+                
                 df
 
 
@@ -1470,7 +1494,19 @@ if authentication_status:
             st.markdown("---")
 
             st.header("Editor")
-            df = pd.read_csv(uploaded_file)
+            df_full = pd.read_csv(uploaded_file)
+            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags','Distance','Effort Type'],
+          axis='columns', inplace=True)
+            df_full
+            c1,c2,c3=st.columns(3)
+            with c1:
+                start=st.number_input("Start Row (inclusive)", value=0)
+            with c2:
+                end=st.number_input("End Row (inclusive)", value=start+64)+1
+            
+            
+            df=df_full[start:end]
             df=df.sort_values("Start time", ascending=True)
             col_one, col_two, col_three = st.columns(3)
             with col_one:
@@ -1485,8 +1521,7 @@ if authentication_status:
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
             df=df.reset_index(drop=True)
-            df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
-          axis='columns', inplace=True)
+      
 
             #df = df.dropna(axis=0, subset=['Time'])
 
@@ -1746,8 +1781,21 @@ if authentication_status:
             st.markdown("---")
 
             st.header("Editor")
-            df = pd.read_csv(uploaded_file)
+            df_full = pd.read_csv(uploaded_file)
+            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags','Distance','Effort Type'],
+          axis='columns', inplace=True)
+            df_full
+            c1,c2,c3=st.columns(3)
+            with c1:
+                start=st.number_input("Start Row (inclusive)", value=0)
+            with c2:
+                end=st.number_input("End Row (inclusive)", value=start+64)+1
+            
+            
+            df=df_full[start:end]
             df=df.sort_values("Start time", ascending=True)
+            
             col_one, col_two, col_three = st.columns(3)
             with col_one:
                 rider = st.text_input("Select Rider:")
@@ -1761,8 +1809,7 @@ if authentication_status:
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
             df=df.reset_index(drop=True)
-            df.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
-          axis='columns', inplace=True)
+         
 
             #df = df.dropna(axis=0, subset=['Time'])
 
