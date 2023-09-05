@@ -256,7 +256,8 @@ if authentication_status:
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
             ##Fourth Figure -- 200m times by Age
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", 
+                                          s = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
@@ -303,7 +304,7 @@ if authentication_status:
 
 
 
-        fig_event = px.line(df_an, y=["100m","200m","Diff"], x = "Athlete")
+        fig_event = px.line(df_an, y=["100m","200m","Diff"], x = "Athlete",markers="True",labels={"value":"Seconds"})
 
         st.plotly_chart(fig_event,use_container_width=True)
 
@@ -557,7 +558,7 @@ if authentication_status:
 
 
 
-        fig_event = px.line(df_an, y=["100m","200m","Diff"], x = "Athlete")
+        fig_event = px.line(df_an, y=["100m","200m","Diff"], x = "Athlete",markers=True)
 
         st.plotly_chart(fig_event,use_container_width=True)
 
@@ -1146,7 +1147,7 @@ if authentication_status:
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
                 usecols='A:Q',
-                nrows=5000
+                nrows=4726
                 )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -4774,7 +4775,10 @@ if authentication_status:
             df_splits_tt[f"{var}"]=df_topten.iloc[i][17:49].values
 
 
-        fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten")
+        fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten",labels={
+                     "value": "Half lap splits (Seconds)"
+                    
+                 })
 
         st.plotly_chart(fig_tt, use_container_width=True)
 
@@ -4845,16 +4849,25 @@ if authentication_status:
                 df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values.cumsum()
 
 
-            fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
+            fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits",labels={
+                     "value": "Running Time (Seconds)"
+                    
+                 })
             st.plotly_chart(fig_CH, use_container_width=True)
 
             #Third Figure - Worm
 
-            fig_event_CH = px.line(df_worm_CH, x="Marker", y = df_worm_CH.columns, title="The Worm")
+            fig_event_CH = px.line(df_worm_CH, x="Marker", y = df_worm_CH.columns, title="The Worm",labels={
+                     "value": "Half lap splits (Seconds)"
+                    
+                 })
             st.plotly_chart(fig_event_CH, use_container_width=True)
 
             #Fourth Figure - Ranges
-            fig_ranges_CH = px.line(df_countryHistory, x=df_splits_CH.columns[1:], y = marker, title="The Ranges",markers=True)
+            fig_ranges_CH = px.line(df_countryHistory, x=df_splits_CH.columns[1:], y = marker, title="The Ranges",markers=True,labels={
+                     "value": "Seconds"
+                    
+                 })
             st.plotly_chart(fig_ranges_CH, use_container_width=True)
 
 
@@ -4905,16 +4918,28 @@ if authentication_status:
             var = str(df_an["Rank"].iloc[i])+" "+str(df_an["Country"].iloc[i])
             df_splits[f"{var}"]=df_an.iloc[i][17:49].values
             df_worm[f"{var}"]=df_an.iloc[i][17:49].values.cumsum()
-        fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
+        fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, markers=True,title="Splits",labels={
+                     "value": "Half lap splits (Seconds)"
+                    
+                 })
         st.plotly_chart(fig_event, use_container_width=True)
 
         ### The Worm
-        fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm")
+        fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm",labels={
+                     "value": "Running Time (Seconds)"
+                    
+                 })
         st.plotly_chart(fig_event, use_container_width=True)
-
-
+        ## use this is you want to color specific lines --> color_discrete_sequence=['red','gray','blue','yellow','white','white','white','white','white','white','white','white','white','white','white','white','white']
+        
+        
+        
         ###The Ranges
-        fig_event = px.line(df_an, y=marker, x = "Country", title="The Ranges", markers=True)
+        fig_event = px.line(df_an, y=marker, x = "Country", title="The Ranges", labels={
+                     "value": "Seconds"
+                    
+                 },
+                            markers=True)
         st.plotly_chart(fig_event, use_container_width=True)
 
         

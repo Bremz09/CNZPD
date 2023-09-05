@@ -52,17 +52,23 @@ if authentication_status:
     ##This bit is the historical visualiser
 
     st.header("All Data")
-    df_master = pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx')
-    df_master["Date"] = df_master["DateTime"].dt.date
-    df_master["Time"] = df_master["DateTime"].dt.time
-    
-    
-    
 
+    df_master = pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx')
+    
+    
+    df_master["Time"]=df_master['Time'].astype(str)
+    
+    df_master[['Date', 'Time']] = df_master['Time'].str.split(' ', 1, expand=True)
     ##Gross start/end date getting stuff
-    df_master=df_master[["DateTime","Date","Time","Temperature(C)","Relative_Humidity(%)","Pressure(hPa)","Dew_Point(C)"]]
+    df_master=df_master[["Date","Time","Temperature(C)","Relative_Humidity(%)","Pressure(hPa)","Dew_Point(C)"]]
     
+    df_master['Time'] = pd.to_datetime(df_master['Time'],format= '%H:%M:%S.%f' ).dt.time 
+    df_master['Date'] = pd.to_datetime(df_master['Date'],format= '%Y/%m/%d' ).dt.date
     
+    end = df_master["Date"][len(df_master)-1]
+    date_time = end.strftime("%Y/%m/%d, %H:%M:%S")
+    splits = date_time.split('/')
+    day=splits[2].split(',')[0]
     
     ##Adding Air Density
     c0=0.99999683
@@ -86,17 +92,19 @@ if authentication_status:
     with col1:
         start = st.date_input(
             "Select Start Date:",
-            value = df_master["Date"][len(df_master)-2],
+            datetime.date(int(splits[0]),int(splits[1]),int(day)),
+            #datetime.date(2023, 5, 17),
             key="start")
     with col2:
         finish = st.date_input(
             "Select End Date:",
-            value = df_master["Date"][len(df_master)-2],
-            key="fin_date")
+            datetime.date(int(splits[0]),int(splits[1]),int(day)),key="fin_date")
     
     
-    start=start+pd.Timedelta(days=-1)
-    mask = (df_master['Date'] > start) & (df_master['Date'] <= finish)
+    start=pd.to_datetime(start)-datetime.timedelta(days=1)
+    
+    end=pd.to_datetime(finish)
+    mask = (df_master['Date'] > start) & (df_master['Date'] <= end)
     df = df_master.loc[mask]
     df=df.reset_index(drop=True)
     
@@ -120,19 +128,18 @@ if authentication_status:
     df
     
     st.header("Data Summary")
-    m_temp=round(df["Temperature(C)"].mean(),4)
+    m_temp=round(df["Temperature(C)"].mean(),2)
     sd_temp=round(df["Temperature(C)"].std(),4)
-    m_humid=round(df["Relative_Humidity(%)"].mean(),4)
+    m_humid=round(df["Relative_Humidity(%)"].mean(),2)
     sd_humid=round(df["Relative_Humidity(%)"].std(),4)
-    m_pressure=round(df["Pressure(hPa)"].mean(),4)
+    m_pressure=round(df["Pressure(hPa)"].mean(),2)
     sd_pressure=round(df["Pressure(hPa)"].std(),4)
-    m_density=round(df["Air_Density(kg/m^3)"].mean(),4)
+    m_density=round(df["Air_Density(kg/m^3)"].mean(),2)
     sd_density=round(df["Air_Density(kg/m^3)"].std(),4)
-    st.write(f"Mean Air Density is {m_density} kg/m^3 with standard deviation {sd_density} kg/m^3")
     st.write(f"Mean Temperature is {m_temp} C with standard deviation {sd_temp} C")
     st.write(f"Mean Relative Humidity is {m_humid}% with standard deviation {sd_humid}%")
     st.write(f"Mean Pressure is {m_pressure} hPa with standard deviation {sd_pressure} hPa")
-    
+    st.write(f"Mean Air Density is {m_density} kg/m^3 with standard deviation {sd_density} kg/m^3")
     
     ##Download buttons
     @st.cache_data
@@ -157,19 +164,17 @@ if authentication_status:
         )
     ##Download buttons complete
 
-    fig = px.scatter(df, x="DateTime", y = "Air_Density(kg/m^3)", title="Air Density (kg/m^3)")
-    st.plotly_chart(fig, use_container_width=True)
-    
-    fig = px.scatter(df, x="DateTime", y = "Temperature(C)", title="Temperature(C)")
+    fig = px.scatter(df, x="Time", y = "Temperature(C)", title="Temperature(C)")
     st.plotly_chart(fig, use_container_width=True)
 
-    fig = px.scatter(df, x="DateTime", y = "Relative_Humidity(%)", title="Relative Humidity (%)")
+    fig = px.scatter(df, x="Time", y = "Relative_Humidity(%)", title="Relative Humidity (%)")
     st.plotly_chart(fig, use_container_width=True)
 
-    fig = px.scatter(df, x="DateTime", y = "Pressure(hPa)", title="Pressure (hPa)")
+    fig = px.scatter(df, x="Time", y = "Pressure(hPa)", title="Pressure (hPa)")
     st.plotly_chart(fig, use_container_width=True)
 
-    
+    fig = px.scatter(df, x="Time", y = "Air_Density(kg/m^3)", title="Air Density (kg/m^3)")
+    st.plotly_chart(fig, use_container_width=True)
     
     
     

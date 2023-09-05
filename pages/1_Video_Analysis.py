@@ -798,58 +798,7 @@ if authentication_status:
 
             st.plotly_chart(fig_tt, use_container_width=True)
             
-            ##This bit needs fixed for variable length df's
 
-#             if len(selections) ==2:
-
-#                 df_zero = df_combine
-#                 df_zero = df_zero.reset_index(drop=True)
-#                 length = df_zero.Title.value_counts()[selections[0]]
-#                 for j in range(length,len(selections)*length):
-#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-#                     df_zero.Split[j-length]=0
-
-                
-
-#                 if Names == "Yes":
-#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
-#                     fig_zero.update_traces(textposition='top center')
-#                 else:
-#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
-#                 st.plotly_chart(fig_zero, use_container_width=True)
-#                 if Names=="Yes":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
-#                     fig_worm.update_traces(textposition='top center')
-#                 if Names=="No":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-#                 st.plotly_chart(fig_worm, use_container_width=True)
-
-#             elif len(selections) >2:
-
-#                 df_zero = df_combine
-#                 df_zero = df_zero.reset_index(drop=True)
-#                 length = df_zero.Title.value_counts()[selections[0]]
-#                 tick=0
-
-                        
-                    
-                
-                
-#                 for j in range(length,len(selections)*length):
-#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-#                     df_zero.Split[j-length]=0
-
-
-                
-
-#                 if Names=="Yes":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
-#                     fig_worm.update_traces(textposition='top center')
-#                 if Names=="No":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-#                 st.plotly_chart(fig_worm, use_container_width=True)
 
 
 
@@ -1038,22 +987,22 @@ if authentication_status:
         df_select = df_master
         c1,c2,c3,c4 = st.columns(4)
         with c1:
-            with c1:
-                event = st.selectbox(
-                "Select Event(s):",
-                options=df_master["Event"].unique()
-                ) 
-                if event:
-                    df_select = df_master.query(
-                "Event == @event"
-                )
+            
+            event = st.selectbox(
+            "Select Event(s):",
+            options=df_master["Event"].unique()
+            ) 
+            if event:
+                df_select = df_master.query(
+            "Event == @event"
+            )
         with c2:
             Round = st.selectbox(
             "Select Round(s):",
             options=df_select["Round"].unique()
             )
             if Round:
-                df_select = df_master.query(
+                df_select = df_select.query(
             "Round == @Round"
             )
         with c3:
@@ -1098,12 +1047,16 @@ if authentication_status:
             
             for j in range(1,cols):
                 df_gaps.loc[i,df_gaps.columns[j]]=df_gaps.loc[i,df_gaps.columns[j]]-small
+     
+
+        
+        
         st.subheader("Time Gap to Leader") 
         c1,c2=st.columns([1,3])
         with c1:
             df_gaps 
 
-        fig_tt = px.line(df_gaps, x="To Go", y = df_gaps.columns, title="Time Gap to Leader")
+        fig_tt = px.line(df_gaps, x="To Go", y = df_gaps.columns, title="Time Gap to Leader", markers=True)
         with c2:
             st.plotly_chart(fig_tt, use_container_width=True)
         
@@ -1124,15 +1077,50 @@ if authentication_status:
         c1,c2=st.columns([1,3])
         with c1:
             df_splits
-        fig_tt = px.line(df_splits, x="Half", y = df_splits.columns, title="Splits")
+        fig_tt = px.line(df_splits, x="Half", y = df_splits.columns, title="Splits",markers=True)
         with c2:
             st.plotly_chart(fig_tt, use_container_width=True)
         
+        
+        c1,c2=st.columns(2)
         if Videos=="Yes":
             video_name=df_select["Video"].iloc[0]
-            c1,c2,c3=st.columns([1,2,1])
             with c2:
                 st.video(f"{video_name}")
+        with c1:
+            
+            len(df_select["Draw"].unique())
+            
+            
+            
+            
+            ## Getting Position at each pursuit line
+            s = df_gaps.iloc[:,1:].stack().sort_values(ascending=True).groupby(level=0).cumcount() + 1
+            s1 = (s.reset_index(1)
+                .set_index(0, append=True)
+                .unstack(1)
+                .add_prefix("Position ")
+                )
+            s1.columns = s1.columns.get_level_values(1)
+            
+            
+            df_gaps=df_gaps.join(s1)
+            
+            num_riders = len(s1.columns)
+            for j in range(num_riders):
+                name=df_select["Draw"].unique()[j]
+                rider_pos=[]
+                for i in range(len(df_gaps)):
+                    n = df_gaps.iloc[:,num_riders+1:].iloc[i]
+                    pos=n[n==name].index[0]
+                    to_go = df_gaps["To Go"][i]
+                    gap = round(df_gaps[name][i],2)
+                    rider_pos.append(int(pos.split(' ')[1]))
+                df_gaps[f'{name} rank'] = rider_pos
+            df_gaps
+            
+
+            
             
         
         st.markdown("---")
@@ -1140,9 +1128,10 @@ if authentication_status:
         df_riders=df_master
         c1,c2=st.columns([5,1])
         with c1:
+            athletes = df_master["Name"].drop_duplicates().sort_values()
             riders = st.multiselect(
                 "Select rider(s):",
-                options=df_master["Name"].unique()
+                options= athletes
                 ) 
         with c2:
             show_vids_2 = ["No","Yes"]
@@ -1195,7 +1184,7 @@ if authentication_status:
 
             df_worm
             
-            fig_worm = px.line(df_worm, x="To Go", y = df_worm.columns, title="Worms")
+            fig_worm = px.line(df_worm, x="To Go", y = df_worm.columns, title="Worms",markers=True)
 
             st.plotly_chart(fig_worm, use_container_width=True)
 
@@ -1214,7 +1203,7 @@ if authentication_status:
             df_split
             
             
-            fig_splits = px.line(df_split, x="Half", y = df_split.columns, title="Splits")
+            fig_splits = px.line(df_split, x="Half", y = df_split.columns, title="Splits",markers=True)
 
             st.plotly_chart(fig_splits, use_container_width=True)
             
