@@ -243,7 +243,7 @@ if authentication_status:
             for i in range(len(df_athleteHistory)):
                 var = str(i+1)+" " +str(df_athleteHistory["Athlete"].iloc[i]) + " " + str(df_athleteHistory["Year"].iloc[i]) + " " +str(df_athleteHistory["Event"].iloc[i]) + " " +str(df_athleteHistory["Location"].iloc[i])
                 df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][8:10].values
-            fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="All Rides")
+            fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="All Rides",labels={"value":"Splits (seconds)"},markers=True)
             st.plotly_chart(fig_CH, use_container_width=True)
 
             ##Second Figure -- 200m times by Date
@@ -257,16 +257,16 @@ if authentication_status:
 
             ##Fourth Figure -- 200m times by Age
             fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", 
-                                          s = "True", color="Athlete")
+                                          markers = "True", color="Athlete",labels={"200m":"200m (seconds)"})
             fig_athlete_history.update_traces(textposition="top right")
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
             ##Fifth Figure -- 100m times by Age    
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100m", title = "100m Times by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100m", title = "100m Times by Age", markers = "True", color="Athlete",labels={"100m":"100m (seconds)"})
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
             ##Sixth Figure -- 100-200m times by Age
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100-200m", title = "100-200m Times by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "100-200m", title = "100-200m Times by Age", markers = "True", color="Athlete",labels={"100-200m":"100-200m (seconds)"})
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
 
@@ -549,7 +549,6 @@ if authentication_status:
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
             an_event = st.selectbox("Select Event:", uniqueEvent)
-
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
         )
@@ -1266,7 +1265,7 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Trueskill by Date", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Conservative Skill Estimate by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -1276,7 +1275,7 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Trueskill by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -4957,7 +4956,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Team Pursuit',
                 skiprows=0,
-                usecols='A:AX',
+                usecols='A:BC',
                 nrows=2000
                 )
             df = df.replace(',','', regex=True)
@@ -5090,7 +5089,7 @@ if authentication_status:
         df_splits_tt["Marker"] = marker
         for i in range(len(df_topten)):
             var = str(i+1)+ " " +str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-            df_splits_tt[f"{var}"]=df_topten.iloc[i][17:49].values
+            df_splits_tt[f"{var}"]=df_topten.iloc[i][22:54].values
 
 
         fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten")
@@ -5110,9 +5109,9 @@ if authentication_status:
             "Country == @country"
         )
         if len(country)>0:
-            df_countryHistory = df_countryHistory.sort_values("Date")
-            df_countryHistory.insert(49,'Final Time',df_countryHistory.iloc[:,16:48].sum(axis=1))
-            df_countryHistory=df_countryHistory.reset_index(drop=True)
+#             df_countryHistory = df_countryHistory.sort_values("Date")
+#             df_countryHistory.insert(49,'Final Time',df_countryHistory.iloc[:,16:48].sum(axis=1))
+#             df_countryHistory=df_countryHistory.reset_index(drop=True)
             st.dataframe(df_countryHistory)
 
             #DOWNLOAD BUTTONS
@@ -5147,7 +5146,7 @@ if authentication_status:
 
             #FIRST FIGURE -- FINAL TIME PROGRESSION
 
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Final Time", title = "Times by Date", text="Location",color="Country",markers=True)
+            fig_country_history = px.line(df_countryHistory, x="Date", y = "Time", title = "Times by Date", text="Location",color="Country",markers=True)
             fig_country_history.update_traces(textposition="top right")
             st.plotly_chart(fig_country_history, use_container_width=True)
 
@@ -5160,8 +5159,8 @@ if authentication_status:
             df_worm_CH["Marker"] = marker
             for i in range(len(df_countryHistory)):
                 var = str(i+1)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])
-                df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values
-                df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values.cumsum()
+                df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][22:54].values
+                df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][22:54].values.cumsum()
 
 
             fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
@@ -5223,8 +5222,8 @@ if authentication_status:
         # df_worm["Marker"] = marker
         for i in range(len(df_an)):
             var = str(df_an["Rank"].iloc[i])+" "+str(df_an["Country"].iloc[i])
-            df_splits[f"{var}"]=df_an.iloc[i][17:49].values
-            df_worm[f"{var}"]=df_an.iloc[i][17:49].values.cumsum()
+            df_splits[f"{var}"]=df_an.iloc[i][22:54].values
+            df_worm[f"{var}"]=df_an.iloc[i][22:54].values.cumsum()
         fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
         st.plotly_chart(fig_event, use_container_width=True)
 

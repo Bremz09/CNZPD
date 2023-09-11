@@ -1056,7 +1056,7 @@ if authentication_status:
         with c1:
             df_gaps 
 
-        fig_tt = px.line(df_gaps, x="To Go", y = df_gaps.columns, title="Time Gap to Leader", markers=True)
+        fig_tt = px.line(df_gaps, x="To Go", y = df_gaps.columns, title="Time Gap to Leader", markers=True,labels={"value":"Seconds"})
         with c2:
             st.plotly_chart(fig_tt, use_container_width=True)
         
@@ -1077,7 +1077,12 @@ if authentication_status:
         c1,c2=st.columns([1,3])
         with c1:
             df_splits
-        fig_tt = px.line(df_splits, x="Half", y = df_splits.columns, title="Splits",markers=True)
+            df_times = df_splits.sum(axis=0)
+            df_times=pd.DataFrame(df_times, columns=["3 lap time"])
+            df_times = df_times[1:]
+            st.subheader("3 lap times")
+            df_times
+        fig_tt = px.line(df_splits, x="Half", y = df_splits.columns, title="Splits",markers=True,labels={"value":"Seconds"})
         with c2:
             st.plotly_chart(fig_tt, use_container_width=True)
         
@@ -1117,6 +1122,7 @@ if authentication_status:
                     gap = round(df_gaps[name][i],2)
                     rider_pos.append(int(pos.split(' ')[1]))
                 df_gaps[f'{name} rank'] = rider_pos
+            df_gaps = df_gaps.iloc[:,num_riders+1:]
             df_gaps
             
 
@@ -1184,7 +1190,7 @@ if authentication_status:
 
             df_worm
             
-            fig_worm = px.line(df_worm, x="To Go", y = df_worm.columns, title="Worms",markers=True)
+            fig_worm = px.line(df_worm, x="To Go", y = df_worm.columns, title="Worms",markers=True,labels={"value":"Seconds"})
 
             st.plotly_chart(fig_worm, use_container_width=True)
 
@@ -1203,7 +1209,7 @@ if authentication_status:
             df_split
             
             
-            fig_splits = px.line(df_split, x="Half", y = df_split.columns, title="Splits",markers=True)
+            fig_splits = px.line(df_split, x="Half", y = df_split.columns, title="Splits",markers=True,labels={"value":"Seconds"})
 
             st.plotly_chart(fig_splits, use_container_width=True)
             
