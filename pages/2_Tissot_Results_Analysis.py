@@ -4638,7 +4638,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Team Pursuit',
                 skiprows=0,
-                usecols='A:AX',
+                usecols='A:BC',
                 nrows=2000
                 )
             df = df.replace(',','', regex=True)
@@ -4771,7 +4771,7 @@ if authentication_status:
         df_splits_tt["Marker"] = marker
         for i in range(len(df_topten)):
             var = str(i+1)+" " +str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-            df_splits_tt[f"{var}"]=df_topten.iloc[i][17:49].values
+            df_splits_tt[f"{var}"]=df_topten.iloc[i][22:54].values
 
 
         fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten",labels={
@@ -4795,7 +4795,7 @@ if authentication_status:
         )
         if len(country)>0:
             df_countryHistory = df_countryHistory.sort_values("Date")
-            df_countryHistory.insert(49,'Final Time',df_countryHistory.iloc[:,16:48].sum(axis=1))
+            df_countryHistory.insert(54,'Final Time',df_countryHistory.iloc[:,22:54].sum(axis=1))
             df_countryHistory=df_countryHistory.reset_index(drop=True)
             st.dataframe(df_countryHistory)
 
@@ -4844,8 +4844,8 @@ if authentication_status:
             df_worm_CH["Marker"] = marker
             for i in range(len(df_countryHistory)):
                 var = str(i+1)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])
-                df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values
-                df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][17:49].values.cumsum()
+                df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][22:54].values
+                df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][22:54].values.cumsum()
 
 
             fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits",labels={
@@ -4915,8 +4915,8 @@ if authentication_status:
         df_splits["Marker"],df_worm["Marker"] = marker,marker
         for i in range(len(df_an)):
             var = str(df_an["Rank"].iloc[i])+" "+str(df_an["Country"].iloc[i])
-            df_splits[f"{var}"]=df_an.iloc[i][17:49].values
-            df_worm[f"{var}"]=df_an.iloc[i][17:49].values.cumsum()
+            df_splits[f"{var}"]=df_an.iloc[i][22:54].values
+            df_worm[f"{var}"]=df_an.iloc[i][22:54].values.cumsum()
         fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, markers=True,title="Splits",labels={
                      "value": "Half lap splits (Seconds)"
                     
