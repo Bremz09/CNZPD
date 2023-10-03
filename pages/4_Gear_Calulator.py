@@ -53,21 +53,189 @@ if authentication_status == None:
 
 if authentication_status:
     ##This bit is the historical visualiser
-    st.header("Gear Visualiser")
+    st.header("All Data")
     df_master = pd.read_excel(f'pages/Gear_Calculator/Gear_Calculator_Master.xlsx')
     df_master["Competition Date"]=pd.to_datetime(df_master["Competition Date"]).dt.date
     df_master
     
+        # buffer to use for excel writer
+    buffer = io.BytesIO()
+    @st.cache_data
+    def convert_to_csv(df_master):
+        # IMPORTANT: Cache the conversion to prevent computation on every rerun
+        return df_master.to_csv(index=False).encode('utf-8')
+    csv = convert_to_csv(df_master)
+    # download button 1 to download dataframe as csv
+    download1 = st.download_button(
+        label="Download All Gear Data as CSV",
+        data=csv,
+        file_name='All_Gear_Data.csv',
+        mime='text/csv'
+    )
+
+    # download button 2 to download dataframe as xlsx
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        # Write each dataframe to a different worksheet.
+        df_master.to_excel(writer, sheet_name='Sheet1', index=False)
+        # Close the Pandas Excel writer and output the Excel file to the buffer
+        writer.save()
+
+        download2 = st.download_button(
+            label="Download All Gear Data as Excel",
+            data=buffer,
+            file_name='All_Gear_Data.xlsx',
+            mime='application/vnd.ms-excel'
+        )  
+    
+    
+    
+    ###Filtering Bit -- REALLY GOOD!!
+    st.header("Filtered Data")
+    import pandas as pd
+    import streamlit as st
+    import streamlit.components.v1 as components
+    from pandas.api.types import (
+    is_categorical_dtype,
+    is_datetime64_any_dtype,
+    is_numeric_dtype,
+    is_object_dtype,
+    )
+
+
+    def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+
+        modify = st.checkbox("Add filters")
+
+        if not modify:
+            return df
+
+        df = df.copy()
+
+        # Try to convert datetimes into a standard format (datetime, no timezone)
+        for col in df.columns:
+            if is_object_dtype(df[col]):
+                try:
+                    df[col] = pd.to_datetime(df[col])
+                except Exception:
+                    pass
+
+            if is_datetime64_any_dtype(df[col]):
+                df[col] = df[col].dt.tz_localize(None)
+
+        modification_container = st.container()
+
+        with modification_container:
+            to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
+            for column in to_filter_columns:
+                left, right = st.columns((1, 20))
+                # Treat columns with < 10 unique values as categorical
+                if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
+                    user_cat_input = right.multiselect(
+                        f"Values for {column}",
+                        df[column].unique(),
+                        default=list(df[column].unique()),
+                    )
+                    df = df[df[column].isin(user_cat_input)]
+                elif is_numeric_dtype(df[column]):
+                    _min = float(df[column].min())
+                    _max = float(df[column].max())
+                    step = (_max - _min) / 100
+                    user_num_input = right.slider(
+                        f"Values for {column}",
+                        min_value=_min,
+                        max_value=_max,
+                        value=(_min, _max),
+                        step=step,
+                    )
+                    df = df[df[column].between(*user_num_input)]
+                elif is_datetime64_any_dtype(df[column]):
+                    user_date_input = right.date_input(
+                        f"Values for {column}",
+                        value=(
+                            df[column].min(),
+                            df[column].max(),
+                        ),
+                    )
+                    if len(user_date_input) == 2:
+                        user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                        start_date, end_date = user_date_input
+                        df = df.loc[df[column].between(start_date, end_date)]
+                else:
+                    user_text_input = right.text_input(
+                        f"Substring or regex in {column}",
+                    )
+                    if user_text_input:
+                        df = df[df[column].astype(str).str.contains(user_text_input)]
+
+        return df
+
+
+        
+        
+        
+        
+        
+        
+        
+        
+
+    
+
+    df = df_master
+    df_filt = filter_dataframe(df)
+    df_filt
+    
+    
+    # buffer to use for excel writer
+    buffer = io.BytesIO()
+    @st.cache_data
+    def convert_to_csv(df_filt):
+        # IMPORTANT: Cache the conversion to prevent computation on every rerun
+        return df_filt.to_csv(index=False).encode('utf-8')
+    csv = convert_to_csv(df_filt)
+    # download button 1 to download dataframe as csv
+    download1 = st.download_button(
+        label="Download Filtered Data as CSV",
+        data=csv,
+        file_name='Filtered_Gear_Data.csv',
+        mime='text/csv'
+    )
+
+    # download button 2 to download dataframe as xlsx
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        # Write each dataframe to a different worksheet.
+        df_filt.to_excel(writer, sheet_name='Sheet1', index=False)
+        # Close the Pandas Excel writer and output the Excel file to the buffer
+        writer.save()
+
+        download2 = st.download_button(
+            label="Download Filtered Data as Excel",
+            data=buffer,
+            file_name='Filtered_Gear_Data.xlsx',
+            mime='application/vnd.ms-excel'
+        )  
+
+    
+    
+    
+    
+#     c1,c2=st.columns(2)
+#     with c1:
+#         event_sel = st.multiselect(
+#         "Select past effort(s):",
+#         options=df_master["Event"].sort_values(ascending=False).unique()
+#         ) 
+#     with c2:
+#         sex_sel = st.multiselect(
+#         "Select past effort(s):",
+#         options=["M","F"]
+#     ) 
+#     if len(event_sel)>0:
+#         df_sel = df_master.loc[df_master['Event'].isin(event_sel)]
+#         df_sel
 
     st.header("Gear Calculator")
     st.write("Use the Gear Finder window on Hudl")
-    
-    
-          
-
-
-    
-
     
     uploaded_file = st.file_uploader("Choose a file",key="uploader")
 
@@ -101,7 +269,9 @@ if authentication_status:
                 position = st.selectbox("Position:", options=[1,2,3,4],key="position")
             name = st.text_input("Rider Name:")
             nation = st.text_input("Nation (eg NZL):")
+            sex = st.selectbox("Sex:", options=["M","F"],key="Sex")
             comp = st.text_input("Competition:")
+            Round = st.selectbox("Round:", options=["Q","R1","R2","R3","Rep","F","A Final","B Final"],key="Round")
             comp_date = st.date_input("Competition Date:")
             ##I'm using 2.111 instead of wheel circumference. Seems to work better.
             #wheel_circ = st.number_input("Wheel Circumference:",value=2.096,step=1e-3, format="%.3f")
@@ -134,8 +304,8 @@ if authentication_status:
  
         nearest_gear = min(round_to, key=lambda x: abs(x - gear))
         st.subheader(f"Nearest possible gear is {nearest_gear}")
-        data = [[name,nation,event,position,comp,comp_date,gear,nearest_gear]]
-        df = pd.DataFrame(data, columns=['Name', 'Nation','Event','Position','Competition','Competition Date','Calculated Gear','Nearest Possible Gear'])
+        data = [[name,nation,sex,event,position,comp,Round,comp_date,gear,nearest_gear]]
+        df = pd.DataFrame(data, columns=['Name', 'Nation','Sex','Event','Position','Competition','Round','Competition Date','Calculated Gear','Nearest Possible Gear'])
         df
         
         

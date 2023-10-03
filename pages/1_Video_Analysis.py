@@ -71,7 +71,7 @@ if authentication_status:
         with c1:
             selections = st.multiselect(
             "Select past effort(s):",
-            options=df_master["Title"].unique()
+            options=df_master["Title"].sort_values(ascending=False).unique()
             ) 
         with c2:
             show_vids = ["No","Yes"]
