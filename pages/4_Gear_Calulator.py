@@ -267,7 +267,7 @@ if authentication_status:
             position="Null"
             if event == "Team Pursuit":
                 position = st.selectbox("Position:", options=[1,2,3,4],key="position")
-            name = st.text_input("Rider Name:")
+            name = st.text_input("Rider Name:",df["Row"].iloc[0])
             nation = st.text_input("Nation (eg NZL):")
             sex = st.selectbox("Sex:", options=["M","F"],key="Sex")
             comp = st.text_input("Competition:")
