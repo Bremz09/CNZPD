@@ -132,47 +132,35 @@ if authentication_status:
     df_filt
     
 
-        
-        
-        
-        
-        
-        
-        
-        
-
     
+    # buffer to use for excel writer
+    buffer = io.BytesIO()
+    @st.cache_data
+    def convert_to_csv(df_filt):
+        # IMPORTANT: Cache the conversion to prevent computation on every rerun
+        return df_filt.to_csv(index=False).encode('utf-8')
+    csv = convert_to_csv(df_filt)
+    # download button 1 to download dataframe as csv
+    download1 = st.download_button(
+        label="Download Filtered Data as CSV",
+        data=csv,
+        file_name='Filtered_Para_Factored_Data.csv',
+        mime='text/csv'
+    )
 
-    ###Fix this!!!!!!1
-    
-#     # buffer to use for excel writer
-#     buffer = io.BytesIO()
-#     @st.cache_data
-#     def convert_to_csv(df_filt):
-#         # IMPORTANT: Cache the conversion to prevent computation on every rerun
-#         return df_filt.to_csv(index=False).encode('utf-8')
-#     csv = convert_to_csv(df_filt)
-#     # download button 1 to download dataframe as csv
-#     download1 = st.download_button(
-#         label="Download Filtered Data as CSV",
-#         data=csv,
-#         file_name='Filtered_Gear_Data.csv',
-#         mime='text/csv'
-#     )
+    # download button 2 to download dataframe as xlsx
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        # Write each dataframe to a different worksheet.
+        df_filt.to_excel(writer, sheet_name='Sheet1', index=False)
+        # Close the Pandas Excel writer and output the Excel file to the buffer
+        writer.save()
 
-#     # download button 2 to download dataframe as xlsx
-#     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-#         # Write each dataframe to a different worksheet.
-#         df_filt.to_excel(writer, sheet_name='Sheet1', index=False)
-#         # Close the Pandas Excel writer and output the Excel file to the buffer
-#         writer.save()
-
-#         download2 = st.download_button(
-#             label="Download Filtered Data as Excel",
-#             data=buffer,
-#             file_name='Filtered_Gear_Data.xlsx',
-#             mime='application/vnd.ms-excel'
-#         )  
+        download2 = st.download_button(
+            label="Download Filtered Data as Excel",
+            data=buffer,
+            file_name='Filtered_Para_Factored_Data.xlsx',
+            mime='application/vnd.ms-excel'
+        )  
 
     
     
