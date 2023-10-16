@@ -70,10 +70,12 @@ if authentication_status:
     from streamlit_image_comparison import image_comparison
 
   
+    from PIL import Image
 
-    # render image-comparison
-    img1="image1.jpg",
-    img2="image2.jpg",
+    image = Image.open('https://i.ibb.co/09q3w6y/20231010-110828.jpg')
+
+    st.image(image, caption='Sunrise by the mountains')
+
 
     
 #     # pil image
@@ -86,8 +88,8 @@ if authentication_status:
 
     
     image_comparison(
-    img1="image1.jpg",
-    img2="image2.jpg",
+    img1="GOPR4758.jpg",
+    img2="GOPR4759.jpg",
     label1="text1",
     label2="text1",
     width=700,
