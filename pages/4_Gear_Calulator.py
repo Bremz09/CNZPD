@@ -218,21 +218,7 @@ if authentication_status:
     
     
     
-    
-#     c1,c2=st.columns(2)
-#     with c1:
-#         event_sel = st.multiselect(
-#         "Select past effort(s):",
-#         options=df_master["Event"].sort_values(ascending=False).unique()
-#         ) 
-#     with c2:
-#         sex_sel = st.multiselect(
-#         "Select past effort(s):",
-#         options=["M","F"]
-#     ) 
-#     if len(event_sel)>0:
-#         df_sel = df_master.loc[df_master['Event'].isin(event_sel)]
-#         df_sel
+
 
     st.header("Gear Calculator")
     st.write("Use the Gear Finder window on Hudl")
