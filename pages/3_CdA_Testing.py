@@ -70,13 +70,14 @@ if authentication_status:
     from streamlit_image_comparison import image_comparison
 
   
-    from PIL import Image
+#     from PIL import Image
 
-    image = Image.open('https://i.ibb.co/09q3w6y/20231010-110828.jpg')
+#     image = Image.open('https://ibb.co/hYnNzDd')
 
-    st.image(image, caption='Sunrise by the mountains')
+#     st.image(image, caption='Sunrise by the mountains')
+    #https://ibb.co/hYnNzDd
 
-
+    st.image("https://example.com/myimage.jpg")
     
 #     # pil image
 #     from PIL import Image
@@ -85,7 +86,7 @@ if authentication_status:
 #     # opencv image
 #     import cv2
 #     image = cv2.cvtColor(cv2.imread("image.jpg"), cv2.COLOR_BGR2RGB)
-
+    
     
     image_comparison(
     img1="GOPR4758.jpg",
