@@ -502,7 +502,7 @@ if authentication_status:
             st.plotly_chart(fig_CH, use_container_width=True)
 
             ##Second Figure -- 200m times by Date
-            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "200m", title = "Times by Date", markers = "True", text = "Location", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "200m", title = "Times by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
             st.plotly_chart(fig_athlete_history,use_container_width=True)
             ##Third Figure -- Rank by Date
@@ -1523,7 +1523,7 @@ if authentication_status:
                 )
             ##Download buttons complete
 
-            fig_athlete_history = px.scatter(df_athleteHistory, x="Date", y = ["Rank"], title = "Rank by Date", text = "Location", color="Athlete")
+            fig_athlete_history = px.scatter(df_athleteHistory, x="Date", y = ["Rank"], title = "Rank by Date", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -1654,7 +1654,7 @@ if authentication_status:
             for i in range(len(aths)):
                 exec(f'st.subheader(aths[i]+ " has average rank " + str(round(sum(ranks{i})/len(ranks{i}),2)))')
                 for j in range(len(aths)):
-                    exec(f'st.write("His likelihood of gaining rank " + str(j+1) + " is "+ str(round(ranks{i}.count(j+1)/len(ranks{i}),3)))')
+                    exec(f'st.write("Her likelihood of gaining rank " + str(j+1) + " is "+ str(round(ranks{i}.count(j+1)/len(ranks{i}),3)))')
                 st.write("")
                 
                 
@@ -2127,7 +2127,7 @@ if authentication_status:
 
             #FIRST FIGURE -- FINAL TIME PROGRESSION
 
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Time", title = "Times by Date",text="Location", color="Country",markers=True)
+            fig_country_history = px.line(df_countryHistory, x="Date", y = "Time", title = "Times by Date", color="Country",markers=True)
             fig_country_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_country_history, use_container_width=True)
@@ -2702,7 +2702,12 @@ if authentication_status:
         for i in range(len(df_summary)):
             var = str(df_summary["Name"].iloc[i])
             df_summary_transpose[f"{var}"]=df_summary.iloc[i][2:6].values
-
+            
+            
+        #Use this to add a discrete color scale to line graphs            
+#         n_colors=len(df_an)
+#         colors = px.colors.sample_colorscale("hsv", [n/(n_colors -1) for n in range(n_colors)])
+#         ,color_discrete_sequence=colors -- add this to the end of px.line
         fig_event_mean = px.line(df_summary_transpose, x="Race", y = df_summary_transpose.columns[1:], title="Omnium Summary", markers=True)
         st.plotly_chart(fig_event_mean,use_container_width=True)
 
@@ -3208,7 +3213,7 @@ if authentication_status:
             st.plotly_chart(fig_event,use_container_width=True)
 
             #Totals by Date
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Final", title = "Totals by Date", markers = "True", text = "Location", color="Name")
+            fig_country_history = px.line(df_countryHistory, x="Date", y = "Final", title = "Totals by Date", markers = "True", color="Name")
             fig_country_history.update_traces(textposition="top right")
             st.plotly_chart(fig_country_history,use_container_width=True)
 
@@ -3612,7 +3617,7 @@ if authentication_status:
                 key="madch2"
                 )
             ##Download buttons complete
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Total", title = "Totals by Date", markers = "True", text = "Location", color="Country")
+            fig_country_history = px.line(df_countryHistory, x="Date", y = "Total", title = "Totals by Date", markers = "True", color="Country")
             fig_country_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_country_history,use_container_width=True)
@@ -3928,7 +3933,7 @@ if authentication_status:
                 key="madch2"
                 )
             ##Download buttons complete
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Total", title = "Totals by Date", markers = "True", text = "Location", color="Country")
+            fig_country_history = px.line(df_countryHistory, x="Date", y = "Total", title = "Totals by Date", markers = "True", color="Country")
             fig_country_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_country_history,use_container_width=True)
@@ -4830,8 +4835,8 @@ if authentication_status:
 
 
             #FIRST FIGURE -- FINAL TIME PROGRESSION
-
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Final Time", title = "Times by Date", text="Location",color="Country",markers=True)
+            df_countryHistoryNN = df_countryHistory.loc[df_countryHistory['Time'].notnull()]
+            fig_country_history = px.line(df_countryHistoryNN, x="Date", y = "Final Time", title = "Times by Date",color="Country",markers=True)
             fig_country_history.update_traces(textposition="top right")
             st.plotly_chart(fig_country_history, use_container_width=True)
 
@@ -5146,7 +5151,7 @@ if authentication_status:
 
             #FIRST FIGURE -- FINAL TIME PROGRESSION
 
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Time", title = "Times by Date", text="Location",color="Country",markers=True)
+            fig_country_history = px.line(df_countryHistory, x="Date", y = "Time", title = "Times by Date",color="Country",markers=True)
             fig_country_history.update_traces(textposition="top right")
             st.plotly_chart(fig_country_history, use_container_width=True)
 

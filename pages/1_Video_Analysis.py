@@ -57,7 +57,7 @@ if authentication_status:
    
     racetype = st.selectbox(
         "Select Race Type:",
-        options=["Women's TP", "Men's TP", "Mens' Keirin","WTS Starts","Men's IP","Women's IP"]
+        options=["Women's Team Sprint","Women's TP", "Men's TP", "Mens' Keirin","WTS Starts","Men's IP","Women's IP"]
         ) 
     
     ################################################ Women's Team Pursuit ##########################################################
@@ -1114,9 +1114,15 @@ if authentication_status:
             df_gaps=df_gaps.join(s1)
             
             num_riders = len(s1.columns)
+            
             for j in range(num_riders):
-                name=df_select["Draw"].unique()[j]
+                name=df_select["Name"].unique()[j]
+                
+                
+                
+                
                 rider_pos=[]
+                
                 for i in range(len(df_gaps)):
                     n = df_gaps.iloc[:,num_riders+1:].iloc[i]
                     pos=n[n==name].index[0]
@@ -1904,3 +1910,160 @@ if authentication_status:
                         mime='application/vnd.ms-excel'
                     )                
                     
+    ################################################ Women's Team Sprint ##########################################################
+    
+    if racetype == "Women's Team Sprint":
+       
+        st.markdown("---")            
+        st.header('View, edit and upload a new effort')
+
+        with open('pages/TP_demo.xlsx', "rb") as template_file:
+                template_byte = template_file.read()
+
+
+
+        st.download_button(label="Click to Download Template File",
+                            data=template_byte,
+                            file_name="template.xlsx"
+                          )
+
+        uploaded_file = st.file_uploader("Choose a file",key="uploader")
+
+        if uploaded_file is not None:
+            st.markdown("---")
+
+            st.header("Editor")
+            st.write("Initial df")
+            df_full = pd.read_csv(uploaded_file)
+            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
+          axis='columns', inplace=True)
+            
+            
+            c1,c2,c3=st.columns(3)
+            with c1:
+                df_full
+                start=st.number_input("Start Row (inclusive)", value=0)
+            with c2:
+                df_check = pd.DataFrame(df_full.iloc[::29, :])
+                df_check.drop(["Start time"],axis='columns', inplace=True)
+                st.write("Checking we've got everything")
+                df_check
+                end=st.number_input("End Row (inclusive)", value=start+28)+1
+            
+            
+            df=df_full[start+1:end]
+            df=df.sort_values("Start time", ascending=True)
+            
+            
+            with c1:
+                rider1 = st.text_input("Select Rider 1:")
+                rider2 = st.text_input("Select Rider 2:")
+                rider3 = st.text_input("Select Rider 3:")
+            
+            riders=[rider1,rider2,rider3]
+            
+            
+            
+            
+
+            #df = df.dropna(axis=0, subset=['Time'])
+
+            with c2:
+                
+               
+                
+                rider1gear = st.text_input("Select Rider 1 gear:")
+                rider2gear = st.text_input("Select Rider 2 gear:")
+                rider3gear = st.text_input("Select Rider 3 gear:")
+                Title = st.text_input("Plot Title:")
+
+
+            df["Riders"]="NA"
+            df["Riders"][1]=rider1
+            df["Riders"][2]=rider2
+            df["Riders"][3]=rider3
+            df["Gears"]=0.0
+            df["Title"]=Title
+            col = df.pop('Title')
+            df.insert(0, col.name, col)
+            df["Gears"][1]=rider1gear
+            df["Gears"][2]=rider2gear
+            df["Gears"][3]=rider3gear
+            front=[rider1]
+            splits=[0]
+            del_speeds=[0]
+            speeds=[0]
+            r=0
+            
+   
+           
+            
+            df=df.reset_index(drop=True)
+            with c3:
+                df
+                ind1=df.index[df['Row'] == "Rider 1 Forward"].tolist()[0]
+                ind2=df.index[df['Row'] == "Rider 2 Forward"].tolist()[0]
+                ind3=df.index[df['Row'] == "Rider 3 Forward"].tolist()[0]
+                indstart=df.index[df['Row'] == "Start"].tolist()[0]
+                react1 = round(df["Start time"][ind1]-df["Start time"][indstart],2)
+                react2 = round(df["Start time"][ind2]-df["Start time"][indstart],2)
+                react3 = round(df["Start time"][ind3]-df["Start time"][indstart],2)
+                st.write(f'Reaction time for rider 1 is {react1} seconds')
+                st.write(f'Reaction time for rider 2 is {react2} seconds')
+                st.write(f'Reaction time for rider 3 is {react3} seconds')
+
+            
+            #master_path=st.text_input("Add path to master file:",key="prompt")
+            if st.button("Append this effort to master",key="upload"):
+
+
+
+
+                df_save=df
+                df_save.insert(0, 'Save_Date', datetime.date.today())
+                df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
+                df = pd.concat([df_master, df_save], axis=0)
+                df
+
+                ##Testing downloader
+
+
+                # buffer to use for excel writer
+                buffer = io.BytesIO()
+
+
+
+                @st.cache_data
+                def convert_to_csv(df):
+                    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+                    return df.to_csv(index=False).encode('utf-8')
+
+                csv = convert_to_csv(df)
+
+                # display the dataframe on streamlit app
+        #         st.write(df)
+
+                # download button 1 to download dataframe as csv
+                download1 = st.download_button(
+                    label="Download new Master as CSV",
+                    data=csv,
+                    file_name='IP_Master_Women.csv',
+                    mime='text/csv'
+                )
+
+                # download button 2 to download dataframe as xlsx
+                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                    # Write each dataframe to a different worksheet.
+                    df.to_excel(writer, sheet_name='Sheet1', index=False)
+                    # Close the Pandas Excel writer and output the Excel file to the buffer
+                    writer.save()
+
+                    download2 = st.download_button(
+                        label="Download new Master as Excel",
+                        data=buffer,
+                        file_name='IP_Master_Women.xlsx',
+                        mime='application/vnd.ms-excel'
+                    )       
+            
+ 
