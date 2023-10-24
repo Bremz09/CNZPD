@@ -99,77 +99,78 @@ if authentication_status:
     mask = (df_master['Date'] > start) & (df_master['Date'] <= finish)
     df = df_master.loc[mask]
     df=df.reset_index(drop=True)
-    
-    
-    with c3:
-        start_time = st.time_input(
-            "Refine Start Time:",
-            df["Time"][0],
-            key="start_time")
-    with c4:
-        finish_time = st.time_input(
-            "Refine End Time:",
-            df["Time"][len(df)-1],
-        key="fin_time")    
-        
+    if len(df)>0:
+
+        with c3:
+            start_time = st.time_input(
+                "Refine Start Time:",
+                df["Time"][0],
+                key="start_time")
+        with c4:
+            finish_time = st.time_input(
+                "Refine End Time:",
+                df["Time"][len(df)-1],
+            key="fin_time")    
 
 
-   
-    mask_time = (df['Time'] > start_time) & (df['Time'] <= finish_time)
-    df = df.loc[mask_time]
-    df
-    
-    st.header("Data Summary")
-    m_temp=round(df["Temperature(C)"].mean(),4)
-    sd_temp=round(df["Temperature(C)"].std(),4)
-    m_humid=round(df["Relative_Humidity(%)"].mean(),4)
-    sd_humid=round(df["Relative_Humidity(%)"].std(),4)
-    m_pressure=round(df["Pressure(hPa)"].mean(),4)
-    sd_pressure=round(df["Pressure(hPa)"].std(),4)
-    m_density=round(df["Air_Density(kg/m^3)"].mean(),4)
-    sd_density=round(df["Air_Density(kg/m^3)"].std(),4)
-    st.write(f"Mean Air Density is {m_density} kg/m^3 with standard deviation {sd_density} kg/m^3")
-    st.write(f"Mean Temperature is {m_temp} C with standard deviation {sd_temp} C")
-    st.write(f"Mean Relative Humidity is {m_humid}% with standard deviation {sd_humid}%")
-    st.write(f"Mean Pressure is {m_pressure} hPa with standard deviation {sd_pressure} hPa")
-    
-    
-    ##Download buttons
-    @st.cache_data
-    def convert_to_csv(df):
-        return df.to_csv(index=False,sep = ",").encode('utf-32')
-    csv = convert_to_csv(df)
-    download1 = st.download_button(
-        label="Download Environmental data as CSV",
-        data=csv,
-        file_name='Enviro_Data.csv',
-        mime='text/csv'
-    )
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Sheet1', index=False)
-        writer.save()
-        download2 = st.download_button(
-            label="Download Environmental data as Excel",
-            data=buffer,
-            file_name='Enviro_Data.xlsx',
-            mime='application/vnd.ms-excel'
+
+
+        mask_time = (df['Time'] > start_time) & (df['Time'] <= finish_time)
+        df = df.loc[mask_time]
+        df
+
+        st.header("Data Summary")
+        m_temp=round(df["Temperature(C)"].mean(),4)
+        sd_temp=round(df["Temperature(C)"].std(),4)
+        m_humid=round(df["Relative_Humidity(%)"].mean(),4)
+        sd_humid=round(df["Relative_Humidity(%)"].std(),4)
+        m_pressure=round(df["Pressure(hPa)"].mean(),4)
+        sd_pressure=round(df["Pressure(hPa)"].std(),4)
+        m_density=round(df["Air_Density(kg/m^3)"].mean(),4)
+        sd_density=round(df["Air_Density(kg/m^3)"].std(),4)
+        st.write(f"Mean Air Density is {m_density} kg/m^3 with standard deviation {sd_density} kg/m^3")
+        st.write(f"Mean Temperature is {m_temp} C with standard deviation {sd_temp} C")
+        st.write(f"Mean Relative Humidity is {m_humid}% with standard deviation {sd_humid}%")
+        st.write(f"Mean Pressure is {m_pressure} hPa with standard deviation {sd_pressure} hPa")
+
+
+        ##Download buttons
+        @st.cache_data
+        def convert_to_csv(df):
+            return df.to_csv(index=False,sep = ",").encode('utf-32')
+        csv = convert_to_csv(df)
+        download1 = st.download_button(
+            label="Download Environmental data as CSV",
+            data=csv,
+            file_name='Enviro_Data.csv',
+            mime='text/csv'
         )
-    ##Download buttons complete
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Sheet1', index=False)
+            writer.save()
+            download2 = st.download_button(
+                label="Download Environmental data as Excel",
+                data=buffer,
+                file_name='Enviro_Data.xlsx',
+                mime='application/vnd.ms-excel'
+            )
+        ##Download buttons complete
 
-    fig = px.scatter(df, x="DateTime", y = "Air_Density(kg/m^3)", title="Air Density (kg/m^3)")
-    st.plotly_chart(fig, use_container_width=True)
-    
-    fig = px.scatter(df, x="DateTime", y = "Temperature(C)", title="Temperature(C)")
-    st.plotly_chart(fig, use_container_width=True)
+        fig = px.scatter(df, x="DateTime", y = "Air_Density(kg/m^3)", title="Air Density (kg/m^3)")
+        st.plotly_chart(fig, use_container_width=True)
 
-    fig = px.scatter(df, x="DateTime", y = "Relative_Humidity(%)", title="Relative Humidity (%)")
-    st.plotly_chart(fig, use_container_width=True)
+        fig = px.scatter(df, x="DateTime", y = "Temperature(C)", title="Temperature(C)")
+        st.plotly_chart(fig, use_container_width=True)
 
-    fig = px.scatter(df, x="DateTime", y = "Pressure(hPa)", title="Pressure (hPa)")
-    st.plotly_chart(fig, use_container_width=True)
+        fig = px.scatter(df, x="DateTime", y = "Relative_Humidity(%)", title="Relative Humidity (%)")
+        st.plotly_chart(fig, use_container_width=True)
 
-    
-    
-    
+        fig = px.scatter(df, x="DateTime", y = "Pressure(hPa)", title="Pressure (hPa)")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.write("No data yet, tell Sam to hurry up!")
+
+
+
     
