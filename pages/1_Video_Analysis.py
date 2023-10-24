@@ -1917,8 +1917,9 @@ if authentication_status:
         st.markdown("---")            
         df_master = pd.read_excel(f'pages/video_analysis/WTS_Master_Women.xlsx')
         #df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
-        
+        st.header("Race Viewer")
         c1,c2=st.columns(2)
+        
         with c1:
             selections = st.multiselect(
             "Select past effort(s):",
@@ -2053,6 +2054,7 @@ if authentication_status:
 
             st.plotly_chart(fig_comp_split, use_container_width=True)
         st.markdown('---')
+        st.header("Editor")
         with open('pages/TP_demo.xlsx', "rb") as template_file:
                 template_byte = template_file.read()
 
