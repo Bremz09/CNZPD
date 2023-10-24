@@ -1717,7 +1717,7 @@ if authentication_status:
 
             col_one, col_two, col_three, col_four = st.columns(4)
             with col_one:
-           
+                
                 fig_tt = px.line(df_combine, x="Distance", y = "Avg_Speed", title="Comparison",color="Title",markers="Front")
 
             st.plotly_chart(fig_tt, use_container_width=True)
@@ -1916,7 +1916,137 @@ if authentication_status:
        
         st.markdown("---")            
         st.header('View, edit and upload a new effort')
+        df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
+        df_master
+        c1,c2=st.columns(2)
+        with c1:
+            selections = st.multiselect(
+            "Select past effort(s):",
+            options=df_master["Title"].sort_values(ascending=False).unique()
+            ) 
+        with c2:
+            show_vids = ["No","Yes"]
+            Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
+        if len(selections) !=0:
+            df_combine = pd.DataFrame()
+            for i in range(len(selections)):
+                df_temp = df_master.loc[df_master['Title'] == selections[i]].reset_index(drop=True)
+                
+                
+                df_table = pd.DataFrame([1,2,3],columns=["Position"])
+                df_table["Rider"]=df_temp["Riders"][0:3]
+                df_table["Gear"]=df_temp["Gears"][0:3]
+                ind1=df_temp.index[df_temp['Row'] == "Rider 1 Forward"].tolist()[0]
+                ind2=df_temp.index[df_temp['Row'] == "Rider 2 Forward"].tolist()[0]
+                ind3=df_temp.index[df_temp['Row'] == "Rider 3 Forward"].tolist()[0]
+                indstart=df_temp.index[df_temp['Row'] == "Start"].tolist()[0]
+                start = df_temp["Start time"][indstart]
+                react1 = round(df_temp["Start time"][ind1]-start,2)
+                react2 = round(df_temp["Start time"][ind2]-start,2)
+                react3 = round(df_temp["Start time"][ind3]-start,2)
+                
+                
+                df_table["RT"]=[react1,react2,react3]
+                df_table["62.5"]=[df_temp["Start time"][4]-start,df_temp["Start time"][5]-start,df_temp["Start time"][6]-start]
+                
+                df_table["125"]=[df_temp["Start time"][7]-df_temp["Start time"][4],df_temp["Start time"][8]-df_temp["Start time"][5],df_temp["Start time"][9]-df_temp["Start time"][6]]
+                
+                df_table["187.5"]=[df_temp["Start time"][10]-df_temp["Start time"][7],df_temp["Start time"][11]-df_temp["Start time"][8],df_temp["Start time"][12]-df_temp["Start time"][9]]
+                
+                df_table["250"]=[df_temp["Start time"][13]-df_temp["Start time"][10],df_temp["Start time"][14]-df_temp["Start time"][11],df_temp["Start time"][15]-df_temp["Start time"][12]]
+                df_table["Lap 1"]=[df_temp["Start time"][13]-start,df_temp["Start time"][14]-start,df_temp["Start time"][15]-start]
+                
+                
+                df_table["Gap 1"]= [0.0,df_table["Lap 1"][1]-df_table["Lap 1"][0],df_table["Lap 1"][2]-df_table["Lap 1"][1]]
+                
+                df_table["312.5"]=[0,df_temp["Start time"][16]-df_temp["Start time"][14],df_temp["Start time"][17]-df_temp["Start time"][15]]
+                
+                df_table["375"]=[0,df_temp["Start time"][18]-df_temp["Start time"][16],df_temp["Start time"][19]-df_temp["Start time"][17]]
+                
+                df_table["437.5"]=[0,df_temp["Start time"][20]-df_temp["Start time"][18],df_temp["Start time"][21]-df_temp["Start time"][19]]
+                
+                df_table["500"]=[0,df_temp["Start time"][22]-df_temp["Start time"][20],df_temp["Start time"][23]-df_temp["Start time"][21]]
+                df_table["Lap 2"]=[0,df_temp["Start time"][22]-df_temp["Start time"][14],df_temp["Start time"][23]-df_temp["Start time"][15]]
+                df_table["500m Time"] = [0,df_table["Lap 1"][1]+df_table["Lap 2"][1],df_table["Lap 1"][2]+df_table["Lap 2"][2]]
+                df_table["Gap 2"]= [0,0,df_table["Lap 2"][2]-df_table["Lap 2"][1] + df_table["Gap 1"][2]]
+                
+                df_table["562.5"] = [0,0,df_temp["Start time"][24]-df_temp["Start time"][23]]
+                df_table["625"] = [0,0,df_temp["Start time"][25]-df_temp["Start time"][24]]
+                df_table["687.5"] = [0,0,df_temp["Start time"][26]-df_temp["Start time"][25]]
+                df_table["750"] = [0,0,df_temp["Start time"][27]-df_temp["Start time"][26]]
+                
+                df_table["Lap 3"] = [0,0,df_temp["Start time"][27]-df_temp["Start time"][23]]
+                df_table["1"] = [df_table["Lap 1"][0],0,0]
+                df_table["2"] = [0,df_table["Lap 2"][1]+df_table["Gap 1"][1],0]
+                df_table["3"] = [0,0,df_table["Lap 3"][2]+df_table["Gap 2"][2]]
+                df_table["Time"] = [0,0,df_temp["Start time"][27]-start]
 
+                df_table
+                gap1_2_1 = round(df_table["62.5"][1]-df_table["62.5"][0],2)
+                gap1_2_2 = round(df_table["125"][1]-df_table["125"][0] + gap1_2_1,2)
+                gap1_2_3 = round(df_table["187.5"][1]-df_table["187.5"][0] + gap1_2_2,2)
+                gap1_2_4 = round(df_table["250"][1]-df_table["250"][0] + gap1_2_3,2)
+                
+                gap2_3_1 = round(df_table["62.5"][2]-df_table["62.5"][1],2)
+                gap2_3_2 = round(df_table["125"][2]-df_table["125"][1]+gap2_3_1,2)
+                gap2_3_3 = round(df_table["187.5"][2]-df_table["187.5"][1]+gap2_3_2,2)
+                gap2_3_4 = round(df_table["250"][2]-df_table["250"][1]+gap2_3_3,2)
+                gap2_3_5 = round(df_table["312.5"][2]-df_table["312.5"][1]+gap2_3_4,2)
+                gap2_3_6 = round(df_table["375"][2]-df_table["375"][1]+gap2_3_5,2)
+                gap2_3_7 = round(df_table["437.5"][2]-df_table["437.5"][1]+gap2_3_6,2)
+                gap2_3_8 = round(df_table["500"][2]-df_table["500"][1]+gap2_3_7,2)
+                
+                gaps1_2=[gap1_2_1,gap1_2_2,gap1_2_3,gap1_2_4,0,0,0,0]
+                gaps2_3=[gap2_3_1,gap2_3_2,gap2_3_3,gap2_3_4,gap2_3_5,gap2_3_6,gap2_3_7,gap2_3_8]
+                df_gap = pd.DataFrame(gaps1_2)
+                df_gap.rename(columns={ df_gap.columns[0]: "Gap1_2" }, inplace = True)
+                df_gap["Gap2_3"]=gaps2_3
+                
+              
+            
+                f1 = go.Figure(
+                data = [
+                    go.Scatter(y=gaps1_2[0:4], x=["Q1","Q2","Q3","Q4"], name="Rider 2 to 1"),
+                    go.Scatter(x=["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8"], y=gaps2_3, name="Rider 3 to 2"),
+                ],
+                layout = {"xaxis": {"title": "Quarters"}, "yaxis": {"title": "Seconds"}, "title": "Gaps by Quarter"}
+                )
+                
+                st.plotly_chart(f1, use_container_width=True)
+                
+                c1,c2=st.columns(2)
+                with c2:
+                    if Videos == "Yes":
+                    
+                        if pd.isnull(df_temp["Video"].iloc[0]):
+                            st.header("No video available")
+                        else:
+                            video_name = df_temp["Video"].iloc[0]
+                            st.header(df_temp["Title"].iloc[0])
+
+                            st.video(f"{video_name}")
+                
+                st.markdown("---")
+                teamsplits = [df_table["62.5"][0],df_table["125"][0],df_table["187.5"][0],df_table["250"][0],df_table["312.5"][1]+df_table["Gap 1"][1],df_table["375"][1],df_table["437.5"][1],df_table["500"][1],df_table["562.5"][2]+df_table["Gap 2"][2],df_table["625"][2],df_table["687.5"][2],df_table["750"][2]]
+                
+                teamsplits = [round(3.6*62.5/i,2) for i in teamsplits]
+                
+                df_splits = pd.DataFrame(teamsplits)
+                
+                df_splits["Title"] = selections[i]
+                df_splits["Marker"] = ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12"]
+                
+                df_combine = pd.concat([df_combine, df_splits], axis=0)
+                df_temp
+                
+                
+            df_combine.rename(columns={ df_combine.columns[0]: "Speed (km/h)" }, inplace = True)
+            
+            fig_comp = px.line(df_combine, x="Marker", y = "Speed (km/h)", title="Comparison",color="Title",markers="Splits",labels = {
+            "Marker":"Quarter"})
+
+            st.plotly_chart(fig_comp, use_container_width=True)
+        st.markdown('---')
         with open('pages/TP_demo.xlsx', "rb") as template_file:
                 template_byte = template_file.read()
 
@@ -1980,16 +2110,16 @@ if authentication_status:
 
 
             df["Riders"]="NA"
-            df["Riders"][1]=rider1
-            df["Riders"][2]=rider2
-            df["Riders"][3]=rider3
+            df["Riders"].iloc[0]=rider1
+            df["Riders"].iloc[1]=rider2
+            df["Riders"].iloc[2]=rider3
             df["Gears"]=0.0
             df["Title"]=Title
             col = df.pop('Title')
             df.insert(0, col.name, col)
-            df["Gears"][1]=rider1gear
-            df["Gears"][2]=rider2gear
-            df["Gears"][3]=rider3gear
+            df["Gears"].iloc[0]=rider1gear
+            df["Gears"].iloc[1]=rider2gear
+            df["Gears"].iloc[2]=rider3gear
             front=[rider1]
             splits=[0]
             del_speeds=[0]
@@ -2048,7 +2178,7 @@ if authentication_status:
                 download1 = st.download_button(
                     label="Download new Master as CSV",
                     data=csv,
-                    file_name='IP_Master_Women.csv',
+                    file_name='WTS_Master_Women.csv',
                     mime='text/csv'
                 )
 
@@ -2062,7 +2192,7 @@ if authentication_status:
                     download2 = st.download_button(
                         label="Download new Master as Excel",
                         data=buffer,
-                        file_name='IP_Master_Women.xlsx',
+                        file_name='WTS_Master_Women.xlsx',
                         mime='application/vnd.ms-excel'
                     )       
             
