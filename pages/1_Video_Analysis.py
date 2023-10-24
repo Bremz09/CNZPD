@@ -1915,8 +1915,8 @@ if authentication_status:
     if racetype == "Women's Team Sprint":
         st.write("hello")
         st.markdown("---")            
-        
-        df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
+        df_master = pd.read_excel(f'pages/video_analysis/WTS_Master_Women.xlsx')
+        #df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
         
         c1,c2=st.columns(2)
         with c1:
