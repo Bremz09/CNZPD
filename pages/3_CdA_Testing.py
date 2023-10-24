@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 import xlwings as xw
 import datetime
 import io
+from streamlit_image_comparison import image_comparison
 
 
 st.set_page_config(page_title='CNZ Performance Database',
@@ -52,52 +53,86 @@ if authentication_status:
 
     ##This bit is the historical visualiser
 
-    st.header("All Data")
+    st.header("Wind Tunnel Images")
 
     df_master = pd.read_excel(f'pages/CdA Testing/Track CdA Testing Streamlit.xlsx')
     
 
 
     df_master['Date'] = pd.to_datetime(df_master['Date'],format= '%Y/%m/%d' ).dt.date
+    df_images = pd.read_excel(f'pages/CdA Testing/Wind Tunnel Images.xlsx')
+    df_run = pd.read_excel(f'pages/CdA Testing/FullRunSheet.xlsx')
+    c1,c2,c3 = st.columns(3)
+    with c1:
+        album = st.selectbox(
+            "Select Album:",
+            options=df_images["Album"].unique()
+            ) 
+    df=df_images.loc[df_images["Album"]==album]
+    with c2:
+        im1 = st.selectbox(
+            "Select Image 1:",
+            options=df["Image"].unique()
+            ) 
+    with c3:
+        im2 = st.selectbox(
+            "Select Image 2:",
+            options=df["Image"].unique()
+            ) 
+    df_run_small=df_run.loc[df_run["Album"]==album].iloc[: , 1:]
+    df_run_small
+
+    image_comparison(
+    img1=im1,
+    img2=im2,
+    label1="Image 1",
+    label2="Image 2",
+    width=1000,
+    starting_position=50,
+    show_labels=True,
+    make_responsive=True,
+    in_memory=True,
+    )
+ 
+        
     
-    df_master
+    st.markdown("---")
     
-    st.header("Video")
+    st.header("Video from Track Testing")
     
     
     # Streamlit Image-Comparison Component Example
 
-    from streamlit_image_comparison import image_comparison
-
-  
-
     
     
-    image_comparison(
-    img1="CS2.jpg",
-    img2="CS3.jpg",
-    label1="text1",
-    label2="text1",
-    width=1000,
-    starting_position=50,
-    show_labels=True,
-    make_responsive=True,
-    in_memory=True,
-    )
     
-    image_comparison(
-    img1="GOPR4758.jpg",
-    img2="GOPR4759.jpg",
-    label1="text1",
-    label2="text1",
-    width=1000,
-    starting_position=50,
-    show_labels=True,
-    make_responsive=True,
-    in_memory=True,
-    )
     
-    st.image("GOPR4758.jpg")
+#     image_comparison(
+#     img1="CS2.jpg",
+#     img2="CS3.jpg",
+#     label1="text1",
+#     label2="text1",
+#     width=1000,
+#     starting_position=50,
+#     show_labels=True,
+#     make_responsive=True,
+#     in_memory=True,
+#     )
+    
+#     image_comparison(
+#     img1="GOPR4758.jpg",
+#     img2="GOPR4759.jpg",
+#     label1="text1",
+#     label2="text1",
+#     width=1000,
+#     starting_position=50,
+#     show_labels=True,
+#     make_responsive=True,
+#     in_memory=True,
+#     )
+    
+#     st.image('https://streamlit.io/images/brand/streamlit-mark-light.png')
+#     st.image("https://i.ibb.co/vQZQ3Mc/Whats-App-Image-2023-09-07-at-1-37-41-PM-1.jpg")
     
     
     
