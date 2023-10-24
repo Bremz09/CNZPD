@@ -1915,9 +1915,9 @@ if authentication_status:
     if racetype == "Women's Team Sprint":
        
         st.markdown("---")            
-        st.header('View, edit and upload a new effort')
+        
         df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
-        df_master
+        
         c1,c2=st.columns(2)
         with c1:
             selections = st.multiselect(
@@ -1980,8 +1980,9 @@ if authentication_status:
                 df_table["2"] = [0,df_table["Lap 2"][1]+df_table["Gap 1"][1],0]
                 df_table["3"] = [0,0,df_table["Lap 3"][2]+df_table["Gap 2"][2]]
                 df_table["Time"] = [0,0,df_temp["Start time"][27]-start]
-
+                st.header(selections[i])
                 df_table
+                
                 gap1_2_1 = round(df_table["62.5"][1]-df_table["62.5"][0],2)
                 gap1_2_2 = round(df_table["125"][1]-df_table["125"][0] + gap1_2_1,2)
                 gap1_2_3 = round(df_table["187.5"][1]-df_table["187.5"][0] + gap1_2_2,2)
@@ -2029,23 +2030,28 @@ if authentication_status:
                 st.markdown("---")
                 teamsplits = [df_table["62.5"][0],df_table["125"][0],df_table["187.5"][0],df_table["250"][0],df_table["312.5"][1]+df_table["Gap 1"][1],df_table["375"][1],df_table["437.5"][1],df_table["500"][1],df_table["562.5"][2]+df_table["Gap 2"][2],df_table["625"][2],df_table["687.5"][2],df_table["750"][2]]
                 
-                teamsplits = [round(3.6*62.5/i,2) for i in teamsplits]
+                teamspeeds = [round(3.6*62.5/i,2) for i in teamsplits]
                 
-                df_splits = pd.DataFrame(teamsplits)
+                df_speeds = pd.DataFrame(teamspeeds)
                 
-                df_splits["Title"] = selections[i]
-                df_splits["Marker"] = ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12"]
+                df_speeds["Title"] = selections[i]
+                df_speeds["Marker"] = ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12"]
+                df_speeds["Splits"] = teamsplits
+                df_combine = pd.concat([df_combine, df_speeds], axis=0)
                 
-                df_combine = pd.concat([df_combine, df_splits], axis=0)
-                df_temp
                 
                 
             df_combine.rename(columns={ df_combine.columns[0]: "Speed (km/h)" }, inplace = True)
             
-            fig_comp = px.line(df_combine, x="Marker", y = "Speed (km/h)", title="Comparison",color="Title",markers="Splits",labels = {
+            fig_comp = px.line(df_combine, x="Marker", y = "Speed (km/h)", title="Average Speed Comparison",color="Title",markers="Splits",labels = {
             "Marker":"Quarter"})
 
             st.plotly_chart(fig_comp, use_container_width=True)
+            
+            fig_comp_split = px.line(df_combine, x="Marker", y = "Splits", title="Split Comparison",color="Title",markers="Splits",labels = {
+            "Marker":"Quarter"})
+
+            st.plotly_chart(fig_comp_split, use_container_width=True)
         st.markdown('---')
         with open('pages/TP_demo.xlsx', "rb") as template_file:
                 template_byte = template_file.read()
