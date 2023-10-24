@@ -97,6 +97,8 @@ if authentication_status:
     in_memory=True,
     )
     
+    st.image("GOPR4758.jpg")
+    
     
     
     
