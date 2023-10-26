@@ -14,7 +14,7 @@ import xlwings as xw
 import datetime
 import io
 from streamlit_image_comparison import image_comparison
-
+import streamlit.components.v1 as components
 
 
 st.set_page_config(page_title='CNZ Performance Database',
@@ -80,20 +80,57 @@ if authentication_status:
             "Select Image 2:",
             options=df["Image"].unique()
             ) 
-    df_run_small=df_run.loc[df_run["Album"]==album].iloc[: , 1:]
     
+    df_run_small=df_run.drop(columns=["Album"])
+    
+    c1,c2=st.columns(2)
+    with c1:
+        df_run_small
+    with c2:
+        image_comparison(
+            img1=im1,
+            img2=im2,
+            label1="Image 1",
+            label2="Image 2",
+            width=700,
+            starting_position=50,
+            show_labels=True,
+            make_responsive=True,
+            in_memory=True,
+            )
+    st.markdown("---")
+    st.header("Compare local images")
+    upimg2=None
+    uppimg1=None
+    c1,c2=st.columns(2)
+    with c1:
+        upim1 = st.file_uploader('', type=['png','jpg'], key=1)
+        if upim1 is not None:
+            upimg1 = Image.open(upim1)
+            st.image(upimg1,width=100)
+    with c2:
+        upim2 = st.file_uploader('', type=['png','jpg'], key=2)
 
-    image_comparison(
-    img1=im1,
-    img2=im2,
-    label1="Image 1",
-    label2="Image 2",
-    width=700,
-    starting_position=50,
-    show_labels=True,
-    make_responsive=True,
-    in_memory=True,
-    )
+        if upim2 is not None:
+            upimg2 = Image.open(upim2)
+            st.image(upimg2,width=100)
+    
+    c1,c2=st.columns(2)
+    if upimg2 is not None and upimg2 is not None:
+        with c1:
+            image_comparison(
+            img1=upimg1,
+            img2=upimg2,
+            label1="Image 1",
+            label2="Image 2",
+            width=700,
+            starting_position=50,
+            show_labels=True,
+            make_responsive=True,
+            in_memory=True,
+            )
+ 
+        
 
     
 #     up_im1 = st.file_uploader("Upload an image to compare",key="uploader1")
@@ -117,7 +154,7 @@ if authentication_status:
     
     st.markdown("---")
     
-    st.header("Video from Track Testing")
+    st.header("Track Testing Data/Video")
     
     
     # Streamlit Image-Comparison Component Example
