@@ -14,6 +14,7 @@ import xlwings as xw
 import datetime
 import io
 from streamlit_image_comparison import image_comparison
+import cv2
 
 
 st.set_page_config(page_title='CNZ Performance Database',
@@ -93,8 +94,26 @@ if authentication_status:
     make_responsive=True,
     in_memory=True,
     )
- 
-        
+
+    
+#     up_im1 = st.file_uploader("Upload an image to compare",key="uploader1")
+#     up_im2 = st.file_uploader("Upload an image to compare",key="uploader2")
+#     if up_im1 and up_im2:
+#         file_bytes1 = np.asarray(bytearray(up_im1.read()), dtype=np.uint8)
+#         opencv_image = cv2.imdecode(file_bytes1, 1)
+#         file_bytes2 = np.asarray(bytearray(up_im2.read()), dtype=np.uint8)
+#         opencv_image = cv2.imdecode(file_bytes2, 1)
+#         image_comparison(
+#         img1=file_bytes1,
+#         img2=file_bytes2,
+#         label1="iMAGE 1",
+#         label2="Image 2",
+#         width=1000,
+#         starting_position=50,
+#         show_labels=True,
+#         make_responsive=True,
+#         in_memory=True,
+#         )
     
     st.markdown("---")
     
