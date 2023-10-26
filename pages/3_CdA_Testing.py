@@ -14,7 +14,7 @@ import xlwings as xw
 import datetime
 import io
 from streamlit_image_comparison import image_comparison
-import cv2
+
 
 
 st.set_page_config(page_title='CNZ Performance Database',
@@ -81,14 +81,14 @@ if authentication_status:
             options=df["Image"].unique()
             ) 
     df_run_small=df_run.loc[df_run["Album"]==album].iloc[: , 1:]
-    df_run_small
+    
 
     image_comparison(
     img1=im1,
     img2=im2,
     label1="Image 1",
     label2="Image 2",
-    width=1000,
+    width=700,
     starting_position=50,
     show_labels=True,
     make_responsive=True,
