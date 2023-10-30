@@ -78,7 +78,8 @@ if authentication_status:
     with c3:
         im2 = st.selectbox(
             "Select Image 2:",
-            options=df["Image"].unique()
+            options=df["Image"].unique(),
+            index=1
             ) 
     
     df_run_small=df_run.drop(columns=["Album"])
@@ -87,17 +88,31 @@ if authentication_status:
     with c1:
         df_run_small
     with c2:
-        image_comparison(
-            img1=im1,
-            img2=im2,
-            label1="Image 1",
-            label2="Image 2",
-            width=700,
-            starting_position=50,
-            show_labels=True,
-            make_responsive=True,
-            in_memory=True,
-            )
+        
+        if "Front" in album:
+            image_comparison(
+                img1=im1,
+                img2=im2,
+                label1="",
+                label2="",
+                width=150,
+                starting_position=50,
+                show_labels=False,
+                make_responsive=True,
+                in_memory=True,
+                )
+        else:
+            image_comparison(
+                img1=im1,
+                img2=im2,
+                label1="",
+                label2="",
+                width=700,
+                starting_position=50,
+                show_labels=False,
+                make_responsive=True,
+                in_memory=True,
+                )
     st.markdown("---")
     st.header("Compare local images")
     upimg2=None
