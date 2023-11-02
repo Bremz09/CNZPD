@@ -274,8 +274,9 @@ if authentication_status:
         df_count["Female_Slots"]=female_slots
         df_count["Male_Slots"]=male_slots
         
+        df_count=df_count.sort_values("Points",ascending=False).reset_index(drop=True)
+        df_count.insert(0, 'Rank', range(1, 1 + len(df_count)))
         df_count
-        
         st.write(f'Total number of points is {total}')
         st.write(f'There are 88 male slots available, so the male factor is {round(total/88,2)}. There are 47 female slots available, so the female factor is {round(total/47,2)}.')
         nzl_points=df_count.loc[df_count["Country"]=="NZL"]["Points"].tolist()[0]
