@@ -137,15 +137,20 @@ if authentication_status:
     
     def get_para_points_data_from_excel():
         df_Para = pd.read_excel(
-            io='pages/All_Para_Points.xlsx',
+            io='pages/Para_Points_All_TEST.xlsx',
             engine ='openpyxl',
-            sheet_name='All_Para_Points',
+            sheet_name='Para_Points_All_TEST',
             skiprows=0,
-            usecols='A:K',
-            nrows=6000
+            usecols='A:L',
+            nrows=5000
             )
+        df_Para["Points"] = df_Para["Points"].str.replace("*","")
         df_Para = df_Para.replace(',','')
         df_Para['Date'] = pd.to_datetime(df_Para['Date']).dt.date
+        df_Para = df_Para.astype({'Points':'int'})
+        df_Para["UCI_ID"]=df_Para["UCI_ID"].astype(str)
+        df_Para["Unique1"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]
+        df_Para["Unique2"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]+ " "+df_Para["UCI_ID"]
         return df_Para
     df_Para = get_para_points_data_from_excel()
 
@@ -252,7 +257,32 @@ if authentication_status:
             return df
         df_master = df
         df_filt = filter_dataframe(df)
+        
+        ##This section is for filtering out anyone except top three in each athlete class
+        
+        uniques = df_filt["Unique1"].unique()
+        #uniques 
+        for i in range(len(uniques)):
+            df_ath_unq = pd.DataFrame(df_filt.loc[df_filt["Unique1"]==uniques[i]])
+            if len(df_ath_unq["UCI_ID"].unique())>3:
+                #st.write(df_ath_unq["Unique1"].iloc[0])
+                ids = df_ath_unq["UCI_ID"].unique()
+                unique2s = df_ath_unq["Unique2"].unique()
+                points_sum=[]
+                for j in range(len(ids)):
+                    points_sum.append(sum(df_ath_unq.loc[df_ath_unq["UCI_ID"]==ids[j]]["Points"]))
+                df_top_three=pd.DataFrame(points_sum)
+                df_top_three["UCI_ID"]=ids
+                df_top_three["Unique2"]=unique2s
+                df_top_three=df_top_three.sort_values(by=0,ascending=False).reset_index(drop=True)
+                
+                #df_top_three
+                for k in range(3,len(df_top_three)):
+                    df_filt = df_filt.drop(df_filt[df_filt['Unique2'] == df_top_three["Unique2"][k]].index).reset_index(drop=True)
+                    
+        ######################################## filtering done ##################            
         df_filt
+        
         
         countries = df_filt.drop_duplicates(subset=['Country']).reset_index(drop=True)
         df_count=pd.DataFrame(countries["Country"])
@@ -282,7 +312,7 @@ if authentication_status:
         nzl_points=df_count.loc[df_count["Country"]=="NZL"]["Points"].tolist()[0]
         st.write(f'NZL has a total of {nzl_points} points') 
         st.write(f'This gives a total of {round(nzl_points/(total/88),2)} male slots and {round(nzl_points/(total/47),2)} female slots')
-        
+    
     else:
 
 

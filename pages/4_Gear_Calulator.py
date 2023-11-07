@@ -250,9 +250,11 @@ if authentication_status:
             df
         with col_two:
             event = st.selectbox("Event:", options=["Team Sprint","Sprint Qual","Match Sprint","Keirin","Team Pursuit","Madison","Bunch","Individual Pursuit"])
-            position="Null"
+            
             if event == "Team Pursuit" or "Team Sprint":
                 position = st.selectbox("Position:", options=[1,2,3,4],key="position")
+            else:
+                position="Null"
             name = st.text_input("Rider Name:",df["Row"].iloc[0])
             nation = st.text_input("Nation (eg NZL):")
             sex = st.selectbox("Sex:", options=["M","F"],key="Sex")
