@@ -153,6 +153,25 @@ if authentication_status:
         df_Para["Unique2"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]+ " "+df_Para["UCI_ID"]
         return df_Para
     df_Para = get_para_points_data_from_excel()
+    
+    def get_2022_para_points_data_from_excel():
+        df_Para_2022 = pd.read_excel(
+            io='pages/Para_Points_All_2022.xlsx',
+            engine ='openpyxl',
+            sheet_name='Para_Points_All_2022',
+            skiprows=0,
+            usecols='A:L',
+            nrows=5000
+            )
+        df_Para_2022["Points"] = df_Para_2022["Points"].str.replace("*","")
+        df_Para_2022 = df_Para_2022.replace(',','')
+        df_Para_2022['Date'] = pd.to_datetime(df_Para_2022['Date']).dt.date
+        df_Para_2022 = df_Para_2022.astype({'Points':'int'})
+        df_Para_2022["UCI_ID"]=df_Para_2022["UCI_ID"].astype(str)
+        df_Para_2022["Unique1"] = df_Para_2022["Classification"]+" "+df_Para_2022["Track_Road"]+" "+df_Para_2022["Event"] + " "+df_Para_2022["Country"]
+        df_Para_2022["Unique2"] = df_Para_2022["Classification"]+" "+df_Para_2022["Track_Road"]+" "+df_Para_2022["Event"] + " "+df_Para_2022["Country"]+ " "+df_Para_2022["UCI_ID"]
+        return df_Para_2022
+    df_Para_2022 = get_2022_para_points_data_from_excel()
 
     s = os.path.getmtime('pages/Kierin_Points_Women.xlsx')
     dt_m = datetime.date.fromtimestamp(s)+pd.DateOffset(days=1)
@@ -188,6 +207,12 @@ if authentication_status:
         is_numeric_dtype,
         is_object_dtype,
         )
+        
+        
+        frames = [df_Para_2022, df_Para]
+        data_22 = st.checkbox("Include data from 2022?")
+        if data_22:
+            df = pd.concat(frames)
         
         def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
@@ -306,6 +331,7 @@ if authentication_status:
         
         df_count=df_count.sort_values("Points",ascending=False).reset_index(drop=True)
         df_count.insert(0, 'Rank', range(1, 1 + len(df_count)))
+        st.header("Country Allocation")
         df_count
         st.write(f'Total number of points is {total}')
         st.write(f'There are 88 male slots available, so the male factor is {round(total/88,2)}. There are 47 female slots available, so the female factor is {round(total/47,2)}.')
