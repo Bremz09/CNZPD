@@ -307,6 +307,44 @@ if authentication_status:
                     
         ######################################## filtering done ##################            
         df_filt
+        c1,c2,c3=st.columns(3)
+        with c1:
+            st.subheader("Points by Athlete")
+            unq_aths = df_filt["Name"].unique()
+            ath_points=[]
+            for ath in unq_aths:
+                ath_points.append(sum(df_filt.loc[df_filt["Name"]==ath]["Points"]))
+            df_ath_points = pd.DataFrame(unq_aths)
+            df_ath_points.rename(columns={ df_ath_points.columns[0]: "Name" }, inplace = True)
+            df_ath_points["Points"] = ath_points
+            
+            df_ath_points=df_ath_points.sort_values(by="Points",ascending=False)
+            df_ath_points.insert(0, 'Rank', range(1, 1 + len(df_ath_points)))
+            df_ath_points
+        with c2:
+            st.subheader("Points by Nation")
+            unq_nat = df_filt["Country"].unique()
+            nat_points=[]
+            for nat in unq_nat:
+                nat_points.append(sum(df_filt.loc[df_filt["Country"]==nat]["Points"]))
+            df_nat_points = pd.DataFrame(unq_nat)
+            df_nat_points.rename(columns={ df_nat_points.columns[0]: "Country" }, inplace = True)
+            df_nat_points["Points"] = nat_points
+            df_nat_points=df_nat_points.sort_values(by="Points",ascending=False)
+            df_nat_points.insert(0, 'Rank', range(1, 1 + len(df_nat_points)))
+            df_nat_points
+        with c3:
+            st.subheader("Points by Event")
+            unq_event = df_filt["Event"].unique()
+            event_points=[]
+            for event in unq_event:
+                event_points.append(sum(df_filt.loc[df_filt["Event"]==event]["Points"]))
+            df_event_points = pd.DataFrame(unq_event)
+            df_event_points.rename(columns={ df_event_points.columns[0]: "Event" }, inplace = True)
+            df_event_points["Points"] = event_points
+            df_event_points=df_event_points.sort_values(by="Points",ascending=False)
+            df_event_points.insert(0, 'Rank', range(1, 1 + len(df_event_points)))
+            df_event_points
         
         
         countries = df_filt.drop_duplicates(subset=['Country']).reset_index(drop=True)
@@ -331,7 +369,7 @@ if authentication_status:
         
         df_count=df_count.sort_values("Points",ascending=False).reset_index(drop=True)
         df_count.insert(0, 'Rank', range(1, 1 + len(df_count)))
-        st.header("Country Allocation")
+        st.header("Country Allocation (uses data above)")
         df_count
         st.write(f'Total number of points is {total}')
         st.write(f'There are 88 male slots available, so the male factor is {round(total/88,2)}. There are 47 female slots available, so the female factor is {round(total/47,2)}.')
