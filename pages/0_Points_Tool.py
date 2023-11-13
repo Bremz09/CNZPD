@@ -148,6 +148,7 @@ if authentication_status:
         df_Para = df_Para.replace(',','')
         df_Para['Date'] = pd.to_datetime(df_Para['Date']).dt.date
         df_Para = df_Para.astype({'Points':'int'})
+        df_Para["Event"] = df_Para["Event"] +" "+df_Para["Track_Road"]
         df_Para["UCI_ID"]=df_Para["UCI_ID"].astype(str)
         df_Para["Unique1"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]
         df_Para["Unique2"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]+ " "+df_Para["UCI_ID"]
@@ -167,7 +168,9 @@ if authentication_status:
         df_Para_2022 = df_Para_2022.replace(',','')
         df_Para_2022['Date'] = pd.to_datetime(df_Para_2022['Date']).dt.date
         df_Para_2022 = df_Para_2022.astype({'Points':'int'})
+        df_Para_2022["Event"] = df_Para_2022["Event"] +" "+df_Para_2022["Track_Road"]
         df_Para_2022["UCI_ID"]=df_Para_2022["UCI_ID"].astype(str)
+        
         df_Para_2022["Unique1"] = df_Para_2022["Classification"]+" "+df_Para_2022["Track_Road"]+" "+df_Para_2022["Event"] + " "+df_Para_2022["Country"]
         df_Para_2022["Unique2"] = df_Para_2022["Classification"]+" "+df_Para_2022["Track_Road"]+" "+df_Para_2022["Event"] + " "+df_Para_2022["Country"]+ " "+df_Para_2022["UCI_ID"]
         return df_Para_2022
@@ -282,17 +285,24 @@ if authentication_status:
             return df
         df_master = df
         df_filt = filter_dataframe(df)
+        df_filt=df_filt.reset_index(drop=True)
         
         ##This section is for filtering out anyone except top three in each athlete class
+        df_filt_top_three = pd.DataFrame().reindex_like(df_filt).dropna()
         
+        non_top_three=[] 
+        drops=[]
         uniques = df_filt["Unique1"].unique()
         #uniques 
         for i in range(len(uniques)):
+            #Making a small dataframe with all riders in the same country + sport class at each event
             df_ath_unq = pd.DataFrame(df_filt.loc[df_filt["Unique1"]==uniques[i]])
+            #Checking if there are more than three athletes per country in this sport class
             if len(df_ath_unq["UCI_ID"].unique())>3:
-                #st.write(df_ath_unq["Unique1"].iloc[0])
+                
                 ids = df_ath_unq["UCI_ID"].unique()
                 unique2s = df_ath_unq["Unique2"].unique()
+                
                 points_sum=[]
                 for j in range(len(ids)):
                     points_sum.append(sum(df_ath_unq.loc[df_ath_unq["UCI_ID"]==ids[j]]["Points"]))
@@ -301,12 +311,27 @@ if authentication_status:
                 df_top_three["Unique2"]=unique2s
                 df_top_three=df_top_three.sort_values(by=0,ascending=False).reset_index(drop=True)
                 
-                #df_top_three
                 for k in range(3,len(df_top_three)):
-                    df_filt = df_filt.drop(df_filt[df_filt['Unique2'] == df_top_three["Unique2"][k]].index).reset_index(drop=True)
+                    non_top_three.append(df_top_three["Unique2"][k])
                     
+                    
+        #I want to remove all rows from df_filt where unique2 is in non_top_three
+        for l in range(len(df_filt)):
+            if df_filt["Unique2"][l] in non_top_three:
+                drops.append(l)
+        for ind in drops:
+            df_filt=df_filt.drop([ind])
+                
+            
+            
+
         ######################################## filtering done ##################            
+        
+        df_filt=df_filt.reset_index(drop=True)
         df_filt
+        
+#         df_filt_top_three=df_filt_top_three.reset_index(drop=True)
+#         df_filt_top_three
         c1,c2,c3=st.columns(3)
         with c1:
             st.subheader("Points by Athlete")
@@ -366,6 +391,7 @@ if authentication_status:
             male_slots.append(points/(total/88))
         df_count["Female_Slots"]=female_slots
         df_count["Male_Slots"]=male_slots
+        df_count["Ratio"] = df_count["Male_Slots"]/df_count["Female_Slots"]
         
         df_count=df_count.sort_values("Points",ascending=False).reset_index(drop=True)
         df_count.insert(0, 'Rank', range(1, 1 + len(df_count)))
