@@ -82,11 +82,12 @@ if authentication_status:
             index=1
             ) 
     
-    df_run_small=df_run.drop(columns=["Album"])
+    df_run_small=df_run.loc[df_run["Album"]==album].drop(columns=["Album"]).reset_index(drop=True)
     
     c1,c2=st.columns(2)
     with c1:
-        df_run_small
+        if len(df_run_small)>0:
+            df_run_small
     with c2:
         
         if "Front" in album:
