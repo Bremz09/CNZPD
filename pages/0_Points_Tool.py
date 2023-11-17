@@ -150,8 +150,9 @@ if authentication_status:
         df_Para = df_Para.astype({'Points':'int'})
         df_Para["Event"] = df_Para["Event"] +" "+df_Para["Track_Road"]
         df_Para["UCI_ID"]=df_Para["UCI_ID"].astype(str)
-        df_Para["Unique1"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]
-        df_Para["Unique2"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]+ " "+df_Para["UCI_ID"]
+        df_Para["Unique1"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]+ " "+df_Para["Sex"]
+
+        df_Para["Unique2"] = df_Para["Classification"]+" "+df_Para["Track_Road"]+" "+df_Para["Event"] + " "+df_Para["Country"]+ " "+df_Para["Sex"]+ " "+df_Para["UCI_ID"]
         return df_Para
     df_Para = get_para_points_data_from_excel()
     
@@ -332,7 +333,7 @@ if authentication_status:
         
 #         df_filt_top_three=df_filt_top_three.reset_index(drop=True)
 #         df_filt_top_three
-        c1,c2,c3=st.columns(3)
+        c1,c2,c3,c4=st.columns(4)
         with c1:
             st.subheader("Points by Athlete")
             unq_aths = df_filt["Name"].unique()
@@ -370,38 +371,81 @@ if authentication_status:
             df_event_points=df_event_points.sort_values(by="Points",ascending=False)
             df_event_points.insert(0, 'Rank', range(1, 1 + len(df_event_points)))
             df_event_points
+        with c4:
+            st.subheader("Points by Sex")
+            unq_sex = df_filt["Sex"].unique()
+            sex_points=[]
+            for sex in unq_sex:
+                sex_points.append(sum(df_filt.loc[df_filt["Sex"]==sex]["Points"]))
+            df_sex_points = pd.DataFrame(unq_sex)
+            df_sex_points.rename(columns={ df_sex_points.columns[0]: "Sex" }, inplace = True)
+            df_sex_points["Points"] = sex_points
+            df_sex_points=df_sex_points.sort_values(by="Points",ascending=False)
+            df_sex_points.insert(0, 'Rank', range(1, 1 + len(df_sex_points)))
+            df_sex_points
         
+        c1,c2=st.columns(2)
+        with c1:
+            male_countries = df_filt.loc[df_filt["Sex"]=="Men"].drop_duplicates(subset=['Country']).reset_index(drop=True)
+            df_count_male=pd.DataFrame(male_countries["Country"])
+            
+
+            points_male=[]
+
+
+            for idx,countries in enumerate(male_countries["Country"]):
+                points_male.append(df_filt.loc[(df_filt['Country'] == countries) & (df_filt['Sex'] == "Men")]["Points"].sum())
+            df_count_male["Points"]=points_male
+            total_male=sum(points_male)
+
+            male_slots=[]
+
+
+            for idx,points in enumerate(df_count_male["Points"]):            
+                male_slots.append(points/(total_male/88))
+            df_count_male["Male_Slots"]=male_slots
+
+
+            df_count_male=df_count_male.sort_values("Points",ascending=False).reset_index(drop=True)
+            df_count_male.insert(0, 'Rank', range(1, 1 + len(df_count_male)))
+            st.header("Male Allocation by Country")
+            df_count_male
+            st.write(f'Total number of male points is {total_male}')
+            st.write(f'There are 88 male slots available, so the male factor is {round(total_male/88,2)}.')
+            nzl_male_points=df_count_male.loc[df_count_male["Country"]=="NZL"]["Points"].tolist()[0]
+            st.write(f'NZL has a total of {nzl_male_points} male points') 
+            st.write(f'This gives a total of {round(nzl_male_points/(total_male/88),2)} male slots.')
         
-        countries = df_filt.drop_duplicates(subset=['Country']).reset_index(drop=True)
-        df_count=pd.DataFrame(countries["Country"])
-        
-        points=[]
-        
-        
-        for idx,countries in enumerate(countries["Country"]):
-            points.append(df_filt.loc[df_filt['Country'] == countries]["Points"].sum())
-        df_count["Points"]=points
-        total=sum(points)
-        female_slots=[]
-        male_slots=[]
-        
-        
-        for idx,points in enumerate(df_count["Points"]):
-            female_slots.append(points/(total/47))
-            male_slots.append(points/(total/88))
-        df_count["Female_Slots"]=female_slots
-        df_count["Male_Slots"]=male_slots
-        df_count["Ratio"] = df_count["Male_Slots"]/df_count["Female_Slots"]
-        
-        df_count=df_count.sort_values("Points",ascending=False).reset_index(drop=True)
-        df_count.insert(0, 'Rank', range(1, 1 + len(df_count)))
-        st.header("Country Allocation (uses data above)")
-        df_count
-        st.write(f'Total number of points is {total}')
-        st.write(f'There are 88 male slots available, so the male factor is {round(total/88,2)}. There are 47 female slots available, so the female factor is {round(total/47,2)}.')
-        nzl_points=df_count.loc[df_count["Country"]=="NZL"]["Points"].tolist()[0]
-        st.write(f'NZL has a total of {nzl_points} points') 
-        st.write(f'This gives a total of {round(nzl_points/(total/88),2)} male slots and {round(nzl_points/(total/47),2)} female slots')
+        with c2:
+            female_countries = df_filt.loc[df_filt["Sex"]=="Women"].drop_duplicates(subset=['Country']).reset_index(drop=True)
+            df_count_female=pd.DataFrame(female_countries["Country"])
+            
+
+            points_female=[]
+
+
+            for idx,countries in enumerate(female_countries["Country"]):
+                points_female.append(df_filt.loc[(df_filt['Country'] == countries) & (df_filt['Sex'] == "Women")]["Points"].sum())
+            df_count_female["Points"]=points_female
+            total_female=sum(points_female)
+
+            female_slots=[]
+
+
+            for idx,points in enumerate(df_count_female["Points"]):            
+                female_slots.append(points/(total_female/88))
+            df_count_female["female_Slots"]=female_slots
+
+
+            df_count_female=df_count_female.sort_values("Points",ascending=False).reset_index(drop=True)
+            df_count_female.insert(0, 'Rank', range(1, 1 + len(df_count_female)))
+            st.header("Female Allocation by Country")
+            df_count_female
+            st.write(f'Total number of female points is {total_female}')
+            st.write(f'There are 88 female slots available, so the female factor is {round(total_female/88,2)}.')
+            nzl_female_points=df_count_female.loc[df_count_female["Country"]=="NZL"]["Points"].tolist()[0]
+            st.write(f'NZL has a total of {nzl_female_points} female points') 
+            st.write(f'This gives a total of {round(nzl_female_points/(total_female/88),2)} female slots.')
     
     else:
 
