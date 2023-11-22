@@ -433,7 +433,7 @@ if authentication_status:
 
 
             for idx,points in enumerate(df_count_female["Points"]):            
-                female_slots.append(points/(total_female/88))
+                female_slots.append(points/(total_female/47))
             df_count_female["female_Slots"]=female_slots
 
 
@@ -442,10 +442,10 @@ if authentication_status:
             st.header("Female Allocation by Country")
             df_count_female
             st.write(f'Total number of female points is {total_female}')
-            st.write(f'There are 88 female slots available, so the female factor is {round(total_female/88,2)}.')
+            st.write(f'There are 47 female slots available, so the female factor is {round(total_female/47,2)}.')
             nzl_female_points=df_count_female.loc[df_count_female["Country"]=="NZL"]["Points"].tolist()[0]
             st.write(f'NZL has a total of {nzl_female_points} female points') 
-            st.write(f'This gives a total of {round(nzl_female_points/(total_female/88),2)} female slots.')
+            st.write(f'This gives a total of {round(nzl_female_points/(total_female/47),2)} female slots.')
     
     else:
 
