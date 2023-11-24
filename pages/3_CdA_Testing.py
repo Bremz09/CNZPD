@@ -186,8 +186,11 @@ if authentication_status:
         
         figJP = px.scatter(df_filt, y="CdA - JP", x = "DateRep", error_y="CdA - JP std",title="Pitman CdA by DateRep")
         st.plotly_chart(figJP, use_container_width=True)
+        
         figGM = px.line(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "DateRep",title="CdA comparison")
         st.plotly_chart(figGM, use_container_width=True)
+        figPos = px.scatter(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "Position",title="CdA by Position")
+        st.plotly_chart(figPos, use_container_width=True)
        
         c1,c2,c3=st.columns(3)
         with c1:
