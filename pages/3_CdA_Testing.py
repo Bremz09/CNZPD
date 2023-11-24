@@ -158,15 +158,14 @@ if authentication_status:
 
 
         df_master = pd.read_excel(f'pages/CdA Testing/Track CdA Testing Streamlit.xlsx')
-
-
-
         df_master['Date'] = pd.to_datetime(df_master['Date']).dt.date
+        df_master["DateRep"] = df_master["Date"].astype(str)+" - "+df_master["Rep"].astype(str)
+
+        
+        
 
 
-
-
-        c1,c2,c3=st.columns(3)
+        c1,c2=st.columns(2)
         with c1:
             athlete = st.selectbox(
             "Select Athlete:",
@@ -177,77 +176,92 @@ if authentication_status:
         with c2:
             dates = st.multiselect(
             "Select Dates:",
-            options=df["Date"].unique()
+            options=df["Date"].unique(),
+                default = df["Date"].unique()[0]
             ) 
         if len(dates)>0:
             df=df.loc[df["Date"].isin(dates)]
-        df=df.reset_index()
-        df
-        with c3:
+        df_filt=df.reset_index(drop=True)
+        df_filt
+        
+        figJP = px.scatter(df_filt, y="CdA - JP", x = "DateRep", error_y="CdA - JP std",title="Pitman CdA by DateRep")
+        st.plotly_chart(figJP, use_container_width=True)
+        figGM = px.line(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "DateRep",title="CdA comparison")
+        st.plotly_chart(figGM, use_container_width=True)
+       
+        c1,c2,c3=st.columns(3)
+        with c1:
             video = st.selectbox(
-            "Show Video?",
+            "Show Video? (Filter first to avoid loading 1 million videos)",
             options=["No","Yes"]
             )     
 
 
         ##Download buttons
         @st.cache_data
-        def convert_to_csv(df):
-            return df.to_csv(index=False,sep = ",").encode('utf-32')
-        csv = convert_to_csv(df)
+        def convert_to_csv(df_filt):
+            return df_filt.to_csv(index=False,sep = ",").encode('utf-32')
+        csv = convert_to_csv(df_filt)
         download1 = st.download_button(
-            label=f"Download {athlete}'s CdA data as CSV",
+            label=f"Download CdA data as CSV",
             data=csv,
-            file_name=f'{athlete}_Data.csv',
+            file_name=f'CdA_Data.csv',
             mime='text/csv'
         )
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Sheet1', index=False)
+            df_filt.to_excel(writer, sheet_name='Sheet1', index=False)
             writer.save()
             download2 = st.download_button(
-                label=f"Download {athlete}'s CdA data as Excel",
+                label=f"Download CdA data as Excel",
                 data=buffer,
-                file_name=f'{athlete}_CdA_Data.xlsx',
+                file_name=f'CdA_Data.xlsx',
                 mime='application/vnd.ms-excel'
             )
         ##Download buttons complete
         st.markdown("---")
         if video == "Yes":
 
-            for i in range(len(df)):
-                if len(str(df["Video"][i]))>4:
+            for i in range(len(df_filt)):
+                if len(str(df_filt["Video"][i]))>4:
                     c1,c2 = st.columns(2)
                     with c1:
-                        st.write(f'Rider: {df["Name"][i]}')
-                        st.write(f'Date (Y-M-D): {df["Date"][i]}')
-                        st.write(f'Position: {df["Position"][i]}')
-                        st.write(f'Clothing: {df["Clothing"][i]}')
-                        st.write(f'Shoe covers: {df["Shoe cover"][i]}')
-                        st.write(f'Shoes: {df["Shoes"][i]}')
-                        st.write(f'Helmet: {df["Helmet"][i]}')
-                        st.write(f'Bike: {df["Bike"][i]}')
-                        st.write(f'Wheels: {df["Wheels"][i]}')
-                        st.write(f'Cranks: {df["Cranks"][i]}')
-                        st.write(f'Rider weight: {df["Rider weight"][i]}')
-                        st.write(f'Bike weight: {df["System weight (kg)"][i]}')
-                        st.write(f'System weight: {df["Clothing"][i]}')
-                        st.write(f'Tyre pressure: {df["Tyre pressure"][i]}')
-                        st.write(f'Gear: {df["Gear"][i]}')
+                        col1,col2,col3 = st.columns(3)
+                        with col1:
+                            st.write(f'Rider: {df_filt["Name"][i]}')
+                            st.write(f'Date (Y-M-D): {str(df_filt["Date"][i]).split(" ")[0]}')
+                            st.write(f'Rep: {df_filt["Rep"][i]}')
+                            st.write(f'Position: {df_filt["Position"][i]}')
+                        with col2:
+                            st.write(f'Clothing: {df_filt["Clothing"][i]}')
+                            st.write(f'Shoe covers: {df_filt["Shoe cover"][i]}')
+                            st.write(f'Shoes: {df_filt["Shoes"][i]}')
+                            st.write(f'Helmet: {df_filt["Helmet"][i]}')
+                            st.write(f'Bike: {df_filt["Bike"][i]}')
+                            st.write(f'Wheels: {df_filt["Wheels"][i]}')
+                            st.write(f'Cranks: {df_filt["Cranks"][i]}')
+                            st.write(f'System weight: {df_filt["System weight (kg)"][i]}')
+                            st.write(f'Clothing: {df_filt["Clothing"][i]}')
+                            st.write(f'Tyre pressure: {df_filt["Tyre pressure"][i]}')
+                            st.write(f'Gear: {df_filt["Gear"][i]}')
+                        with col3:
+                            st.write(f'Notio CdA: {df_filt["CdA - Notio"][i]}')
+                            st.write(f'Goldmine CdA: {df_filt["CdA"][i]}')
+                            st.write(f'Pitman CdA: {df_filt["CdA - JP"][i]}')
+                            st.write(f'Pitman CdA std: {df_filt["CdA - JP std"][i]}')
+                            st.write(f'Speed: {df_filt["Speed"][i]}')
+                            st.write(f'Power: {df_filt["Power"][i]}')
+                            st.write(f'Distance: {df_filt["Distance (m)"][i]} m')
+                            st.write(f'Temperature: {df_filt["Temp"][i]} C')
+                            st.write(f'Air Pressure: {df_filt["Air pressure"][i]} hP')
+                            st.write(f'Humidity: {df_filt["Humidity"][i]}%')
+                            st.write(f'Air Density: {df_filt["Air density"][i]} kg/m^3')
 
-                        st.write(f'Notio CdA: {df["CdA - Notio"][i]}')
-                        st.write(f'Goldmine CdA: {df["CdA"][i]}')
-                        st.write(f'Speed: {df["Speed"][i]}')
-                        st.write(f'Power: {df["Power"][i]}')
-                        st.write(f'Distance: {df["Distance (m)"][i]}m')
-
-                        st.write(f'Speed: {df["Speed"][i]}')
-                        st.write(f'Speed: {df["Speed"][i]}')
-                        st.write(f'Speed: {df["Speed"][i]}')
+                    
 
 
                     with c2:
-                        video_name = df["Video"][i]
+                        video_name = df_filt["Video"][i]
 
                         st.video(f"{video_name}")
                     st.markdown('---')

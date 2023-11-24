@@ -231,6 +231,7 @@ if authentication_status:
                     yaxis_max = max(df_temp["Avg_Speed"])+1
                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
+                    
                 c1,c2=st.columns(2)
                 with c1:
                     #st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
@@ -283,7 +284,11 @@ if authentication_status:
                     df_laps["Split"]=lap_split
                     df_laps["Total"]=df_laps["Split"].cumsum()
                     df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    df_laps['Diff from avg']=(average*4)-df_laps["Split"]
+                    consistency = sum(abs(df_laps["Diff from avg"][1:]))
+                    
                     df_laps
+                    
                     
                     st.subheader("Kilo Splits")
                     df_kilos=pd.DataFrame(["1k","2k","3k","4k"])
@@ -293,8 +298,13 @@ if authentication_status:
                     df_kilos["Total"]=df_kilos["Split"].cumsum()
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
-                if Videos == "Yes":
-                    with c2:
+                with c2:
+                    st.subheader(f"Consistency score is {round(consistency,2)}")
+                    st.write("Sum of the absolute difference of lap splits from the average post first lap (smaller is better).")
+                    if Videos == "Yes":
+                    
+                    
+                    
                         if pd.isnull(df_temp["Video"].iloc[0]):
                             st.header("No video available")
                         else:
