@@ -183,24 +183,7 @@ if authentication_status:
             df=df.loc[df["Date"].isin(dates)]
         df_filt=df.reset_index(drop=True)
         df_filt
-        
-        figJP = px.scatter(df_filt, y="CdA - JP", x = "DateRep", error_y="CdA - JP std",title="Pitman CdA by DateRep")
-        st.plotly_chart(figJP, use_container_width=True)
-        
-        figGM = px.line(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "DateRep",title="CdA comparison")
-        st.plotly_chart(figGM, use_container_width=True)
-        figPos = px.scatter(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "Position",title="CdA by Position")
-        st.plotly_chart(figPos, use_container_width=True)
-       
-        c1,c2,c3=st.columns(3)
-        with c1:
-            video = st.selectbox(
-            "Show Video? (Filter first to avoid loading 1 million videos)",
-            options=["No","Yes"]
-            )     
-
-
-        ##Download buttons
+                ##Download buttons
         @st.cache_data
         def convert_to_csv(df_filt):
             return df_filt.to_csv(index=False,sep = ",").encode('utf-32')
@@ -222,6 +205,24 @@ if authentication_status:
                 mime='application/vnd.ms-excel'
             )
         ##Download buttons complete
+        
+        figJP = px.scatter(df_filt, y="CdA - JP", x = "DateRep", error_y="CdA - JP std",title="Pitman CdA by DateRep")
+        st.plotly_chart(figJP, use_container_width=True)
+        
+        figGM = px.line(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "DateRep",title="CdA comparison")
+        st.plotly_chart(figGM, use_container_width=True)
+        figPos = px.scatter(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "Position",title="CdA by Position")
+        st.plotly_chart(figPos, use_container_width=True)
+       
+        c1,c2,c3=st.columns(3)
+        with c1:
+            video = st.selectbox(
+            "Show Video? (Filter first to avoid loading 1 million videos)",
+            options=["No","Yes"]
+            )     
+
+
+
         st.markdown("---")
         if video == "Yes":
 
