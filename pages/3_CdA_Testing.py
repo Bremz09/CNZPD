@@ -53,7 +53,7 @@ if authentication_status == None:
 if authentication_status:
     show = st.selectbox(
             "Select Tool:",
-            options=["Stored Image Comparison","Local Image Comparison","Track Testing Video Viewer"]
+            options=["Track Testing Video Viewer","Stored Image Comparison","Local Image Comparison"]
             ) 
     
     if show == "Stored Image Comparison":
