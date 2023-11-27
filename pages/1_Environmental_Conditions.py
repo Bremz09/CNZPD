@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 import xlwings as xw
 import datetime
 import io
+import time
 
 st.set_page_config(page_title='CNZ Performance Database',
                   page_icon=":bike:",
@@ -52,14 +53,21 @@ if authentication_status:
     ##This bit is the historical visualiser
 
     st.header("All Data")
-    df_master = pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx')
+    x1=time.time()
+    df_master=pd.DataFrame()
+    @st.cache_data
+    def load_master(df_master):
+        return pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx')
+    x2=time.time()
     df_master["Date"] = df_master["DateTime"].dt.date
     df_master["Time"] = df_master["DateTime"].dt.time
     
-    
+    loadtime = x2-x1
+    st.write(loadtime)
     
 
     ##Gross start/end date getting stuff
+    x3=time.time()
     df_master=df_master[["DateTime","Date","Time","Temperature(C)","Relative_Humidity(%)","Pressure(hPa)","Dew_Point(C)"]]
     
     
@@ -118,7 +126,9 @@ if authentication_status:
         mask_time = (df['Time'] > start_time) & (df['Time'] <= finish_time)
         df = df.loc[mask_time]
         df
-
+        x4=time.time()
+        loadtime = x4-x3
+        st.write(loadtime)
         st.header("Data Summary")
         m_temp=round(df["Temperature(C)"].mean(),4)
         sd_temp=round(df["Temperature(C)"].std(),4)
