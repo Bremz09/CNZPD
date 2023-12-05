@@ -161,23 +161,19 @@ if authentication_status:
         df_master['Date'] = pd.to_datetime(df_master['Date']).dt.date
         df_master["DateRep"] = df_master["Date"].astype(str)+" - "+df_master["Rep"].astype(str)
 
-        
-        
-
-
         c1,c2=st.columns(2)
         with c1:
             athlete = st.selectbox(
             "Select Athlete:",
-            options=df_master["Name"].unique()
+            options=df_master["Name"].sort_values().unique()
             ) 
 
         df=df_master.loc[df_master["Name"]==athlete]
         with c2:
             dates = st.multiselect(
             "Select Dates:",
-            options=df["Date"].unique(),
-                default = df["Date"].unique()[0]
+            options=df["Date"].sort_values(ascending=False).unique(),
+                default = df["Date"].sort_values(ascending=False).unique()[0]
             ) 
         if len(dates)>0:
             df=df.loc[df["Date"].isin(dates)]
