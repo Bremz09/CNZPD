@@ -68,7 +68,7 @@ if authentication_status:
         with c1:
             album = st.selectbox(
                 "Select Album:",
-                options=df_images["Album"].sort_values().unique()
+                options=df_images["Album"].sort_values(ascending=False).unique()
                 ) 
         df=df_images.loc[df_images["Album"]==album]
         with c2:
