@@ -438,8 +438,8 @@ if authentication_status:
     if Calc == "Male Individual Pursuit":
        
 
-        progress_text = "Operation in progress. Please wait."
-        my_bar = st.progress(0, text=progress_text)
+#         progress_text = "Operation in progress. Please wait."
+#         my_bar = st.progress(0, text=progress_text)
         ###Modelling bit - most comes from the paper The effects of forward rotation of posture on computer-simulated 4-km track cycling: Implications of Union Cycliste Internationale rule 1.3.013 by Caddy et al
         bike_eff = bike_stiffness*chain_efficiency*bearing_efficiency/(1000000)
         curve_rad = (track_circumference-(4*pl_to_trans))/(2*math.pi)# radius of curvature in the bends - assumes semicircles
@@ -591,7 +591,7 @@ if authentication_status:
             df["Wh_Speed_av"][i] =(df["Wh_Speed_in"][i]+df["Wh_Speed_f"][i])/2
             df["delta_t(s)"][i]= df["delta_S_cm"][i]/df["Speed_av"][i]
             df["run_time"][i] = sum(df["delta_t(s)"][0:i+1])
-            my_bar.progress(round(100*i/len(df)), text=progress_text)
+#             my_bar.progress(round(100*i/len(df)), text=progress_text)
 
         st.subheader("Using Editable Power Profile as input to our model")
         df
