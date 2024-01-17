@@ -214,7 +214,7 @@ if authentication_status:
                    
                     
                 with col_2:
-                    average = df_small.Split.iloc[4:].mean()
+                    average = df_small.Split.iloc[4:len(df_small)-1].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
                     fig.update_layout(
@@ -238,6 +238,7 @@ if authentication_status:
                     #st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
                     #st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
                     #st.write("We then sum all values to get the Wind_Score shown below:")
+                    df_small
                     unq_riders = df_small["Front"].unique()
                     df_summ=pd.DataFrame(unq_riders)
                     df_summ.columns=["Rider"]
@@ -285,7 +286,7 @@ if authentication_status:
                     df_laps["Total"]=df_laps["Split"].cumsum()
                     df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_laps['Diff from avg']=(average*4)-df_laps["Split"]
-                    consistency = sum(abs(df_laps["Diff from avg"][1:]))
+                    consistency = sum(abs(df_laps["Diff from avg"][1:len(df_laps)-1]))
                     
                     df_laps
                     
@@ -300,7 +301,7 @@ if authentication_status:
                     df_kilos
                 with c2:
                     st.subheader(f"Consistency score is {round(consistency,2)}")
-                    st.write("Sum of the absolute difference of lap splits from the average post first lap (smaller is better).")
+                    st.write("Sum of the absolute difference of lap splits from the average post first lap, pre last quarter (smaller is better).")
                     if Videos == "Yes":
                     
                     
@@ -728,6 +729,7 @@ if authentication_status:
                     #st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
                     #st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
                     #st.write("We then sum all values to get the Wind_Score shown below:")
+                    
                     unq_riders = df_small["Front"].unique()
                     df_summ=pd.DataFrame(unq_riders)
                     df_summ.columns=["Rider"]
