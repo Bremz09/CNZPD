@@ -135,6 +135,7 @@ if authentication_status:
         return df_WTT
     df_WTT = get_WTT_points_data_from_excel()
     
+    ###This script is in "Daily Scrape"
     def get_para_points_data_from_excel():
         df_Para = pd.read_excel(
             io='pages/Para_Points_All_TEST.xlsx',
