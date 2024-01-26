@@ -204,12 +204,31 @@ if authentication_status:
         
         figJP = px.scatter(df_filt, y="CdA - JP", x = "DateRep", error_y="CdA - JP std",title="Pitman CdA by DateRep")
         st.plotly_chart(figJP, use_container_width=True)
-        
+
         figGM = px.line(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "DateRep",title="CdA comparison")
         st.plotly_chart(figGM, use_container_width=True)
-        figPos = px.scatter(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "Position",title="CdA by Position")
-        st.plotly_chart(figPos, use_container_width=True)
-       
+        c1,c2,c3=st.columns(3)
+        with c1:
+            comp_by = st.selectbox(
+            "Compare by:",
+            options=["Position", "Skinsuit", "Helmet", "Shoe Cover", "Shoe"]
+            ) 
+
+
+
+        df_test=df_filt.groupby([f'{comp_by}']).mean().reset_index()
+        df_test['Average_CdA'] = df_test[["CdA","CdA - JP","CdA - Notio"]].mean(axis=1)
+
+
+        if len(df_test)>1:
+            df_test["Delta"] = df_test['Average_CdA']-df_test["Average_CdA"][0]
+            figPos = px.bar(df_test, y=df_test["Delta"], x = df_test[f"{comp_by}"],title=f"Average CdA shift from baseline by {comp_by}")
+            st.plotly_chart(figPos, use_container_width=True)   
+        else:
+            st.header("Nothing to compare - try something else")
+
+
+
         c1,c2,c3=st.columns(3)
         with c1:
             video = st.selectbox(
