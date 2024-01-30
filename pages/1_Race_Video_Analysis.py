@@ -841,7 +841,7 @@ if authentication_status:
             
             df_full = pd.read_csv(uploaded_file)
             df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
-            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags','Distance','Effort Type'],
+            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
           axis='columns', inplace=True)
             df_full
             c1,c2,c3=st.columns(3)
