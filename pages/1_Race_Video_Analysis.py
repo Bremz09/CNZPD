@@ -214,16 +214,21 @@ if authentication_status:
                     hl_splits=[]
                     hl_rider =[] 
                     hl_distance=[]
-                    
+                    hl_del_speed=[]
                     for i in range(2,len(df_main["Split"]),2):
                         hl_splits.append(df_main["Split"][i]+df_main["Split"][i-1])
                         hl_rider.append(df_main["Front"][i])
                         hl_distance.append(df_main["Distance"][i])
+                        if df_main["Del_Speed"][i]!=df_main["Avg_Speed"][i]:
+                            hl_del_speed.append(df_main["Del_Speed"][i])
+                        else:
+                            hl_del_speed.append(125*3.6/(df_main["Split"][i]+df_main["Split"][i-1]))
                     df_gm=pd.DataFrame()
                     df_gm["Split"] = hl_splits
                     df_gm["Front"]=hl_rider
                     df_gm["Distance"]=hl_distance
                     df_gm["Avg_Speed"]=125*3.6/df_gm["Split"]
+                    df_gm["Del_Speed"]=hl_del_speed
                     df_gm
                    
                     
@@ -248,8 +253,25 @@ if authentication_status:
                     yaxis_min = yaxis_min #min(df_temp["Avg_Speed"][1:])-1
                     yaxis_max = yaxis_max #max(df_temp["Avg_Speed"])+1
                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
+                    st.header("Quarter lap split speed trace")
                     st.plotly_chart(fig, use_container_width=True)
+                    
+                    #Goldmine style Speed Trace
+                    st.header("Goldmine style speed trace")
+                    
                     fig_gm = px.bar(df_gm, x='Distance', y='Avg_Speed',color=df_gm.Front,hover_data=[df_gm.Split, df_gm.Avg_Speed])
+                    
+                    fig_gm.add_trace(go.Scatter(x=df_gm['Distance'][1:], y=df_gm['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
+                    fig_gm.update_layout(
+                    title={
+                        'text': df_temp.Title.iloc[0],
+                        'y':0.9,
+                        'x':0.5,
+                        'xanchor': 'center',
+                        'yanchor': 'top',
+                        'font':dict(size=25)})
+                    fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig_gm, use_container_width=True)
                     
                     
