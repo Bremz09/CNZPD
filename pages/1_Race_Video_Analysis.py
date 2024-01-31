@@ -214,7 +214,12 @@ if authentication_status:
                    
                     
                 with col_2:
-                    average = df_small.Split.iloc[4:len(df_small)-1].mean()
+                    c1,c2=st.columns(2)
+                    with c1:
+                        yaxis_min = st.number_input("Y-axis Minimum:", min_value=0.00, max_value=None,value=min(df_temp["Avg_Speed"][1:])-1)
+                    with c2:
+                        yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1)
+                    average = df_small.Split.iloc[4:].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
                     fig.update_layout(
@@ -226,11 +231,27 @@ if authentication_status:
                         'yanchor': 'top',
                         'font':dict(size=25)})
                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
-                    
-                    yaxis_min = min(df_temp["Avg_Speed"][1:])-1
-                    yaxis_max = max(df_temp["Avg_Speed"])+1
+                    yaxis_min = yaxis_min #min(df_temp["Avg_Speed"][1:])-1
+                    yaxis_max = yaxis_max #max(df_temp["Avg_Speed"])+1
                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
+#                     average = df_small.Split.iloc[4:len(df_small)-1].mean()
+#                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
+#                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
+#                     fig.update_layout(
+#                     title={
+#                         'text': df_temp.Title.iloc[0],
+#                         'y':0.9,
+#                         'x':0.5,
+#                         'xanchor': 'center',
+#                         'yanchor': 'top',
+#                         'font':dict(size=25)})
+#                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    
+#                     yaxis_min = min(df_temp["Avg_Speed"][1:])-1
+#                     yaxis_max = max(df_temp["Avg_Speed"])+1
+#                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
+#                     st.plotly_chart(fig, use_container_width=True)
                     
                 c1,c2=st.columns(2)
                 with c1:
