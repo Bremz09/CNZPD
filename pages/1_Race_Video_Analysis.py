@@ -229,6 +229,13 @@ if authentication_status:
                     df_gm["Distance"]=hl_distance
                     df_gm["Avg_Speed"]=125*3.6/df_gm["Split"]
                     df_gm["Del_Speed"]=hl_del_speed
+                    lap_splits=[]
+                    for i in range(len(df_gm["Split"])):
+                        if i % 2==0:
+                            lap_splits.append("")
+                        else:
+                            lap_splits.append(round(df_gm["Split"][i]+df_gm["Split"][i-1],2))
+                    df_gm["Lap_Split"]=lap_splits
                     df_gm
                    
                     
@@ -259,7 +266,7 @@ if authentication_status:
                     #Goldmine style Speed Trace
                     st.header("Goldmine style speed trace")
                     
-                    fig_gm = px.bar(df_gm, x='Distance', y='Avg_Speed',color=df_gm.Front,hover_data=[df_gm.Split, df_gm.Avg_Speed])
+                    fig_gm = px.bar(df_gm, x='Distance', y='Avg_Speed',text="Lap_Split",color=df_gm.Front,hover_data=[df_gm.Split, df_gm.Avg_Speed])
                     
                     fig_gm.add_trace(go.Scatter(x=df_gm['Distance'][1:], y=df_gm['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
                     fig_gm.update_layout(
@@ -272,6 +279,7 @@ if authentication_status:
                         'font':dict(size=25)})
                     fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
                     fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
+                    fig_gm.update_traces(textfont_size=24, cliponaxis=False)
                     st.plotly_chart(fig_gm, use_container_width=True)
                     
                     
