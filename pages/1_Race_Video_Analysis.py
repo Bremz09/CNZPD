@@ -211,6 +211,20 @@ if authentication_status:
 
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
                     df_main
+                    hl_splits=[]
+                    hl_rider =[] 
+                    hl_distance=[]
+                    
+                    for i in range(2,len(df_main["Split"]),2):
+                        hl_splits.append(df_main["Split"][i]+df_main["Split"][i-1])
+                        hl_rider.append(df_main["Front"][i])
+                        hl_distance.append(df_main["Distance"][i])
+                    df_gm=pd.DataFrame()
+                    df_gm["Split"] = hl_splits
+                    df_gm["Front"]=hl_rider
+                    df_gm["Distance"]=hl_distance
+                    df_gm["Avg_Speed"]=125*3.6/df_gm["Split"]
+                    df_gm
                    
                     
                 with col_2:
@@ -235,6 +249,10 @@ if authentication_status:
                     yaxis_max = yaxis_max #max(df_temp["Avg_Speed"])+1
                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
+                    fig_gm = px.bar(df_gm, x='Distance', y='Avg_Speed',color=df_gm.Front,hover_data=[df_gm.Split, df_gm.Avg_Speed])
+                    st.plotly_chart(fig_gm, use_container_width=True)
+                    
+                    
 #                     average = df_small.Split.iloc[4:len(df_small)-1].mean()
 #                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
 #                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
@@ -307,7 +325,9 @@ if authentication_status:
                     df_laps["Total"]=df_laps["Split"].cumsum()
                     df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_laps['Diff from avg']=(average*4)-df_laps["Split"]
-                    consistency = sum(abs(df_laps["Diff from avg"][1:len(df_laps)-1]))
+                    
+                    laps_done = (df_laps["Split"].gt(12)).sum()
+                    consistency = sum(abs(df_laps["Diff from avg"][1:laps_done]))
                     
                     df_laps
                     
@@ -801,6 +821,13 @@ if authentication_status:
                     df_laps["Split"]=lap_split
                     df_laps["Total"]=df_laps["Split"].cumsum()
                     df_laps['Total'] = pd.to_datetime(df_laps['Total'], unit='s').dt.strftime('%M:%S.%f')
+                    
+                    laps_done = (df_laps["Split"].gt(12)).sum()
+                    
+                    df_laps['Diff from avg']=(average*4)-df_laps["Split"]
+                    consistency = sum(abs(df_laps["Diff from avg"][1:laps_done]))
+                    
+                    
                     df_laps
                     
                     st.subheader("Kilo Splits")
@@ -811,14 +838,18 @@ if authentication_status:
                     df_kilos["Total"]=df_kilos["Split"].cumsum()
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
-                if Videos == "Yes":
-                    with c2:
+                    
+                with c2:
+                    st.subheader(f"Consistency score is {round(consistency,2)}")
+                    st.write("Sum of the absolute difference of lap splits from the average post first lap, pre last quarter (smaller is better).")
+                    if Videos == "Yes":
+
                         if pd.isnull(df_temp["Video"].iloc[0]):
                             st.header("No video available")
                         else:
                             video_name = df_temp["Video"].iloc[0]
                             st.header(df_temp["Title"].iloc[0])
-           
+
                             st.video(f"{video_name}")
                 st.markdown("---")
 
