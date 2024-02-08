@@ -57,7 +57,7 @@ if authentication_status:
    
     racetype = st.selectbox(
         "Select Race Type:",
-        options=["Women's Team Sprint","Women's TP", "Men's TP", "Mens' Keirin","WTS Starts","Men's IP","Women's IP"]
+        options=["Women's TP", "Men's TP", "Women's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP"]
         ) 
     
     ################################################ Women's Team Pursuit ##########################################################
@@ -66,7 +66,7 @@ if authentication_status:
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Women.xlsx')
         df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
-        df_small
+#         df_small
         c1,c2=st.columns(2)
         with c1:
             selections = st.multiselect(
@@ -81,6 +81,7 @@ if authentication_status:
         if len(selections) !=0:
             df_combine = pd.DataFrame()
             for i in range(len(selections)):
+                st.markdown("---")
                 col_1,col_2=st.columns(2)
                 with col_1:
                     df_temp = df_master.loc[df_master['Title'] == selections[i]]
@@ -210,7 +211,7 @@ if authentication_status:
 
 
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
-                    df_main
+    #                     df_main
                     hl_splits=[]
                     hl_rider =[] 
                     hl_distance=[]
@@ -236,14 +237,14 @@ if authentication_status:
                         else:
                             lap_splits.append(round(df_gm["Split"][i]+df_gm["Split"][i-1],2))
                     df_gm["Lap_Split"]=lap_splits
-                    df_gm
-                   
-                    
+    #                     df_gm
+
+
                 with col_2:
-                    c1,c2=st.columns(2)
-                    with c1:
+                    c1sub,c2sub=st.columns(2)
+                    with c1sub:
                         yaxis_min = st.number_input("Y-axis Minimum:", min_value=0.00, max_value=None,value=min(df_temp["Avg_Speed"][1:])-1)
-                    with c2:
+                    with c2sub:
                         yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1)
                     average = df_small.Split.iloc[4:].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
@@ -301,12 +302,10 @@ if authentication_status:
 #                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
 #                     st.plotly_chart(fig, use_container_width=True)
                     
-                c1,c2=st.columns(2)
-                with c1:
-                    #st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
-                    #st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
-                    #st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
-                    #st.write("We then sum all values to get the Wind_Score shown below:")
+#                 c1,c2=st.columns(2)
+                with col_1:
+
+                    st.header(df_temp["Title"].iloc[0])
                     df_small
                     unq_riders = df_small["Front"].unique()
                     df_summ=pd.DataFrame(unq_riders)
@@ -337,6 +336,10 @@ if authentication_status:
                     
                     speed_var=[df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].max()-df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].min(),df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].max()-df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].min(),df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].max()-df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].min(),df_small[4:].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].min()]
                     df_summ["Speed_Var"]=speed_var
+                    st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
+                    st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
+                    st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
+                    st.write("We then sum all values to get the Wind_Score shown below:")
                     df_summ
                     
                                  
@@ -370,7 +373,7 @@ if authentication_status:
                     df_kilos["Total"]=df_kilos["Split"].cumsum()
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
-                with c2:
+                with col_2:
                     st.subheader(f"Consistency score is {round(consistency,2)}")
                     st.write("Sum of the absolute difference of lap splits from the average post first lap, pre last quarter (smaller is better).")
                     if Videos == "Yes":
@@ -393,7 +396,7 @@ if authentication_status:
                 show_names = ["No","Yes"]
                 Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
                 df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
-                
+
             if Names == "Yes":
                 fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",text="Initial",markers="Front")
                 fig_tt.update_traces(textposition='top center')
@@ -630,7 +633,7 @@ if authentication_status:
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Men.xlsx')
         df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
-        df_small
+#         df_small
         c1,c2=st.columns(2)
         with c1:
             selections = st.multiselect(
@@ -647,7 +650,9 @@ if authentication_status:
             for i in range(len(selections)):
                 col_1,col_2=st.columns(2)
                 with col_1:
+                    
                     df_temp = df_master.loc[df_master['Title'] == selections[i]]
+                    st.header(df_temp["Title"].iloc[0])
                     df_combine = pd.concat([df_combine, df_temp], axis=0)
                     df_small = df_temp.drop(columns=["Save_Date","Video"])
                     df_small=df_small.reset_index(drop="True")
@@ -772,16 +777,43 @@ if authentication_status:
                     df_small["Rider3WS"]=r3WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
                     df_small["Rider4WS"]=r4WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
 
-
+                    df_small
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
-                    df_main
+                    
+                    
+                    hl_splits=[]
+                    hl_rider =[] 
+                    hl_distance=[]
+                    hl_del_speed=[]
+                    for i in range(2,len(df_main["Split"]),2):
+                        hl_splits.append(df_main["Split"][i]+df_main["Split"][i-1])
+                        hl_rider.append(df_main["Front"][i])
+                        hl_distance.append(df_main["Distance"][i])
+                        if df_main["Del_Speed"][i]!=df_main["Avg_Speed"][i]:
+                            hl_del_speed.append(df_main["Del_Speed"][i])
+                        else:
+                            hl_del_speed.append(125*3.6/(df_main["Split"][i]+df_main["Split"][i-1]))
+                    df_gm=pd.DataFrame()
+                    df_gm["Split"] = hl_splits
+                    df_gm["Front"]=hl_rider
+                    df_gm["Distance"]=hl_distance
+                    df_gm["Avg_Speed"]=125*3.6/df_gm["Split"]
+                    df_gm["Del_Speed"]=hl_del_speed
+                    lap_splits=[]
+                    for i in range(len(df_gm["Split"])):
+                        if i % 2==0:
+                            lap_splits.append("")
+                        else:
+                            lap_splits.append(round(df_gm["Split"][i]+df_gm["Split"][i-1],2))
+                    df_gm["Lap_Split"]=lap_splits
+    #                     df_gm
                    
                     
                 with col_2:
-                    c1,c2=st.columns(2)
-                    with c1:
+                    c1sub,c2sub=st.columns(2)
+                    with c1sub:
                         yaxis_min = st.number_input("Y-axis Minimum:", min_value=0.00, max_value=None,value=min(df_temp["Avg_Speed"][1:])-1)
-                    with c2:
+                    with c2sub:
                         yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1)
                     average = df_small.Split.iloc[4:].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
@@ -799,8 +831,27 @@ if authentication_status:
                     yaxis_max = yaxis_max #max(df_temp["Avg_Speed"])+1
                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     st.plotly_chart(fig, use_container_width=True)
+                    
+                    #Goldmine style Speed Trace
+                    st.header("Goldmine style speed trace")
+                    
+                    fig_gm = px.bar(df_gm, x='Distance', y='Avg_Speed',text="Lap_Split",color=df_gm.Front,hover_data=[df_gm.Split, df_gm.Avg_Speed])
+                    
+                    fig_gm.add_trace(go.Scatter(x=df_gm['Distance'][1:], y=df_gm['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
+                    fig_gm.update_layout(
+                    title={
+                        'text': df_temp.Title.iloc[0],
+                        'y':0.9,
+                        'x':0.5,
+                        'xanchor': 'center',
+                        'yanchor': 'top',
+                        'font':dict(size=25)})
+                    fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
+                    fig_gm.update_traces(textfont_size=24, cliponaxis=False)
+                    st.plotly_chart(fig_gm, use_container_width=True)
                 c1,c2=st.columns(2)
-                with c1:
+                with col_1:
                     #st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
                     #st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
                     #st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
@@ -869,7 +920,7 @@ if authentication_status:
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
                     
-                with c2:
+                with col_2:
                     st.subheader(f"Consistency score is {round(consistency,2)}")
                     st.write("Sum of the absolute difference of lap splits from the average post first lap, pre last quarter (smaller is better).")
                     if Videos == "Yes":
