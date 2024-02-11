@@ -211,7 +211,7 @@ if authentication_status:
         with c1:
             comp_by = st.selectbox(
             "Compare by:",
-            options=["Position", "Skinsuit", "Helmet", "Shoe Cover", "Shoe"]
+            options=["Position", "Clothing", "Helmet", "Shoe cover", "Shoes"]
             ) 
 
 
