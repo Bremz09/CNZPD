@@ -138,12 +138,12 @@ if authentication_status:
     ###This script is in "Daily Scrape"
     def get_para_points_data_from_excel():
         df_Para = pd.read_excel(
-            io='pages/Para_Points_All_MASTER.xlsx',
+            io='pages/Para_Points_All_PREDICTION.xlsx',
             engine ='openpyxl',
-            sheet_name='Para_Points_All_MASTER',
+            sheet_name='Para_Points_All_PREDICTION',
             skiprows=0,
             usecols='A:L',
-            nrows=5000
+            nrows=6000
             )
         df_Para["Points"] = df_Para["Points"].str.replace("*","")
         df_Para = df_Para.replace(',','')
@@ -246,7 +246,7 @@ if authentication_status:
                 for column in to_filter_columns:
                     left, right = st.columns((1, 20))
                     # Treat columns with < 10 unique values as categorical
-                    if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
+                    if is_categorical_dtype(df[column]) or df[column].nunique() < 11:
                         user_cat_input = right.multiselect(
                             f"Values for {column}",
                             df[column].unique(),
