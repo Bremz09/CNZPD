@@ -160,7 +160,7 @@ if authentication_status:
         df_master = pd.read_excel(f'pages/CdA Testing/Track CdA Testing Streamlit.xlsx')
         df_master['Date'] = pd.to_datetime(df_master['Date']).dt.date
         df_master["DateRep"] = df_master["Date"].astype(str)+" - "+df_master["Rep"].astype(str)
-
+        df_master=df_master.sort_values(['Date','Name', 'Rep'], ascending=[True, True, True])
         c1,c2=st.columns(2)
         with c1:
             athlete = st.selectbox(
@@ -211,24 +211,83 @@ if authentication_status:
         with c1:
             comp_by = st.selectbox(
             "Compare by:",
-            options=["Position", "Clothing", "Helmet", "Shoe cover", "Shoes"]
+            options=["Position", "Clothing", "Helmet", "Shoe cover"]
             ) 
 
 
 
         df_test=df_filt.groupby([f'{comp_by}']).mean().reset_index()
         df_test['Average_CdA'] = df_test[["CdA","CdA - JP","CdA - Notio"]].mean(axis=1)
-
+        
 
         if len(df_test)>1:
             df_test["Delta"] = df_test['Average_CdA']-df_test["Average_CdA"][0]
-            figPos = px.bar(df_test, y=df_test["Delta"], x = df_test[f"{comp_by}"],title=f"Average CdA shift from baseline by {comp_by}")
+            figPos = px.bar(df_test, y=df_test["Delta"], x = df_test[f"{comp_by}"],title=f"Average CdA shifts by {comp_by}")
             st.plotly_chart(figPos, use_container_width=True)   
         else:
             st.header("Nothing to compare - try something else")
+        st.markdown("---")
+        st.markdown("<h1 style='text-align: center; color: white;'>Session Breakdowns</h1>", unsafe_allow_html=True)
+        dates=sorted(dates)
+        for ind,date in enumerate(dates):
+            
+            df_date = df_filt.loc[df_filt["Date"]==date].reset_index(drop=True)
+            df_date["filt"]=""         
+            st.subheader(f'Session {ind+1} on {date}')
+            for i in range(len(df_date)):
+                Position = str(df_date["Position"][i])
+                Clothing = str(df_date["Clothing"][i])
+                Helmet = str(df_date["Helmet"][i])
+                Shoe_cover = str(df_date["Shoe cover"][i])
+                if Helmet=="nan":
+                    Helmet="not specified"
+                if Position=="nan":
+                    Position="not specified"
+                if Shoe_cover=="nan":
+                    Shoe_cover="not specified"
+                if Clothing=="nan":
+                    Clothing="not specified"
+                df_date["filt"][i]=f'{Position}, {Clothing}, {Helmet}, {Shoe_cover}'
+                
+        
+            df_date = df_date.groupby('filt', sort=False).agg({"Position":"first","Clothing":"first","Helmet":"first","Shoe cover":"first","CdA - JP": "mean","CdA - Notio": "mean","CdA": "mean"}).reset_index()
+            df_date['CdA Average'] = df_date[['CdA - JP', 'CdA - Notio',"CdA"]].mean(axis=1)
+#             df_date.insert(1, "Configuration", "Baseline", True)
+            df_date=df_date.drop(['filt'], axis=1)
+            c1,c2 = st.columns(2)
+            with c1:
+                df_date
+ 
+                configuration=["Baseline"]
+                for i in range(len(df_date)):
 
-
-
+                    Position = str(df_date["Position"][i])
+                    Clothing = str(df_date["Clothing"][i])
+                    Helmet = str(df_date["Helmet"][i])
+                    Shoe_cover = str(df_date["Shoe cover"][i])
+                    if Helmet=="nan":
+                        Helmet="not specified"
+                    if Position=="nan":
+                        Position="not specified"
+                    if Shoe_cover=="nan":
+                        Shoe_cover="not specified"
+                    if Clothing=="nan":
+                        Clothing="not specified"
+                    if i == 0:
+                        st.write(f'Baseline runs used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average CdA was {round(df_date["CdA Average"][i],4)}')
+                        baseline = df_date["CdA Average"][0]
+                    else:
+                        st.write(f'Configuration {i} used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average CdA was {round(df_date["CdA Average"][i],4)}, a shift from baseline of {round(df_date["CdA Average"][i]-baseline,4)}')
+                        configuration.append(f'Config {i}')
+            with c2:           
+                figPos = px.bar(df_date, y=df_date["CdA Average"], x = configuration,title=f"Average CdA by config")
+                figPos.update_yaxes(range = [min(df_date["CdA Average"])-0.001,max(df_date["CdA Average"])])
+                figPos.update_layout(xaxis_title="Configuration")
+                st.plotly_chart(figPos, use_container_width=True)
+            st.markdown("---")
+            
+            
+            
         c1,c2,c3=st.columns(3)
         with c1:
             video = st.selectbox(
