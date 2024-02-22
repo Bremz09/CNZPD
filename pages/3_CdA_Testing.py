@@ -288,17 +288,29 @@ if authentication_status:
                         st.write(f'Configuration {i} used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average JP CdA was {round(df_date_mean["CdA - JP"][i],4)}, a shift from baseline of {round(df_date_mean["CdA - JP"][i]-baseline,4)}')
                         configuration.append(f'Config {i}')
                  
-            with c2:           
-                figPos = px.bar(df_date_mean, y=df_date_mean["CdA - JP"], x = configuration,title=f"Average JP CdA by config - Error bars show complete range of config values").update_traces(
-                    error_y={
-            #"type":'data',
-            "symmetric":False,
-            "array":df_date_mean["CdA - JP Max"]-df_date_mean["CdA - JP"],
-            "arrayminus":df_date_mean["CdA - JP"]-df_date_mean["CdA - JP Min"]}
-        )
-                figPos.update_yaxes(range = [min(df_date_mean["CdA - JP Min"])-0.001,max(df_date_mean["CdA - JP Max"])])
-                figPos.update_layout(xaxis_title="Configuration")
-                st.plotly_chart(figPos, use_container_width=True)
+            with c2:  
+                if len(df_date_mean["CdA - JP"].value_counts()) > 0:
+                    figPos = px.bar(df_date_mean, y=df_date_mean["CdA - JP"], x = configuration,title=f"Average JP CdA by config - Error bars show complete range of config values").update_traces(
+                        error_y={
+                #"type":'data',
+                "symmetric":False,
+                "array":df_date_mean["CdA - JP Max"]-df_date_mean["CdA - JP"],
+                "arrayminus":df_date_mean["CdA - JP"]-df_date_mean["CdA - JP Min"]}
+            )
+                    figPos.update_yaxes(range = [min(df_date_mean["CdA - JP Min"])-0.001,max(df_date_mean["CdA - JP Max"])])
+                    figPos.update_layout(xaxis_title="Configuration")
+                    st.plotly_chart(figPos, use_container_width=True)
+                else:
+                    figPos = px.bar(df_date_mean, y=df_date_mean["CdA - GM"], x = configuration,title=f"Average GM CdA by config - Error bars show complete range of config values").update_traces(
+                        error_y={
+                #"type":'data',
+                "symmetric":False,
+                "array":df_date_mean["CdA - GM Max"]-df_date_mean["CdA - GM"],
+                "arrayminus":df_date_mean["CdA - GM"]-df_date_mean["CdA - GM Min"]}
+            )
+                    figPos.update_yaxes(range = [min(df_date_mean["CdA - GM Min"])-0.001,max(df_date_mean["CdA - GM Max"])])
+                    figPos.update_layout(xaxis_title="Configuration")
+                    st.plotly_chart(figPos, use_container_width=True)
             st.markdown("---")
             
             
