@@ -205,7 +205,7 @@ if authentication_status:
         figJP = px.scatter(df_filt, y="CdA - JP", x = "DateRep", error_y="CdA - JP std",title="Pitman CdA by DateRep")
         st.plotly_chart(figJP, use_container_width=True)
 
-        figGM = px.line(df_filt, y=["CdA","CdA - JP","CdA - Notio"], x = "DateRep",title="CdA comparison")
+        figGM = px.line(df_filt, y=["CdA - GM","CdA - JP","CdA - Notio"], x = "DateRep",title="CdA comparison")
         st.plotly_chart(figGM, use_container_width=True)
         c1,c2,c3=st.columns(3)
         with c1:
@@ -217,7 +217,7 @@ if authentication_status:
 
 
         df_test=df_filt.groupby([f'{comp_by}']).mean().reset_index()
-        df_test['Average_CdA'] = df_test[["CdA","CdA - JP","CdA - Notio"]].mean(axis=1)
+        df_test['Average_CdA'] = df_test[["CdA - GM","CdA - JP","CdA - Notio"]].mean(axis=1)
         
 
         if len(df_test)>1:
@@ -249,22 +249,30 @@ if authentication_status:
                     Clothing="not specified"
                 df_date["filt"][i]=f'{Position}, {Clothing}, {Helmet}, {Shoe_cover}'
                 
-        
-            df_date = df_date.groupby('filt', sort=False).agg({"Position":"first","Clothing":"first","Helmet":"first","Shoe cover":"first","CdA - JP": "mean","CdA - Notio": "mean","CdA": "mean"}).reset_index()
-            df_date['CdA Average'] = df_date[['CdA - JP', 'CdA - Notio',"CdA"]].mean(axis=1)
+            
+            df_date_mean = df_date.groupby('filt', sort=False).agg({"Position":"first","Clothing":"first","Helmet":"first","Shoe cover":"first","CdA - JP": "mean","CdA - GM": "mean"}).reset_index()
+            df_date_min = df_date.groupby('filt', sort=False).agg({"Position":"first","Clothing":"first","Helmet":"first","Shoe cover":"first","CdA - JP": "min","CdA - GM": "min"}).reset_index()
+            df_date_max = df_date.groupby('filt', sort=False).agg({"Position":"first","Clothing":"first","Helmet":"first","Shoe cover":"first","CdA - JP": "max","CdA - GM": "max"}).reset_index()
+            
 #             df_date.insert(1, "Configuration", "Baseline", True)
-            df_date=df_date.drop(['filt'], axis=1)
+            df_date_mean['CdA Average'] = df_date_mean[['CdA - JP',"CdA - GM"]].mean(axis=1)
+            df_date_mean["CdA - JP Min"] = df_date_min["CdA - JP"]
+            df_date_mean["CdA - JP Max"] = df_date_max["CdA - JP"]
+            df_date_mean["CdA - GM Min"] = df_date_min["CdA - GM"]
+            df_date_mean["CdA - GM Max"] = df_date_max["CdA - GM"]
+            
+            df_date_mean=df_date_mean.drop(['filt'], axis=1)
             c1,c2 = st.columns(2)
             with c1:
-                df_date
- 
+                df_date_mean
+                
                 configuration=["Baseline"]
-                for i in range(len(df_date)):
+                for i in range(len(df_date_mean)):
 
-                    Position = str(df_date["Position"][i])
-                    Clothing = str(df_date["Clothing"][i])
+                    Position = str(df_date_mean["Position"][i])
+                    Clothing = str(df_date_mean["Clothing"][i])
                     Helmet = str(df_date["Helmet"][i])
-                    Shoe_cover = str(df_date["Shoe cover"][i])
+                    Shoe_cover = str(df_date_mean["Shoe cover"][i])
                     if Helmet=="nan":
                         Helmet="not specified"
                     if Position=="nan":
@@ -274,14 +282,21 @@ if authentication_status:
                     if Clothing=="nan":
                         Clothing="not specified"
                     if i == 0:
-                        st.write(f'Baseline runs used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average CdA was {round(df_date["CdA Average"][i],4)}')
-                        baseline = df_date["CdA Average"][0]
+                        st.write(f'Baseline runs used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average JP CdA was {round(df_date_mean["CdA - JP"][i],4)}')
+                        baseline = df_date["CdA - JP"][0]
                     else:
-                        st.write(f'Configuration {i} used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average CdA was {round(df_date["CdA Average"][i],4)}, a shift from baseline of {round(df_date["CdA Average"][i]-baseline,4)}')
+                        st.write(f'Configuration {i} used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average JP CdA was {round(df_date_mean["CdA - JP"][i],4)}, a shift from baseline of {round(df_date_mean["CdA - JP"][i]-baseline,4)}')
                         configuration.append(f'Config {i}')
+                 
             with c2:           
-                figPos = px.bar(df_date, y=df_date["CdA Average"], x = configuration,title=f"Average CdA by config")
-                figPos.update_yaxes(range = [min(df_date["CdA Average"])-0.001,max(df_date["CdA Average"])])
+                figPos = px.bar(df_date_mean, y=df_date_mean["CdA - JP"], x = configuration,title=f"Average JP CdA by config - Error bars show complete range of config values").update_traces(
+                    error_y={
+            #"type":'data',
+            "symmetric":False,
+            "array":df_date_mean["CdA - JP Max"]-df_date_mean["CdA - JP"],
+            "arrayminus":df_date_mean["CdA - JP"]-df_date_mean["CdA - JP Min"]}
+        )
+                figPos.update_yaxes(range = [min(df_date_mean["CdA - JP Min"])-0.001,max(df_date_mean["CdA - JP Max"])])
                 figPos.update_layout(xaxis_title="Configuration")
                 st.plotly_chart(figPos, use_container_width=True)
             st.markdown("---")
@@ -324,7 +339,7 @@ if authentication_status:
                             st.write(f'Gear: {df_filt["Gear"][i]}')
                         with col3:
                             st.write(f'Notio CdA: {df_filt["CdA - Notio"][i]}')
-                            st.write(f'Goldmine CdA: {df_filt["CdA"][i]}')
+                            st.write(f'Goldmine CdA: {df_filt["CdA - GM"][i]}')
                             st.write(f'Pitman CdA: {df_filt["CdA - JP"][i]}')
                             st.write(f'Pitman CdA std: {df_filt["CdA - JP std"][i]}')
                             st.write(f'Speed: {df_filt["Speed"][i]}')
