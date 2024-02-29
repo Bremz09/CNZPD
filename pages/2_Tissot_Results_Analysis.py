@@ -2771,12 +2771,44 @@ if authentication_status:
 
         ##
         st.markdown("---")
-        st.header("Points by Position")
+        st.header("All top 3's")
         df_points_orig = df_points_orig.replace(["DNS","REL","DNF","DSQ"], np.nan) 
         df_points_orig = df_points_orig.dropna() 
+        df_top_3=df_points_orig.loc[(df_points_orig["Rank"]==1)|(df_points_orig["Rank"]==2)|(df_points_orig["Rank"]==3)].drop(columns=["Time","Avg Speed"])
+        df_top_3
         df_points_by_pos=df_points_orig.groupby("Rank", as_index=False).mean()
         df_points_by_pos=df_points_by_pos.drop(columns=["Year","Age","Avg Speed"])
+        st.header("Average points by Position")
         df_points_by_pos
+        
+        rank = st.selectbox(
+        'Select ranking:',
+    (1,2,3,4,5,6,7,8))
+        df_1 = df_points_orig.loc[df_points_orig["Rank"]==rank].reset_index(drop=True)
+        df_1["Wins"]=0
+        
+        
+        for i in range(len(df_1)):
+            try:
+                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Lap +"].value_counts()[5]
+            except:
+                df_1["Wins"][i]=0
+        for i in range(len(df_1)):
+            if df_1["Sprint 10"][i]==10:
+                df_1["Wins"][i]+=1
+              
+
+        df_1["Place"]=0
+        for i in range(len(df_1)):
+            place=0
+            for j in range(1,11):
+                if df_1.loc[i][f"Sprint {j}"] > 0:
+                    place+=1
+            df_1["Place"][i]=place
+        df_1=df_1.drop(columns=["Avg Speed","Time"])
+        df_1
+        st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['Lap +'].mean()/20,2)} laps.")
+
         st.markdown("---")
         st.header("Dataset Averages")
 
@@ -3382,6 +3414,44 @@ if authentication_status:
 
         ##
         st.markdown("---")
+        st.header("All top 3's")
+        df_points_orig = df_points_orig.replace(["DNS","REL","DNF","DSQ"], np.nan) 
+        df_points_orig = df_points_orig.dropna() 
+        df_top_3=df_points_orig.loc[(df_points_orig["Rank"]==1)|(df_points_orig["Rank"]==2)|(df_points_orig["Rank"]==3)].drop(columns=["Time","Avg Speed"])
+        df_top_3
+        df_points_by_pos=df_points_orig.groupby("Rank", as_index=False).mean()
+        df_points_by_pos=df_points_by_pos.drop(columns=["Year","Age","Avg Speed"])
+        st.header("Average points by Position")
+        df_points_by_pos
+
+        rank = st.selectbox(
+        'Select ranking:',
+    (1,2,3,4,5,6,7,8))
+        df_1 = df_points_orig.loc[df_points_orig["Rank"]==rank].reset_index(drop=True)
+        df_1["Wins"]=0
+
+
+        for i in range(len(df_1)):
+            try:
+                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 7"].value_counts()[5]
+            except:
+                df_1["Wins"][i]=0
+        for i in range(len(df_1)):
+            if df_1["Sprint 8"][i]==10:
+                df_1["Wins"][i]+=1
+
+
+        df_1["Place"]=0
+        for i in range(len(df_1)):
+            place=0
+            for j in range(1,9):
+                if df_1.loc[i][f"Sprint {j}"] > 0:
+                    place+=1
+            df_1["Place"][i]=place
+        df_1=df_1.drop(columns=["Avg Speed","Time"])
+        df_1
+        st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['Lap +'].mean()/20,2)} laps.")
+        st.markdown("---")
         st.header("Dataset Averages")
 
         df_mean_points = df_points_orig.groupby('Name', as_index=False).mean()
@@ -3443,6 +3513,8 @@ if authentication_status:
             ##Overall Averages plot
             fig_overall_mean = px.line(df_mean_total_transpose, x="Marker", y = df_mean_total_transpose.columns[1:], title="Overall Averages", markers=True)
             st.plotly_chart(fig_overall_mean,use_container_width=True)
+            
+            
             
     if race_type=="Men's Madison":
         st.header('Men\'s Madison')
@@ -3760,6 +3832,47 @@ if authentication_status:
         fig_total_mean = px.bar(df_mean_total, x="Country", y = "Total", title="Total Scoring Average")
         st.plotly_chart(fig_total_mean,use_container_width=True)
         
+        
+        st.header("All top 3's")
+        df_orig = df_orig.replace(["DNS","REL","DNF","DSQ"], np.nan).drop(columns=["Time","Avg Speed"]) 
+        
+        df_orig = df_orig.dropna() 
+        
+        df_top_3=df_orig.loc[(df_orig["Rank"]==1)|(df_orig["Rank"]==2)|(df_orig["Rank"]==3)]
+        df_top_3
+        df_points_by_pos=df_orig.groupby("Rank", as_index=False).mean()
+        df_points_by_pos=df_points_by_pos
+        st.header("Average points by Position")
+        df_points_by_pos
+        
+        rank = st.selectbox(
+        'Select ranking:',
+    (1,2,3,4,5,6,7,8))
+        df_1 = df_orig.loc[df_orig["Rank"]==rank].reset_index(drop=True)
+        df_1["Wins"]=0
+        
+        
+        for i in range(len(df_1)):
+            try:
+                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 20"].value_counts()[5]
+            except:
+                df_1["Wins"][i]=0
+        for i in range(len(df_1)):
+            if df_1["Sprint 20"][i]==10:
+                df_1["Wins"][i]+=1
+              
+
+        df_1["Place"]=0
+        for i in range(len(df_1)):
+            place=0
+            for j in range(1,21):
+                if df_1.loc[i][f"Sprint {j}"] > 0:
+                    place+=1
+            df_1["Place"][i]=place
+        
+        df_1
+        st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['P.Laps'].mean()/20,2)} laps.")
+        
     if race_type=="Women's Madison":
         st.header('Women\'s Madison')
         st.subheader('All results')
@@ -4075,6 +4188,45 @@ if authentication_status:
 
         fig_total_mean = px.bar(df_mean_total, x="Country", y = "Total", title="Total Scoring Average")
         st.plotly_chart(fig_total_mean,use_container_width=True)
+        
+        st.header("All top 3's")
+        df_orig = df_orig.replace(["DNS","REL","DNF","DSQ"], np.nan).drop(columns=["Time","Avg Speed"]) 
+        
+        df_orig = df_orig.dropna() 
+        
+        df_top_3=df_orig.loc[(df_orig["Rank"]==1)|(df_orig["Rank"]==2)|(df_orig["Rank"]==3)]
+        df_top_3
+        df_points_by_pos=df_orig.groupby("Rank", as_index=False).mean()
+        df_points_by_pos=df_points_by_pos
+        st.header("Average points by Position")
+        df_points_by_pos
+        
+        rank = st.selectbox(
+        'Select ranking:',
+    (1,2,3,4,5,6,7,8))
+        df_1 = df_orig.loc[df_orig["Rank"]==rank].reset_index(drop=True)
+        df_1["Wins"]=0
+        
+        
+        for i in range(len(df_1)):
+            try:
+                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 12"].value_counts()[5]
+            except:
+                df_1["Wins"][i]=0
+        for i in range(len(df_1)):
+            if df_1["Sprint 12"][i]==10:
+                df_1["Wins"][i]+=1
+              
+
+        df_1["Place"]=0
+        for i in range(len(df_1)):
+            place=0
+            for j in range(1,13):
+                if df_1.loc[i][f"Sprint {j}"] > 0:
+                    place+=1
+            df_1["Place"][i]=place
+        df_1
+        st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['P.Laps'].mean()/20,2)} laps.")
         
         
     if race_type=="Men's 1k Time Trial":
