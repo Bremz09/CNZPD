@@ -725,12 +725,12 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final CSE", title = "Conservative Skill Estimate by Date", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Conservative Skill Estimate by Date", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
@@ -892,7 +892,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[-1]
+                default=df["Year"].unique()[0]
             )    
         if year:
             df = df.query(
@@ -905,7 +905,7 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[-1]
+                default=df["Location"].unique()[0]
             )
 
         if location:
@@ -918,7 +918,7 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[-1]
+                default=df["Event"].unique()[0]
             )
 
         if event:
@@ -993,7 +993,7 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final Rank", title = "Rank by Date", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_Rank", title = "Rank by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
@@ -1003,17 +1003,17 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Conservative Skill Estimate by Age", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final CSE", title = "Conservative Skill Estimate by Date", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Conservative Skill Estimate by Date", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
@@ -1146,7 +1146,7 @@ if authentication_status:
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
                 usecols='A:Q',
-                nrows=4726
+                nrows=5000
                 )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -1179,7 +1179,7 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[0]
+                default=df["Location"].unique()[-1]
             )
 
         if location:
@@ -2771,6 +2771,13 @@ if authentication_status:
 
         ##
         st.markdown("---")
+        st.header("Points by Position")
+        df_points_orig = df_points_orig.replace(["DNS","REL","DNF","DSQ"], np.nan) 
+        df_points_orig = df_points_orig.dropna() 
+        df_points_by_pos=df_points_orig.groupby("Rank", as_index=False).mean()
+        df_points_by_pos=df_points_by_pos.drop(columns=["Year","Age","Avg Speed"])
+        df_points_by_pos
+        st.markdown("---")
         st.header("Dataset Averages")
 
         df_mean_points = df_points_orig.groupby('Name', as_index=False).mean()
@@ -2848,6 +2855,8 @@ if authentication_status:
                 )
             df_points = df_points.replace(',','')
             df_points.Age = round(df_points.Age,2)
+            df_points = df_points.replace(["REL","DNF","DNS"], np.nan) 
+            df_points = df_points.dropna() 
             return df_points
         df_points= get_points_data_from_excel()
         @st.cache_data
@@ -3204,7 +3213,7 @@ if authentication_status:
                 var = str(i+1)+" "+str(df_summ["Name"].iloc[i])+" " +str(df_summ["Location"].iloc[i])+" " +str(df_summ["Event"].iloc[i])+" " +str(df_summ["Year"].iloc[i])
                 df_summ_trans[f"{var}"]=df_summ.iloc[i][7:11].values
                 df_ch_Trans[f"{var}"]=df_countryHistory_short.iloc[i][12:20].values
-            st.dataframe(df_summ_trans)
+            
             fig_event_mean = px.line(df_summ_trans, x="Race", y = df_summ_trans.columns[1:], title="Overall Scoring", markers=True)
             st.plotly_chart(fig_event_mean,use_container_width=True)
 
@@ -3233,7 +3242,7 @@ if authentication_status:
             df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
                           ).applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
-            st.dataframe(df_tempo_hist_styled)
+            
 
             df_tempo_trans = pd.DataFrame()
             df_tempo_trans["Sprint"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]
