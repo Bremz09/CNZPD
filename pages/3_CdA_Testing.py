@@ -283,7 +283,7 @@ if authentication_status:
                         Clothing="not specified"
                     if i == 0:
                         st.write(f'Baseline runs used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average JP CdA was {round(df_date_mean["CdA - JP"][i],4)}')
-                        baseline = df_date["CdA - JP"][0]
+                        baseline = round(df_date_mean["CdA - JP"][i],4)
                     else:
                         st.write(f'Configuration {i} used position "{Position}". The skinsuit was {Clothing}, the helmet was {Helmet}, the shoe covers were {Shoe_cover}. The average JP CdA was {round(df_date_mean["CdA - JP"][i],4)}, a shift from baseline of {round(df_date_mean["CdA - JP"][i]-baseline,4)}')
                         configuration.append(f'Config {i}')
