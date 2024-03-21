@@ -35,7 +35,8 @@ for uname,name,pwd in zip(usernames,names,hashed_passwords):
         
 authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
 
-name, authentication_status, username = authenticator.login("Login", "main")
+name, authentication_status, username = authenticator.login('Login', "main")
+#name, authentication_status, username = authenticator.fields{'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'}
 
 if authentication_status == False:
     st.error("Username/password is incorrect")
