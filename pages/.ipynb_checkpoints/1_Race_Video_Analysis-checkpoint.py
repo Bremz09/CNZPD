@@ -160,40 +160,40 @@ if authentication_status:
                     four_turn_3=0
                     j=0
 
-                    while j<len(df_small) and r1[j] == 1:
+                    while j<df_small["Time"].count() and r1[j] == 1:
                         one_turn_1+=1
                         j+=1
-                    while j<len(df_small) and r2[j] == 1:
+                    while j<df_small["Time"].count() and r2[j] == 1:
                         two_turn_1+=1
                         j+=1
-                    while j<len(df_small) and r3[j] == 1:
+                    while j<df_small["Time"].count() and r3[j] == 1:
                         three_turn_1+=1
                         j+=1
-                    while j<len(df_small) and r4[j] == 1:
+                    while j<df_small["Time"].count() and r4[j] == 1:
                         four_turn_1+=1
                         j+=1
-                    while j<len(df_small) and r1[j] == 1:
+                    while j<df_small["Time"].count() and r1[j] == 1:
                         one_turn_2+=1
                         j+=1
-                    while j<len(df_small) and r2[j] == 1:
+                    while j<df_small["Time"].count() and r2[j] == 1:
                         two_turn_2+=1
                         j+=1
-                    while j<len(df_small) and r3[j] == 1:
+                    while j<df_small["Time"].count() and r3[j] == 1:
                         three_turn_2+=1
                         j+=1
-                    while j <len(df_small) and r4[j] == 1:
+                    while j <df_small["Time"].count() and r4[j] == 1:
                         four_turn_2+=1
                         j+=1
-                    while j <len(df_small) and r1[j] == 1:
+                    while j <df_small["Time"].count() and r1[j] == 1:
                         one_turn_3+=1
                         j+=1
-                    while j <len(df_small) and r2[j] == 1:
+                    while j <df_small["Time"].count() and r2[j] == 1:
                         two_turn_3+=1
                         j+=1
-                    while j<len(df_small) and r3[j] == 1:
+                    while j<df_small["Time"].count() and r3[j] == 1:
                         three_turn_3+=1
                         j+=1
-                    while j <len(df_small) and r4[j] == 1:
+                    while j <df_small["Time"].count() and r4[j] == 1:
                         four_turn_3+=1
                         j+=1
                     first_turns=[one_turn_1,two_turn_1,three_turn_1,four_turn_1]
@@ -340,6 +340,7 @@ if authentication_status:
                     st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
                     st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
                     st.write("We then sum all values to get the Wind_Score shown below:")
+
                     df_summ
                     
                                  
@@ -456,7 +457,7 @@ if authentication_status:
                 )  
             variable = st.selectbox(
             'Select variable to compare:',
-                df_full_summary.columns[3:]
+                df_full_summary.columns[4:]
             )
         
             
