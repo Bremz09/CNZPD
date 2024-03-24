@@ -1009,6 +1009,24 @@ if authentication_status:
                     df_kilos["Total"]=df_kilos["Split"].cumsum()
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
+                    df_summ_full = df_summ
+                    df_summ_full.insert(1,"Event",df_temp["Title"].iloc[0])
+                    total_wind=df_summ_full['Wind_Score'].sum()
+                    df_summ_full.insert(7,"Wind_Share_%",100*df_summ_full["Wind_Score"]/total_wind)
+                    #df_summ_full["Wind_Share_%"]=100*df_summ_full["Wind_Score"]/total_wind
+                    df_summ_full["Team_consistency"]=round(consistency,2)
+                    df_summ_full.insert(1,"Position",[1,2,3,4])
+                    df_summ_full.insert(3,"Time",df_kilos['Total'][3])
+                    df_summ_full["62.5"]=round(df_small["Split"][0],3)
+                    df_summ_full["125"]=round(df_start["Total"][1],3)
+                    df_summ_full["187.5"]=round(df_start["Total"][2],3)
+                    df_summ_full["250"]=round(df_start["Total"][3],3)
+                    df_summ_full["1k"]=round(df_kilos["Split"][0],3)
+                    df_summ_full["2k"]=round(df_kilos["Split"][1],3)
+                    df_summ_full["3k"]=round(df_kilos["Split"][2],3)
+                    df_summ_full["4k"]=round(df_kilos["Split"][3],3)
+                    avg_del_split=df_summ_full['Avg_Del_Split'].mean()
+                    df_summ_full.insert(11,"Avg_Del_Split_%",round(100*df_summ_full["Avg_Del_Split"]/avg_del_split,2))
                     
                 with col_2:
                     st.subheader(f"Consistency score is {round(consistency,2)}")
@@ -1023,6 +1041,72 @@ if authentication_status:
 
                             st.video(f"{video_name}")
                 st.markdown("---")
+                st.header("Full Summary")
+                
+            
+                if event_count == 0:
+                    df_full_summary = pd.DataFrame()
+                    df_full_summary=df_summ_full
+                else:
+                    df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
+            df_full_summary
+            buffer = io.BytesIO()
+
+
+
+            @st.cache_data
+            def convert_to_csv(df_full_summary):
+                # IMPORTANT: Cache the conversion to prevent computation on every rerun
+                return df_full_summary.to_csv(index=False).encode('utf-8')
+
+            csv = convert_to_csv(df_full_summary)
+
+            # display the dataframe on streamlit app
+    #         st.write(df)
+
+            # download button 1 to download dataframe as csv
+            download1 = st.download_button(
+                label="Download Summary as CSV",
+                data=csv,
+                file_name='TP_Summary_Men.csv',
+                mime='text/csv'
+            )
+
+            # download button 2 to download dataframe as xlsx
+            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                # Write each dataframe to a different worksheet.
+                df_full_summary.to_excel(writer, sheet_name='Sheet1', index=False)
+                # Close the Pandas Excel writer and output the Excel file to the buffer
+                writer.close()
+
+                download2 = st.download_button(
+                    label="Download Summary as Excel",
+                    data=buffer,
+                    file_name='TP_Summary_Men.xlsx',
+                    mime='application/vnd.ms-excel'
+                )  
+            variable = st.selectbox(
+            'Select variable to compare:',
+                df_full_summary.columns[4:]
+            )
+        
+            
+            fig_summary = px.line(df_full_summary, x='Event', y=f'{variable}',color=df_full_summary.Rider, markers=True)
+                    
+            # fig_gm.add_trace(go.Scatter(x=df_gm['Distance'][1:], y=df_gm['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
+            # fig_gm.update_layout(
+            # title={
+            #     'text': df_temp.Title.iloc[0],
+            #     'y':0.9,
+            #     'x':0.5,
+            #     'xanchor': 'center',
+            #     'yanchor': 'top',
+            #     'font':dict(size=25)})
+            # fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+            # fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
+            # fig_gm.update_traces(textfont_size=24, cliponaxis=False)
+            st.plotly_chart(fig_summary, use_container_width=True)
+            st.markdown("---")
 
 
 
