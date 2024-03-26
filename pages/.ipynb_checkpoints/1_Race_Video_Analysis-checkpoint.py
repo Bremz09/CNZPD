@@ -64,16 +64,36 @@ if authentication_status:
     
     if racetype == "Women's TP":
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Women.xlsx')
-        df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
-        df_small = df_master.drop(columns=["Save_Date","Action","Video"])
-#         df_small
-        c1,c2=st.columns(2)
+        df_master = df_master.sort_values(by=["Sort_name","Distance"], ascending=[False,True])
+        
+        df_small = df_master.drop(columns=["Save_Date","Action","Video","Sort_date","Sort_letter"])
+        
+        c1,c2,c3=st.columns(3)
         with c1:
-            selections = st.multiselect(
-            "Select past effort(s):",
-            options=df_master["Title"].sort_values(ascending=False).unique()
-            ) 
+            ath_filt = st.multiselect(
+    'Filter athletes? Leave blank to see all rides',["Ally Wollaston","Bryony Botha","Emily Shearman","Micky Drummond","Nicole Shields","Sami Donnelly"]
+    )
+
+        #st.write(df_small["Title"].unique())
         with c2:
+            if len(ath_filt)>0:
+                options=[]
+                for race in df_small["Title"].unique():
+                    for name in ath_filt:
+                        #st.write(df_small["Front"].loc[df_small["Title"]==race].unique())
+                        if name in df_small["Front"].loc[df_small["Title"]==race].unique():
+                            #st.write(df_small["Front"].loc[df_small["Title"]==race])
+                            options.append(race)
+                selections = st.multiselect(
+                "Select past effort(s):",
+                options=options  #.sort_values(ascending=False)
+                ) 
+            else:
+                selections = st.multiselect(
+                "Select past effort(s):",
+                options=df_master["Title"].unique()  #.sort_values(ascending=False)
+                ) 
+        with c3:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
 
@@ -86,7 +106,7 @@ if authentication_status:
                 with col_1:
                     df_temp = df_master.loc[df_master['Title'] == selections[event_count]]
                     df_combine = pd.concat([df_combine, df_temp], axis=0)
-                    df_small = df_temp.drop(columns=["Save_Date","Video"])
+                    df_small = df_temp.drop(columns=["Save_Date","Video","Sort_name","Sort_date","Sort_letter"])
                     df_small=df_small.reset_index(drop="True")
                     r1 = [1]
                     r2 = [2]
@@ -237,7 +257,7 @@ if authentication_status:
                         else:
                             lap_splits.append(round(df_gm["Split"][i]+df_gm["Split"][i-1],2))
                     df_gm["Lap_Split"]=lap_splits
-    #                     df_gm
+                    
 
 
                 with col_2:
@@ -333,7 +353,7 @@ if authentication_status:
                     df_summ["Avg_Del_Split"]=avg_splits
                     
                     st.subheader("Rider Info")
-                    df_small
+                    
                     speed_var=[df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].min()]
                     df_summ["Speed_Var"]=speed_var
                     st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
@@ -721,30 +741,47 @@ if authentication_status:
                     
     if racetype == "Men's TP":
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Men.xlsx')
-        df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
-        df_small = df_master.drop(columns=["Save_Date","Action","Video"])
+        df_master = df_master.sort_values(by=["Sort_name","Distance"], ascending=[False,True])
+        df_small = df_master.drop(columns=["Save_Date","Action","Video","Sort_date","Sort_letter"])
 #         df_small
-        c1,c2=st.columns(2)
+        c1,c2,c3=st.columns(3)
         with c1:
-            selections = st.multiselect(
-            "Select past effort(s):",
-            options=df_master["Title"].unique()
-            ) 
+            ath_filt = st.multiselect(
+    'Filter athletes? Leave blank to see all rides',["Aaron Gate","Campbell Stewart","Dan Bridgwater","George Jackson","Keegan Hornblow","Nick Kergozou","Tom Sexton"]
+    )
         with c2:
+            if len(ath_filt)>0:
+                options=[]
+                for race in df_small["Title"].unique():
+                    for name in ath_filt:
+                        #st.write(df_small["Front"].loc[df_small["Title"]==race].unique())
+                        if name in df_small["Front"].loc[df_small["Title"]==race].unique():
+                            #st.write(df_small["Front"].loc[df_small["Title"]==race])
+                            options.append(race)
+                selections = st.multiselect(
+                "Select past effort(s):",
+                options=options  #.sort_values(ascending=False)
+                ) 
+            else:
+                selections = st.multiselect(
+                "Select past effort(s):",
+                options=df_master["Title"].unique()  #.sort_values(ascending=False)
+                ) 
+        with c3:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
 
-
+        st.markdown("---")
         if len(selections) !=0:
             df_combine = pd.DataFrame()
-            for i in range(len(selections)):
+            for event_count in range(len(selections)):
                 col_1,col_2=st.columns(2)
                 with col_1:
                     
-                    df_temp = df_master.loc[df_master['Title'] == selections[i]]
+                    df_temp = df_master.loc[df_master['Title'] == selections[event_count]]
                     st.header(df_temp["Title"].iloc[0])
                     df_combine = pd.concat([df_combine, df_temp], axis=0)
-                    df_small = df_temp.drop(columns=["Save_Date","Video"])
+                    df_small = df_temp.drop(columns=["Save_Date","Video","Sort_name","Sort_date","Sort_letter"])
                     df_small=df_small.reset_index(drop="True")
                     r1 = [1]
                     r2 = [2]
