@@ -1145,12 +1145,12 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:Q',
-                nrows=5000
+                usecols='A:N',
+                nrows=6000
                 )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
-            df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
+            #df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
             return df
         df= get_data_from_excel()
 
@@ -1408,7 +1408,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:Q',
+                usecols='A:n',
                 nrows=5000
                 )
             df = df.replace(',','')
@@ -1527,7 +1527,7 @@ if authentication_status:
             fig_athlete_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
-
+            df_athleteHistory
             fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final CSE", title = "Trueskill by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
 
@@ -2773,11 +2773,18 @@ if authentication_status:
         st.markdown("---")
         st.header("All top 3's")
         df_points_orig = df_points_orig.replace(["DNS","REL","DNF","DSQ"], np.nan) 
-        df_points_orig = df_points_orig.dropna() 
+        df_points_orig = df_points_orig.dropna().reset_index()
         df_top_3=df_points_orig.loc[(df_points_orig["Rank"]==1)|(df_points_orig["Rank"]==2)|(df_points_orig["Rank"]==3)].drop(columns=["Time","Avg Speed"])
         df_top_3
-        df_points_by_pos=df_points_orig.groupby("Rank", as_index=False).mean()
-        df_points_by_pos=df_points_by_pos.drop(columns=["Year","Age","Avg Speed"])
+        
+        
+        #df_points_by_pos=df_points_by_pos.group_by("Rank", as_index=False)
+        df_points_by_pos=df_points_orig.groupby("Rank", as_index=False).mean(numeric_only=True)
+        df_points_by_pos=df_points_by_pos.drop(columns=["index","Year","Age","Avg Speed"])#.reset_index(drop=True, inplace=True)
+        #df_points_by_pos=df_points_by_pos.drop(columns=["Year","Age","Avg Speed"])
+        
+        
+        
         st.header("Average points by Position")
         df_points_by_pos
         
@@ -2805,15 +2812,15 @@ if authentication_status:
                 if df_1.loc[i][f"Sprint {j}"] > 0:
                     place+=1
             df_1["Place"][i]=place
-        df_1=df_1.drop(columns=["Avg Speed","Time"])
+        df_1=df_1.drop(columns=["index","Avg Speed","Time"])
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['Lap +'].mean()/20,2)} laps.")
 
         st.markdown("---")
         st.header("Dataset Averages")
 
-        df_mean_points = df_points_orig.groupby('Name', as_index=False).mean()
-        df_mean_tempo = df_tempo_orig.groupby('Name', as_index=False).mean()
+        df_mean_points = df_points_orig.groupby('Name', as_index=False).mean(numeric_only=True)
+        df_mean_tempo = df_tempo_orig.groupby('Name', as_index=False).mean(numeric_only=True)
         df_mean_points=df_mean_points.drop(['Year','Age','Scratch','Lap +','Lap -','Avg Speed'],axis=1)
         df_mean_total = df_points_orig[(df_points_orig.Final != "DSQ") & (df_points_orig.Final != "DNF")]
 
@@ -2839,9 +2846,9 @@ if authentication_status:
             df_mean_total["Sub Total"] = pd.to_numeric(df_mean_total["Sub Total"])
             df_mean_total["Points"] = df_mean_total["Final"]-df_mean_total["Sub Total"]
             df_mean_total=df_mean_total.drop(["Year","Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sub Total","Final"],axis=1)
-            df_mean_total = df_mean_total.groupby('Name', as_index=False).mean()
-
-
+            df_mean_total = df_mean_total.groupby('Name', as_index=False).mean(numeric_only=True)
+            
+            
 
             df_mean_points_transpose = pd.DataFrame()
             df_mean_points_transpose["Marker"] = ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"]
@@ -2851,22 +2858,27 @@ if authentication_status:
             df_mean_total_transpose["Marker"] = ["Scratch","Tempo","Elimination","Points"]
             for i in range(len(df_mean_points)):
                 var = str(df_mean_points["Name"].iloc[i])
-                df_mean_points_transpose[f"{var}"]=df_mean_points.iloc[i][1:12].values
-                df_mean_total_transpose[f"{var}"]=df_mean_total.iloc[i][1:5].values
+                df_mean_points_transpose[f"{var}"]=df_mean_points.iloc[i][6:16].values
+                df_mean_total_transpose[f"{var}"]=df_mean_total.iloc[i][3:7].values
                 df_mean_tempo_transpose[f"{var}"]=df_mean_tempo.iloc[i][3:39].values
 
             ##Points scoring average plot
+            df_mean_points
+            df_mean_points_transpose
             fig_point_mean = px.line(df_mean_points_transpose, x="Marker", y = df_mean_points_transpose.columns[1:], title="Points Scoring Average", markers=True)
             st.plotly_chart(fig_point_mean,use_container_width=True)
 
             ##Tempo scoring average plot
-
+            df_mean_tempo
+            df_mean_tempo_transpose
             fig_tempo_mean = px.line(df_mean_tempo_transpose, x="Marker", y = df_mean_tempo_transpose.columns[1:], title="Tempo Scoring Average", markers=True)
             st.plotly_chart(fig_tempo_mean,use_container_width=True)
 
 
 
             ##Overall Averages plot
+            df_mean_total
+            df_mean_total_transpose
             fig_overall_mean = px.line(df_mean_total_transpose, x="Marker", y = df_mean_total_transpose.columns[1:], title="Overall Averages", markers=True)
             st.plotly_chart(fig_overall_mean,use_container_width=True)
 
@@ -2882,7 +2894,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='OM-Points',
                 skiprows=0,
-                usecols='A:AA',
+                usecols='A:Y',
                 nrows=3000
                 )
             df_points = df_points.replace(',','')
@@ -2912,7 +2924,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='OM-Tempo',
                 skiprows=0,
-                usecols='A:AW',
+                usecols='A:AM',
                 nrows=3000
                 )
             df_tempo = df_tempo.replace(',','')
@@ -2941,6 +2953,7 @@ if authentication_status:
         df_points_orig = df_points
 
         c1,c2,c3=st.columns(3)
+        df_points
         with c1:
             year = st.multiselect(
                 "Select Year:",
@@ -3419,7 +3432,7 @@ if authentication_status:
         df_points_orig = df_points_orig.dropna() 
         df_top_3=df_points_orig.loc[(df_points_orig["Rank"]==1)|(df_points_orig["Rank"]==2)|(df_points_orig["Rank"]==3)].drop(columns=["Time","Avg Speed"])
         df_top_3
-        df_points_by_pos=df_points_orig.groupby("Rank", as_index=False).mean()
+        df_points_by_pos=df_points_orig.groupby("Rank", as_index=False).mean(numeric_only=True)
         df_points_by_pos=df_points_by_pos.drop(columns=["Year","Age","Avg Speed"])
         st.header("Average points by Position")
         df_points_by_pos
@@ -3454,8 +3467,8 @@ if authentication_status:
         st.markdown("---")
         st.header("Dataset Averages")
 
-        df_mean_points = df_points_orig.groupby('Name', as_index=False).mean()
-        df_mean_tempo = df_tempo_orig.groupby('Name', as_index=False).mean()
+        df_mean_points = df_points_orig.groupby('Name', as_index=False).mean(numeric_only=True)
+        df_mean_tempo = df_tempo_orig.groupby('Name', as_index=False).mean(numeric_only=True)
         df_mean_points=df_mean_points.drop(['Year','Age','Lap +','Lap -','Avg Speed'],axis=1)
         df_mean_total = df_points_orig[(df_points_orig.Final != "DSQ") & (df_points_orig.Final != "DNF")]
 
@@ -3482,7 +3495,7 @@ if authentication_status:
             df_mean_total["Sub Total"] = pd.to_numeric(df_mean_total["Sub Total"])
             df_mean_total["Points"] = df_mean_total["Final"]-df_mean_total["Sub Total"]
             df_mean_total=df_mean_total.drop(["Year","Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sub Total","Final"],axis=1)
-            df_mean_total = df_mean_total.groupby('Name', as_index=False).mean()
+            df_mean_total = df_mean_total.groupby('Name', as_index=False).mean(numeric_only=True)
 
 
 
@@ -3495,22 +3508,24 @@ if authentication_status:
 
             for i in range(len(df_mean_points)):
                 var = str(df_mean_points["Name"].iloc[i])
-                df_mean_points_transpose[f"{var}"]=df_mean_points.iloc[i][2:10].values
-                df_mean_total_transpose[f"{var}"]=df_mean_total.iloc[i][1:5].values
+                df_mean_points_transpose[f"{var}"]=df_mean_points.iloc[i][6:14].values
+                df_mean_total_transpose[f"{var}"]=df_mean_total.iloc[i][2:6].values
                 df_mean_tempo_transpose[f"{var}"]=df_mean_tempo.iloc[i][3:29].values
 
             ##Points scoring average plot
+            
             fig_point_mean = px.line(df_mean_points_transpose, x="Marker", y = df_mean_points_transpose.columns[1:], title="Points Scoring Average", markers=True)
             st.plotly_chart(fig_point_mean,use_container_width=True)
 
             ##Tempo scoring average plot
-
+           
             fig_tempo_mean = px.line(df_mean_tempo_transpose, x="Marker", y = df_mean_tempo_transpose.columns[1:], title="Tempo Scoring Average", markers=True)
             st.plotly_chart(fig_tempo_mean,use_container_width=True)
 
 
 
             ##Overall Averages plot
+            
             fig_overall_mean = px.line(df_mean_total_transpose, x="Marker", y = df_mean_total_transpose.columns[1:], title="Overall Averages", markers=True)
             st.plotly_chart(fig_overall_mean,use_container_width=True)
             
@@ -3811,7 +3826,7 @@ if authentication_status:
         ##
         st.markdown("---")
         st.header(":chart: Historical Averages")
-        df_mean = df_orig.groupby('Country', as_index=False).mean()
+        df_mean = df_orig.groupby('Country', as_index=False).mean(numeric_only=True)
 
         st.write("Points Average")
         df_splits_mean = pd.DataFrame()
@@ -3840,7 +3855,7 @@ if authentication_status:
         
         df_top_3=df_orig.loc[(df_orig["Rank"]==1)|(df_orig["Rank"]==2)|(df_orig["Rank"]==3)]
         df_top_3
-        df_points_by_pos=df_orig.groupby("Rank", as_index=False).mean()
+        df_points_by_pos=df_orig.groupby("Rank", as_index=False).mean(numeric_only=True)
         df_points_by_pos=df_points_by_pos
         st.header("Average points by Position")
         df_points_by_pos
@@ -4168,7 +4183,7 @@ if authentication_status:
         ##
         st.markdown("---")
         st.header(":chart: Historical Averages")
-        df_mean = df_orig.groupby('Country', as_index=False).mean()
+        df_mean = df_orig.groupby('Country', as_index=False).mean(numeric_only=True)
 
         st.write("Points Average")
         df_splits_mean = pd.DataFrame()
@@ -4196,7 +4211,7 @@ if authentication_status:
         
         df_top_3=df_orig.loc[(df_orig["Rank"]==1)|(df_orig["Rank"]==2)|(df_orig["Rank"]==3)]
         df_top_3
-        df_points_by_pos=df_orig.groupby("Rank", as_index=False).mean()
+        df_points_by_pos=df_orig.groupby("Rank", as_index=False).mean(numeric_only=True)
         df_points_by_pos=df_points_by_pos
         st.header("Average points by Position")
         df_points_by_pos
@@ -5688,7 +5703,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Individual Pursuit',
                 skiprows=0,
-                usecols='A:AQ',
+                usecols='A:AI',
                 nrows=2500
                 )
             df = df.replace(',','', regex=True)
