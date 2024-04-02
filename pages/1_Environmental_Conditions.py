@@ -53,12 +53,18 @@ if authentication_status:
     ##This bit is the historical visualiser
 
     st.header("All Data")
-
-    df_master=pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx')
-   
+    t0=time.time()
+    @st.cache_data
+    def get_master():
+        df=pd.read_excel(f'pages/Environmental_Data/Uni_t_data_master.xlsx',usecols='A:E', nrows=183000)
+        return df
+    df_master = get_master()
+    t1=time.time()
+    st.write(f"read excel takes {t1-t0} seconds")
     df_master["Date"] = df_master["DateTime"].dt.date
     df_master["Time"] = df_master["DateTime"].dt.time
-    
+    t2=time.time()
+    st.write(f"adding dates stuff takes {t2-t1} seconds")
 
 
     ##Gross start/end date getting stuff
@@ -151,7 +157,7 @@ if authentication_status:
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df.to_excel(writer, sheet_name='Sheet1', index=False)
-            writer.save()
+            writer.close()
             download2 = st.download_button(
                 label="Download Environmental data as Excel",
                 data=buffer,

@@ -245,7 +245,7 @@ if authentication_status:
                 df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][8:10].values
             fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="All Rides",labels={"value":"Splits (seconds)"},markers=True)
             st.plotly_chart(fig_CH, use_container_width=True)
-
+            
             ##Second Figure -- 200m times by Date
             fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "200m", title = "Times by Date", markers = "True", text = "Location", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")

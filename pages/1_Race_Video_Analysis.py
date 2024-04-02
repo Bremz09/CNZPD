@@ -81,18 +81,19 @@ if authentication_status:
                 for race in df_small["Title"].unique():
                     for name in ath_filt:
                         #st.write(df_small["Front"].loc[df_small["Title"]==race].unique())
-                        if name in df_small["Front"].loc[df_small["Title"]==race].unique():
+                        if name in df_small["Front"].loc[df_small["Title"]==race].unique() and race not in options:
                             #st.write(df_small["Front"].loc[df_small["Title"]==race])
                             options.append(race)
                 selections = st.multiselect(
                 "Select past effort(s):",
-                options=options  #.sort_values(ascending=False)
+                options=options,#.sort_values(ascending=False)
                 ) 
             else:
                 selections = st.multiselect(
                 "Select past effort(s):",
-                options=df_master["Title"].unique()  #.sort_values(ascending=False)
-                ) 
+                options=df_master["Title"].unique())
+                
+                
         with c3:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
@@ -100,11 +101,11 @@ if authentication_status:
 
         if len(selections) !=0:
             df_combine = pd.DataFrame()
-            for event_count in range(len(selections)):
+            for count,event_count in enumerate(selections):
                 st.markdown("---")
                 col_1,col_2=st.columns(2)
                 with col_1:
-                    df_temp = df_master.loc[df_master['Title'] == selections[event_count]]
+                    df_temp = df_master.loc[df_master['Title'] == selections[count]]
                     df_combine = pd.concat([df_combine, df_temp], axis=0)
                     df_small = df_temp.drop(columns=["Save_Date","Video","Sort_name","Sort_date","Sort_letter"])
                     df_small=df_small.reset_index(drop="True")
@@ -265,7 +266,7 @@ if authentication_status:
                     with c1sub:
                         yaxis_min = st.number_input("Y-axis Minimum:", min_value=0.00, max_value=None,value=min(df_temp["Avg_Speed"][1:])-1,key=f"yaxis min{event_count}")
                     with c2sub:
-                        yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1)
+                        yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1,key=f"yaxis max{event_count}")
                     average = df_small.Split.iloc[4:].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
@@ -347,6 +348,7 @@ if authentication_status:
                     df_summ["Turn_2"]=second_turns
                     df_summ["Turn_3"]=third_turns
                     df_summ["Wind_Score"] = wind_scores
+                    df_summ["Event_Count"]=count
                     
                     # Calculating Splits based off delivery speeds - 900 is a conversion factor
                     avg_splits=[round(900/(df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].mean()),2), round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].mean(),2),round(900/df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].mean(),2)]
@@ -394,8 +396,13 @@ if authentication_status:
                     df_kilos["Total"]=df_kilos["Split"].cumsum()
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
+                    df_summ
                     df_summ_full = df_summ
+                    
                     df_summ_full.insert(1,"Event",df_temp["Title"].iloc[0])
+                    # df_summ_full = df_summ_full.query(
+                    #     "Event == @selections"
+                    #     )
                     total_wind=df_summ_full['Wind_Score'].sum()
                     df_summ_full.insert(7,"Wind_Share_%",100*df_summ_full["Wind_Score"]/total_wind)
                     #df_summ_full["Wind_Share_%"]=100*df_summ_full["Wind_Score"]/total_wind
@@ -412,6 +419,7 @@ if authentication_status:
                     df_summ_full["4k"]=round(df_kilos["Split"][3],3)
                     avg_del_split=df_summ_full['Avg_Del_Split'].mean()
                     df_summ_full.insert(11,"Avg_Del_Split_%",round(100*df_summ_full["Avg_Del_Split"]/avg_del_split,2))
+                    df_summ_full["Date"]=df_summ_full["Event"].str[:8]
                     
 
                 # df_start["Split"]=df_small["Split"][0:4]
@@ -434,11 +442,12 @@ if authentication_status:
                 st.header("Full Summary")
                 
             
-                if event_count == 0:
+                if count == 0:
                     df_full_summary = pd.DataFrame()
                     df_full_summary=df_summ_full
                 else:
                     df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
+            df_full_summary.sort_values("Event_Count",ascending=True)
             df_full_summary
             buffer = io.BytesIO()
 
@@ -480,21 +489,10 @@ if authentication_status:
                 df_full_summary.columns[4:]
             )
         
-            
-            fig_summary = px.line(df_full_summary, x='Event', y=f'{variable}',color=df_full_summary.Rider, markers=True)
-                    
-            # fig_gm.add_trace(go.Scatter(x=df_gm['Distance'][1:], y=df_gm['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
-            # fig_gm.update_layout(
-            # title={
-            #     'text': df_temp.Title.iloc[0],
-            #     'y':0.9,
-            #     'x':0.5,
-            #     'xanchor': 'center',
-            #     'yanchor': 'top',
-            #     'font':dict(size=25)})
-            # fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
-            # fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
-            # fig_gm.update_traces(textfont_size=24, cliponaxis=False)
+            x_ax=df_full_summary.sort_values("Event_Count",ascending=True)["Event"]
+            fig_summary = px.line(df_full_summary, x="Event_Count", y=f'{variable}',color="Rider",markers=True)
+            # fig_summary.update_xaxes(type='category')
+            fig_summary.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(fig_summary, use_container_width=True)
             st.markdown("---")
                 
