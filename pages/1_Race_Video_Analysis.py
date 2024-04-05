@@ -2369,7 +2369,7 @@ if authentication_status:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
         if len(selections) !=0:
-            st.markdown("[Jump to Full Summary](#full-summary)", unsafe_allow_html=True)
+            st.markdown("[Jump to Full Summary](#summary)", unsafe_allow_html=True)
             df_combine = pd.DataFrame()
             for i in range(len(selections)):
                 checkboxid+=1
@@ -2487,7 +2487,7 @@ if authentication_status:
                 df_speeds["Splits"] = teamsplits
                 df_combine = pd.concat([df_combine, df_speeds], axis=0)
                 
-            st.header("Full Summary")
+            st.header("Full Summary", anchor="summary")
             df = df_table_all
             df_filt = filter_dataframe(df)
             df_filt
