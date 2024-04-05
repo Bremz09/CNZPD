@@ -16,6 +16,13 @@ import xlwings as xw
 import datetime
 import io
 import os.path
+import streamlit.components.v1 as components
+from pandas.api.types import (
+is_categorical_dtype,
+is_datetime64_any_dtype,
+is_numeric_dtype,
+is_object_dtype,
+)
 
 
 
@@ -52,7 +59,75 @@ if authentication_status == None:
     st.warning("Please enter your username and password")
 
 if authentication_status:
+    checkboxid=0
     ##This bit is the historical visualiser
+    def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+
+        modify = st.checkbox("Add filters",key=f"filt{checkboxid}")
+
+        if not modify:
+            return df
+
+        df = df.copy()
+
+        # Try to convert datetimes into a standard format (datetime, no timezone)
+        for col in df.columns:
+            if is_object_dtype(df[col]):
+                try:
+                    df[col] = pd.to_datetime(df[col])
+                except Exception:
+                    pass
+
+            if is_datetime64_any_dtype(df[col]):
+                df[col] = df[col].dt.tz_localize(None)
+
+        modification_container = st.container()
+
+        with modification_container:
+            to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
+            for column in to_filter_columns:
+                left, right = st.columns((1, 20))
+                # Treat columns with < 10 unique values as categorical
+                if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
+                    user_cat_input = right.multiselect(
+                        f"Values for {column}",
+                        df[column].unique(),
+                        default=list(df[column].unique()),
+                    )
+                    df = df[df[column].isin(user_cat_input)]
+                elif is_numeric_dtype(df[column]):
+                    _min = float(df[column].min())
+                    _max = float(df[column].max())
+                    step = (_max - _min) / 100
+                    user_num_input = right.slider(
+                        f"Values for {column}",
+                        min_value=_min,
+                        max_value=_max,
+                        value=(_min, _max),
+                        step=step,
+                    )
+                    df = df[df[column].between(*user_num_input)]
+                elif is_datetime64_any_dtype(df[column]):
+                    user_date_input = right.date_input(
+                        f"Values for {column}",
+                        value=(
+                            df[column].min(),
+                            df[column].max(),
+                        ),
+                    )
+                    if len(user_date_input) == 2:
+                        user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                        start_date, end_date = user_date_input
+                        df = df.loc[df[column].between(start_date, end_date)]
+                else:
+                    user_text_input = right.text_input(
+                        f"Substring or regex in {column}",
+                    )
+                    if user_text_input:
+                        df = df[df[column].astype(str).str.contains(user_text_input)]
+
+        return df
+
 
    
     racetype = st.selectbox(
@@ -70,13 +145,16 @@ if authentication_status:
         
         c1,c2,c3=st.columns(3)
         with c1:
+            
             ath_filt = st.multiselect(
     'Filter athletes? Leave blank to see all rides',["Ally Wollaston","Bryony Botha","Emily Shearman","Micky Drummond","Nicole Shields","Sami Donnelly"]
     )
+            st.markdown("[Jump to Full Summary](#full-summary)", unsafe_allow_html=True)
 
         #st.write(df_small["Title"].unique())
         with c2:
             if len(ath_filt)>0:
+                
                 options=[]
                 for race in df_small["Title"].unique():
                     for name in ath_filt:
@@ -92,7 +170,7 @@ if authentication_status:
                 selections = st.multiselect(
                 "Select past effort(s):",
                 options=df_master["Title"].unique())
-                
+            
                 
         with c3:
             show_vids = ["No","Yes"]
@@ -439,7 +517,7 @@ if authentication_status:
            
                             st.video(f"{video_name}")
                 st.markdown("---")
-                st.header("Full Summary")
+                
                 
             
                 if count == 0:
@@ -448,6 +526,7 @@ if authentication_status:
                 else:
                     df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
             df_full_summary.sort_values("Event_Count",ascending=True)
+            st.header("Full Summary")
             df_full_summary
             buffer = io.BytesIO()
 
@@ -747,6 +826,7 @@ if authentication_status:
             ath_filt = st.multiselect(
     'Filter athletes? Leave blank to see all rides',["Aaron Gate","Campbell Stewart","Dan Bridgwater","George Jackson","Keegan Hornblow","Nick Kergozou","Tom Sexton"]
     )
+            st.markdown("[Jump to Full Summary](#full-summary)", unsafe_allow_html=True)
         with c2:
             if len(ath_filt)>0:
                 options=[]
@@ -1076,7 +1156,7 @@ if authentication_status:
 
                             st.video(f"{video_name}")
                 st.markdown("---")
-                st.header("Full Summary")
+                
                 
             
                 if event_count == 0:
@@ -1084,6 +1164,7 @@ if authentication_status:
                     df_full_summary=df_summ_full
                 else:
                     df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
+            st.header("Full Summary")
             df_full_summary
             buffer = io.BytesIO()
 
@@ -1330,7 +1411,7 @@ if authentication_status:
                     # Write each dataframe to a different worksheet.
                     df.to_excel(writer, sheet_name='Sheet1', index=False)
                     # Close the Pandas Excel writer and output the Excel file to the buffer
-                    writer.save()
+                    writer.close()
 
                     download2 = st.download_button(
                         label="Download new Master as Excel",
@@ -1972,7 +2053,7 @@ if authentication_status:
                     # Write each dataframe to a different worksheet.
                     df.to_excel(writer, sheet_name='Sheet1', index=False)
                     # Close the Pandas Excel writer and output the Excel file to the buffer
-                    writer.save()
+                    writer.close()
 
                     download2 = st.download_button(
                         label="Download new Master as Excel",
@@ -2260,7 +2341,7 @@ if authentication_status:
                     # Write each dataframe to a different worksheet.
                     df.to_excel(writer, sheet_name='Sheet1', index=False)
                     # Close the Pandas Excel writer and output the Excel file to the buffer
-                    writer.save()
+                    writer.close()
 
                     download2 = st.download_button(
                         label="Download new Master as Excel",
@@ -2288,8 +2369,10 @@ if authentication_status:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
         if len(selections) !=0:
+            st.markdown("[Jump to Full Summary](#full-summary)", unsafe_allow_html=True)
             df_combine = pd.DataFrame()
             for i in range(len(selections)):
+                checkboxid+=1
                 df_temp = df_master.loc[df_master['Title'] == selections[i]].reset_index(drop=True)
                 
                 
@@ -2374,7 +2457,10 @@ if authentication_status:
                 )
                 
                 st.plotly_chart(f1, use_container_width=True)
-                
+                if i==0:
+                    df_table_all=df_table
+                else:
+                    df_table_all=pd.concat([df_table_all,df_table])
                 c1,c2=st.columns(2)
                 with c2:
                     if Videos == "Yes":
@@ -2388,6 +2474,8 @@ if authentication_status:
                             st.video(f"{video_name}")
                 
                 st.markdown("---")
+                
+                
                 teamsplits = [df_table["62.5"][0],df_table["125"][0],df_table["187.5"][0],df_table["250"][0],df_table["312.5"][1]+df_table["Gap 1"][1],df_table["375"][1],df_table["437.5"][1],df_table["500"][1],df_table["562.5"][2]+df_table["Gap 2"][2],df_table["625"][2],df_table["687.5"][2],df_table["750"][2]]
                 
                 teamspeeds = [round(3.6*62.5/i,2) for i in teamsplits]
@@ -2399,8 +2487,10 @@ if authentication_status:
                 df_speeds["Splits"] = teamsplits
                 df_combine = pd.concat([df_combine, df_speeds], axis=0)
                 
-                
-                
+            st.header("Full Summary")
+            df = df_table_all
+            df_filt = filter_dataframe(df)
+            df_filt
             df_combine.rename(columns={ df_combine.columns[0]: "Speed (km/h)" }, inplace = True)
             
             fig_comp = px.line(df_combine, x="Marker", y = "Speed (km/h)", title="Average Speed Comparison",color="Title",markers="Splits",labels = {
@@ -2554,7 +2644,7 @@ if authentication_status:
                     # Write each dataframe to a different worksheet.
                     df.to_excel(writer, sheet_name='Sheet1', index=False)
                     # Close the Pandas Excel writer and output the Excel file to the buffer
-                    writer.save()
+                    writer.close()
 
                     download2 = st.download_button(
                         label="Download new Master as Excel",
