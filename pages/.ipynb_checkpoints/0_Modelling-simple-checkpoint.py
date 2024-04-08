@@ -60,9 +60,9 @@ if authentication_status:
 
     c1,c2,c3,c4=st.columns(4)
     with c1:
-        options=["v","CdA","rho","P"]
-        options
-        var1=st.selectbox(options=options,label="Inital value 1:",key="var1")
+        options1=["v","CdA","rho","P"]
+        options1
+        var1=st.selectbox(options=options1,label="Inital value 1:",key="var1")
         if var1=="v":
             value = 16.67
             label="Speed in m/s"
@@ -70,7 +70,7 @@ if authentication_status:
             v=var1_value
             ls=250/v
             st.write(f"Lap split of {round(ls,2)} seconds")
-
+            
         if var1=="CdA":
             value = 0.1700
             label="CdA in m^2"
@@ -86,10 +86,10 @@ if authentication_status:
             label="Power in watts"
             var1_value=st.number_input(label=f"{label}:",value=value,key=f"var1_P")
             P=var1_value
-
+        
     with c2:
-        options.remove(var1)
-        options2=options
+        #options.remove(var1)
+        options2 = list(filter(lambda choices: choices != var1, options1))
         options2
         var2=st.selectbox(options=options2,label="Inital value 2:",key="var2")
         if var2=="P":
@@ -116,8 +116,7 @@ if authentication_status:
             st.write(f"Lap split of {round(ls,2)} seconds")
         
     with c3:
-        options2.remove(var2)
-        options3=options2
+        options3 = list(filter(lambda choices: choices != var2, options2))
         options3
         var3=st.selectbox(options=options3,label="Inital value 3:",key="var3")
         if var3=="P":
@@ -144,20 +143,21 @@ if authentication_status:
             st.write(f"Lap split of {round(ls,2)} seconds")
         
     with c4:
-        options.remove(var3)
-        if options[0]=="P":
+        options4 = list(filter(lambda choices: choices != var3, options3))
+        options4
+        if options4[0]=="P":
             var4 = CdA*0.5*rho*(v**3)
             P=var4
             st.latex(r'''P = C_{d}A \frac{1}{2} \rho v^3 = '''+rf'''{round(var4,2)}'''+r'''\text{ W}''')
-        if options[0]=="CdA":
+        if options4[0]=="CdA":
             var4 = 2*P/(rho*(v**3))
             CdA=var4
             st.latex(r'''C_{d}A=\frac{2P}{\rho v^3} = '''+rf'''{round(var4,4)} '''+r'''\text{ }'''+r'''ms^{-1}''')
-        if options[0]=="rho":
+        if options4[0]=="rho":
             var4 = 2*P/(CdA*(v**3))
             rho=var4
             st.latex(r'''\rho=\frac{2P}{C_{d}A v^3} = '''+rf'''{round(var4,3)}'''+r'''\text{ }'''+r'''kgm^{-3}''')
-        if options[0]=="v":
+        if options4[0]=="v":
             var4 = (2*P/(CdA*rho))**(1/3)
             v=var4
             st.latex(r'''v=\left( \frac{2P}{C_{d}A\rho}  \right)^{\frac{1}{3}} = '''+rf'''{round(var4,2)} '''+ r''' \text{ }ms^{-1}''')
