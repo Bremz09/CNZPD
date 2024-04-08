@@ -62,11 +62,11 @@ if authentication_status:
     with c1:
         options=["v","CdA","rho","P"]
         
-        var1=st.selectbox(options=options,label="Inital value 1:",key="a")
+        var1=st.selectbox(options=options,label="Inital value 1:",key="var1")
         if var1=="v":
             value = 16.67
             label="Speed in m/s"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"e")
+            var1_value=st.number_input(label=f"{label}:",value=value,key=f"var1_v")
             v=var1_value
             ls=250/v
             st.write(f"Lap split of {round(ls,2)} seconds")
@@ -74,67 +74,67 @@ if authentication_status:
         if var1=="CdA":
             value = 0.1700
             label="CdA in m^2"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"c",step=1e-4,format="%.4f")
+            var1_value=st.number_input(label=f"{label}:",value=value,key=f"var1_CdA",step=1e-4,format="%.4f")
             CdA=var1_value
         if var1=="rho":
             value = 1.169
             label="Air density in kg/m^3"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"d",step=1e-3,format="%.3f")
+            var1_value=st.number_input(label=f"{label}:",value=value,key=f"var1_rho",step=1e-3,format="%.3f")
             rho=var1_value
         if var1=="P":
             value = 460
             label="Power in watts"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"b")
+            var1_value=st.number_input(label=f"{label}:",value=value,key=f"var1_P")
             P=var1_value
 
     with c2:
         options.remove(var1)
-        var2=st.selectbox(options=options,label="Inital value 2:",key="f")
+        var2=st.selectbox(options=options,label="Inital value 2:",key="var2")
         if var2=="P":
             value = 460
             label="Power in watts"
-            var2_value=st.number_input(label=f"{label}:",value=value,key=f"g")
+            var2_value=st.number_input(label=f"{label}:",value=value,key=f"var2_P")
             P=var2_value
         if var2=="CdA":
             value = 0.1700
             label="CdA in m^2"
-            var2_value=st.number_input(label=f"{label}:",value=value,key=f"h",step=1e-4,format="%.4f")
+            var2_value=st.number_input(label=f"{label}:",value=value,key=f"var2_CdA",step=1e-4,format="%.4f")
             CdA=var2_value
         if var2=="rho":
             value = 1.169
             label="Air density in kg/m^3"
-            var2_value=st.number_input(label=f"{label}:",value=value,key=f"i",step=1e-3,format="%.3f")
+            var2_value=st.number_input(label=f"{label}:",value=value,key=f"var2_rho",step=1e-3,format="%.3f")
             rho=var2_value
         if var2=="v":
             value = 16.67
             label="Speed in m/s"
-            var2_value=st.number_input(label=f"{label}:",value=value,key=f"j")
+            var2_value=st.number_input(label=f"{label}:",value=value,key=f"var2_v")
             v=var2_value
             ls=250/v
             st.write(f"Lap split of {round(ls,2)} seconds")
         
     with c3:
         options.remove(var2)
-        var3=st.selectbox(options=options,label="Inital value 3:",key="k")
+        var3=st.selectbox(options=options,label="Inital value 3:",key="var3")
         if var3=="P":
             value = 460
             label="Power in watts"
-            var3_value=st.number_input(label=f"{label}:",value=value,key=f"l")
+            var3_value=st.number_input(label=f"{label}:",value=value,key=f"var3_P")
             P=var3_value
         if var3=="CdA":
             value = 0.1700
             label="CdA in m^2"
-            var3_value=st.number_input(label=f"{label}:",value=value,key=f"m",step=1e-4,format="%.4f")
+            var3_value=st.number_input(label=f"{label}:",value=value,key=f"var3_CdA",step=1e-4,format="%.4f")
             CdA=var3_value
         if var3=="rho":
             value = 1.169
             label="Air density in kg/m^3"
-            var3_value=st.number_input(label=f"{label}:",value=value,key=f"n",step=1e-3,format="%.3f")
+            var3_value=st.number_input(label=f"{label}:",value=value,key=f"var3_rho",step=1e-3,format="%.3f")
             rho=var3_value
         if var3=="v":
             value = 16.67
             label="Speed in m/s"
-            var3_value=st.number_input(label=f"{label}:",value=value,key=f"o")
+            var3_value=st.number_input(label=f"{label}:",value=value,key=f"var3_v")
             v=var3_value
             ls=250/v
             st.write(f"Lap split of {round(ls,2)} seconds")
@@ -163,7 +163,7 @@ if authentication_status:
     c1,c2=st.columns(2)
    
     with c1:
-        free_var=st.selectbox(options=["P","CdA","v","rho"],label="Select free variable:",key="p")
+        free_var=st.selectbox(options=["P","CdA","v","rho"],label="Select free variable:",key="free_var")
     with c2:
         if free_var=="P":
             shift=st.number_input(label=f"Power shift in Watts:",value=0,key=f"free_P")
