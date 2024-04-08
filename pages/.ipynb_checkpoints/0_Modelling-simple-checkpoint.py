@@ -89,8 +89,9 @@ if authentication_status:
 
     with c2:
         options.remove(var1)
-        options
-        var2=st.selectbox(options=options,label="Inital value 2:",key="var2")
+        options2=options
+        options2
+        var2=st.selectbox(options=options2,label="Inital value 2:",key="var2")
         if var2=="P":
             value = 460
             label="Power in watts"
@@ -115,9 +116,10 @@ if authentication_status:
             st.write(f"Lap split of {round(ls,2)} seconds")
         
     with c3:
-        options.remove(var2)
-        options
-        var3=st.selectbox(options=options,label="Inital value 3:",key="var3")
+        options2.remove(var2)
+        options3=options2
+        options3
+        var3=st.selectbox(options=options3,label="Inital value 3:",key="var3")
         if var3=="P":
             value = 460
             label="Power in watts"
