@@ -56,33 +56,35 @@ if authentication_status:
 
     st.header("Insert initial values")
     st.session_state
-    c1,c2,c3,c4=st.columns(4)
-    with c1:
-        options=["v","CdA","rho","P"]
-        var1=st.selectbox(options=options,label="Inital value 1:",key="a")
-        if var1=="P":
-            value = 460
-            label="Power in watts"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"b")
-            P=var1_value
-        if var1=="CdA":
-            value = 0.1700
-            label="CdA in m^2"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"c",step=1e-4,format="%.4f")
-            CdA=var1_value
-        if var1=="rho":
-            value = 1.169
-            label="Air density in kg/m^3"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"d",step=1e-3,format="%.3f")
-            rho=var1_value
-        if var1=="v":
-            value = 16.67
-            label="Speed in m/s"
-            var1_value=st.number_input(label=f"{label}:",value=value,key=f"e")
-            v=var1_value
-            ls=250/v
-            st.write(f"Lap split of {round(ls,2)} seconds")
-        
+    
+    with st.form(key='my_form'):
+        c1,c2,c3,c4=st.columns(4)
+        with c1:
+            options=["v","CdA","rho","P"]
+            var1=st.selectbox(options=options,label="Inital value 1:",key="a")
+            if var1=="P":
+                value = 460
+                label="Power in watts"
+                var1_value=st.number_input(label=f"{label}:",value=value,key=f"b")
+                P=var1_value
+            if var1=="CdA":
+                value = 0.1700
+                label="CdA in m^2"
+                var1_value=st.number_input(label=f"{label}:",value=value,key=f"c",step=1e-4,format="%.4f")
+                CdA=var1_value
+            if var1=="rho":
+                value = 1.169
+                label="Air density in kg/m^3"
+                var1_value=st.number_input(label=f"{label}:",value=value,key=f"d",step=1e-3,format="%.3f")
+                rho=var1_value
+            if var1=="v":
+                value = 16.67
+                label="Speed in m/s"
+                var1_value=st.number_input(label=f"{label}:",value=value,key=f"e")
+                v=var1_value
+                ls=250/v
+                st.write(f"Lap split of {round(ls,2)} seconds")
+        submit_button = st.form_submit_button(label='Submit')
     with c2:
         options.remove(var1)
         var2=st.selectbox(options=options,label="Inital value 2:",key="f")
