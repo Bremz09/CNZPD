@@ -55,7 +55,7 @@ if authentication_status:
     st.latex(r'''P_{Aero} = C_{d}A \frac{1}{2}\rho v^3''')
 
     st.header("Insert initial values")
-
+    st.session_state
     c1,c2,c3,c4=st.columns(4)
     with c1:
         options=["v","CdA","rho","P"]
@@ -159,7 +159,7 @@ if authentication_status:
     c1,c2=st.columns(2)
    
     with c1:
-        free_var=st.selectbox(options=["P","CdA","v","rho"],label="Select free variable:",key="free var")
+        free_var=st.selectbox(options=["P","CdA","v","rho"],label="Select free variable:",key="16")
     with c2:
         if free_var=="P":
             shift=st.number_input(label=f"Power shift in Watts:",value=0,key=f"free_P")
