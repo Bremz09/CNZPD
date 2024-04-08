@@ -55,13 +55,13 @@ if authentication_status:
     st.latex(r'''P_{Aero} = C_{d}A \frac{1}{2}\rho v^3''')
 
     st.header("Insert initial values")
-    st.session_state
+    
     
 
     c1,c2,c3,c4=st.columns(4)
     with c1:
         options=["v","CdA","rho","P"]
-        
+        options
         var1=st.selectbox(options=options,label="Inital value 1:",key="var1")
         if var1=="v":
             value = 16.67
@@ -89,6 +89,7 @@ if authentication_status:
 
     with c2:
         options.remove(var1)
+        options
         var2=st.selectbox(options=options,label="Inital value 2:",key="var2")
         if var2=="P":
             value = 460
@@ -115,6 +116,7 @@ if authentication_status:
         
     with c3:
         options.remove(var2)
+        options
         var3=st.selectbox(options=options,label="Inital value 3:",key="var3")
         if var3=="P":
             value = 460
