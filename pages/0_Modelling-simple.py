@@ -61,7 +61,7 @@ if authentication_status:
     c1,c2,c3,c4=st.columns(4)
     with c1:
         options1=["v","CdA","rho","P"]
-        options1
+        
         var1=st.selectbox(options=options1,label="Inital value 1:",key="var1")
         if var1=="v":
             value = 16.67
@@ -90,7 +90,7 @@ if authentication_status:
     with c2:
         #options.remove(var1)
         options2 = list(filter(lambda choices: choices != var1, options1))
-        options2
+        
         var2=st.selectbox(options=options2,label="Inital value 2:",key="var2")
         if var2=="P":
             value = 460
@@ -117,7 +117,7 @@ if authentication_status:
         
     with c3:
         options3 = list(filter(lambda choices: choices != var2, options2))
-        options3
+        
         var3=st.selectbox(options=options3,label="Inital value 3:",key="var3")
         if var3=="P":
             value = 460
@@ -144,7 +144,7 @@ if authentication_status:
         
     with c4:
         options4 = list(filter(lambda choices: choices != var3, options3))
-        options4
+        
         if options4[0]=="P":
             var4 = CdA*0.5*rho*(v**3)
             P=var4
