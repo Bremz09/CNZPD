@@ -426,7 +426,7 @@ if authentication_status:
                     df_summ["Turn_2"]=second_turns
                     df_summ["Turn_3"]=third_turns
                     df_summ["Wind_Score"] = wind_scores
-                    df_summ["Event_Count"]=count
+                    # df_summ["Event_Count"]=count
                     
                     # Calculating Splits based off delivery speeds - 900 is a conversion factor
                     avg_splits=[round(900/(df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].mean()),2), round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].mean(),2),round(900/df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].mean(),2)]
@@ -525,7 +525,7 @@ if authentication_status:
                     df_full_summary=df_summ_full
                 else:
                     df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
-            df_full_summary.sort_values("Event_Count",ascending=True)
+            # df_full_summary.sort_values("Event_Count",ascending=True)
             st.header("Full Summary")
             df_full_summary
             buffer = io.BytesIO()
@@ -562,16 +562,31 @@ if authentication_status:
                     data=buffer,
                     file_name='TP_Summary_Women.xlsx',
                     mime='application/vnd.ms-excel'
-                )  
-            variable = st.selectbox(
-            'Select variable to compare:',
-                df_full_summary.columns[4:]
-            )
+                ) 
+            c1,c2=st.columns(2)
+            with c1:
+                variable = st.selectbox(
+                'Select variable to compare:',
+                    df_full_summary.columns[4:]
+                )
+            with c2:
+                show_event = st.selectbox(
+                'Show event names?',
+                    ["No","Yes"]
+                )
+
+            df_full_summary["Date"]=df_full_summary["Event"].str[0:8]
+            df_full_summary=df_full_summary.sort_values(by="Date")
+            df_full_summary["EventName"]=df_full_summary["Event"].str[9:]
+            if show_event == "Yes":
+                fig_summary = px.line(df_full_summary, x="Date", color="Rider",y=f'{variable}',markers=True,text="EventName",hover_data=["EventName"])
+            else:
+                fig_summary = px.line(df_full_summary, x=df_full_summary["Date"], color="Rider",y=f'{variable}',markers=True,hover_data=["EventName"] )
         
-            x_ax=df_full_summary.sort_values("Event_Count",ascending=True)["Event"]
-            fig_summary = px.line(df_full_summary, x="Event_Count", y=f'{variable}',color="Rider",markers=True)
-            # fig_summary.update_xaxes(type='category')
-            fig_summary.update_xaxes(categoryorder='category ascending')
+            # x_ax=df_full_summary.sort_values("Event_Count",ascending=True)["Event"]
+            # fig_summary = px.line(df_full_summary, x="Event_Count", y=f'{variable}',color="Rider",markers=True)
+            # # fig_summary.update_xaxes(type='category')
+            # fig_summary.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(fig_summary, use_container_width=True)
             st.markdown("---")
                 
@@ -1165,7 +1180,10 @@ if authentication_status:
                 else:
                     df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
             st.header("Full Summary")
+            
+            
             df_full_summary
+            
             buffer = io.BytesIO()
 
 
@@ -1201,14 +1219,82 @@ if authentication_status:
                     file_name='TP_Summary_Men.xlsx',
                     mime='application/vnd.ms-excel'
                 )  
-            variable = st.selectbox(
-            'Select variable to compare:',
-                df_full_summary.columns[4:]
-            )
-        
+            c1,c2=st.columns(2)
+            with c1:
+                variable = st.selectbox(
+                'Select variable to compare:',
+                    df_full_summary.columns[4:]
+                )
+            with c2:
+                show_event = st.selectbox(
+                'Display event name?',
+                    ["No","Yes"]
+                )   
+
+            # riders=df_full_summary["Rider"].unique()
+            # events = df_full_summary["Event"].unique()
+            # riders2=[]
+            # for idx,event in enumerate(events):
+            #     df_temp = df_full_summary.loc[df_full_summary["Event"]==event].reset_index(drop=True)
+            #     df_temp
+            #     for rider in riders:
+            #         for i
+            #         if df_temp.Rider.isin([riders]):
+            #             riders2.append(rider)
+            # riders2
+                
+
             
-            fig_summary = px.line(df_full_summary, x='Event', y=f'{variable}',color=df_full_summary.Rider, markers=True)
-                    
+
+
+
+
+            ##Horrific code snippet
+            
+            # df_var_summ=pd.DataFrame()
+            # df_event_unq=pd.DataFrame()
+            # df_var_summ["Rider"]=df_full_summary["Rider"].unique()
+            # df_var_summ = pd.DataFrame(np.repeat(df_var_summ.values, len(df_full_summary["Event"].unique()), axis=0))
+            # df_var_summ.rename(columns={ df_var_summ.columns[0]: "Rider" }, inplace = True)
+            # events=[]
+            # count=0
+            # for i in range(len(df_var_summ)):
+            #     events.append(df_full_summary["Event"].unique()[count])
+            #     count+=1
+            #     if count==len(df_full_summary["Event"].unique()):
+            #         count=0
+            # var_score=[]
+            # df_var_summ["Event"]=events
+            # df_var_summ
+            # for i in range(len(df_var_summ)):
+            #     rider = df_var_summ["Rider"][i]
+            #     event = df_var_summ["Event"][i]
+            #     df_temp=df_full_summary.loc[df_full_summary["Event"]==event]
+            #     if rider in df_temp["Rider"].unique():
+            #         df_temp
+            #         ind = df_temp['Rider'].loc[lambda x: x==True].index
+            #         id
+            #         var_score.append(df_temp[f'{variable}'][ind])
+            #     else:
+            #         var_score.append(None)
+            # df_var_summ[f"{variable}"]=var_score
+            # df_var_summ
+
+
+
+
+
+
+            
+            df_full_summary["Date"]=df_full_summary["Event"].str[0:8]
+            df_full_summary=df_full_summary.sort_values(by="Date")
+            df_full_summary["EventName"]=df_full_summary["Event"].str[9:]
+            if show_event == "Yes":
+                fig_summary = px.line(df_full_summary, x="Date", color="Rider",y=f'{variable}',markers=True,text="EventName",hover_data=["EventName"])
+            else:
+                fig_summary = px.line(df_full_summary, x=df_full_summary["Date"], color="Rider",y=f'{variable}',markers=True,hover_data=["EventName"] )
+            #for event in df_full_summary["Event"].unique():
+        
             # fig_gm.add_trace(go.Scatter(x=df_gm['Distance'][1:], y=df_gm['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
             # fig_gm.update_layout(
             # title={
@@ -1221,6 +1307,7 @@ if authentication_status:
             # fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
             # fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
             # fig_gm.update_traces(textfont_size=24, cliponaxis=False)
+            
             st.plotly_chart(fig_summary, use_container_width=True)
             st.markdown("---")
 
