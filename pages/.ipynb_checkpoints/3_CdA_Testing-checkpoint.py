@@ -205,7 +205,7 @@ if authentication_status:
         figJP = px.scatter(df_filt, y="CdA - JP - PF corrected", x = "DateRep", error_y="CdA - JP std",title="Pitman CdA by DateRep")
         st.plotly_chart(figJP, use_container_width=True)
 
-        figGM = px.line(df_filt, y=["CdA - GM","CdA - JP - PF corrected","CdA - Notio"], x = "DateRep",title="CdA comparison")
+        figGM = px.line(df_filt, y=["CdA - GM","CdA - JP - PF corrected","CdA - Notio"], x = "DateRep",title="CdA comparison", markers=True)
         st.plotly_chart(figGM, use_container_width=True)
         c1,c2,c3=st.columns(3)
         with c1:
