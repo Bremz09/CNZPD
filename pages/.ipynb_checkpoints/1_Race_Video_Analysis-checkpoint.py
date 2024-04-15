@@ -1037,7 +1037,7 @@ if authentication_status:
                     with c2sub:
                         yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1)
                     average = df_small.Split.iloc[4:].mean()
-                    fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
+                    fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data={'Split':':.2f', 'Avg_Speed':':.2f', 'Del_Speed':':.2f'})
                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
                     fig.update_layout(
                     title={
@@ -1056,7 +1056,7 @@ if authentication_status:
                     #Goldmine style Speed Trace
                     st.header("Goldmine style speed trace")
                     
-                    fig_gm = px.bar(df_gm, x='Distance', y='Avg_Speed',text="Lap_Split",color=df_gm.Front,hover_data=[df_gm.Split, df_gm.Avg_Speed])
+                    fig_gm = px.bar(df_gm, x='Distance', y='Avg_Speed',text="Lap_Split",color=df_gm.Front,hover_data={'Split':':.2f', 'Avg_Speed':':.2f'})
                     
                     fig_gm.add_trace(go.Scatter(x=df_gm['Distance'][1:], y=df_gm['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
                     fig_gm.update_layout(
