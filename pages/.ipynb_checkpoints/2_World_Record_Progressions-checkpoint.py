@@ -298,98 +298,221 @@ if authentication_status:
 
 
     if race_type=="Men's Team Sprint":
+        @st.cache_data
+        def get_wr_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Men_TS.xlsx',
+                engine ='openpyxl',
+                sheet_name='Sheet1',
+                skiprows=0,
+                usecols='A:D',
+                nrows=30
+                )
+            #df = df.replace(',','')
+            
+            df["Datetime"]=df["Date"]
+            df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
+            return df
+
+        def get_medal_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Medals_Men_TS.xlsx',
+                engine ='openpyxl',
+                sheet_name='Sheet1',
+                skiprows=0,
+                usecols='A:D',
+                nrows=30
+                )
+            #df = df.replace(',','')
+       
+
+            return df
         
         c1,c2=st.columns([1,3])
         with c1:
-            @st.cache_data
-            def get_data_from_excel():
-                df = pd.read_excel(
-                    io='pages/WR_progressions/Men_TS.xlsx',
-                    engine ='openpyxl',
-                    sheet_name='Sheet1',
-                    skiprows=0,
-                    usecols='A:D',
-                    nrows=30
-                    )
-                #df = df.replace(',','')
-                
-                df["Datetime"]=df["Date"]
-                df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
-                return df
-            df= get_data_from_excel()
-            df_master=df
-            df_show = df.drop(columns=["Seconds","DateSerial","Datetime"])
-            
-            st.dataframe(df_show)
-            ##Download buttons
-            def convert_to_csv(df_show):
-                return df.to_csv(index=False,sep = ",").encode('utf-32')
-            csv = convert_to_csv(df_show)
-            download1 = st.download_button(
-                label="Download Men TS WR data as CSV",
-                data=csv,
-                file_name='Men_TS_Data.csv',
-                mime='text/csv',
-                key="buffertt1"
-            )
-            buffer_tt = io.BytesIO()
-            with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
-                df_show.to_excel(writer, sheet_name='Sheet1', index=False)
-                writer.close()
-                download2 = st.download_button(
-                    label="Download Men TS WR data as Excel",
-                    data=buffer_tt,
-                    file_name='Men_TS_Data.xlsx',
-                    mime='application/vnd.ms-excel',
-                    key="buffertt2"
-                )
-            ##Download buttons complete
+            trend = st.selectbox("WR or Medal trend?:", ["World Record progression","Medal progression"], key="trend type Selector")
 
-
-        with c2:
-            date_range = st.slider(
-    "Restrict date range?",
-            value = (datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y')),
-                min_value = datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),
-                max_value = datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y'),
-            format="DD/MM/YY")
-            
-            time_range = st.slider(
-    "Restrict time range?",
-            value = (df_master["Time"][len(df_master)-1],df_master["Time"][0]),
-                max_value = df_master["Time"][0],
-                min_value = df_master["Time"][len(df_master)-1])
-            
-            
-            df_mask = df.mask(df["Datetime"] < date_range[0])
-            df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
-            df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
-            df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
-            fig = px.scatter(df_mask, x="DateSerial", y = "Time", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
-            customdata = np.stack((df_mask['Seconds'], df_mask['Date']), axis=-1)
-            hovertemplate = ('Time: %{customdata[0]}<br>' + 
-        'Date: %{customdata[1]}<br>' 
-        '<extra></extra>')
-            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-            st.plotly_chart(fig, use_container_width=True)
-            a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
-            const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
-            x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
-            st.write(f"Time = {round(x1,6)}(DateSerial) + {round(const,3)}")
-            st.write(f"R-squared = {round(a,3)}")
-            col1,col2=st.columns(2)
-            with col1:
-                date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
-                date_formatted=date.strftime('%d/%m/%Y')
-                
-            with col2:
-                serial = date - datetime(1899, 12, 30).date()
+            if trend=="World Record progression":
+                df= get_wr_data_from_excel()
+                df_master=df
+                df_show = df
+                df_show
     
-                st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {round(x1*serial.days +const,3)} seconds.")
+                ##Download buttons
+                def convert_to_csv(df_show):
+                    return df.to_csv(index=False,sep = ",").encode('utf-32')
+                csv = convert_to_csv(df_show)
+                download1 = st.download_button(
+                    label="Download Men TS data as CSV",
+                    data=csv,
+                    file_name='Men_TS_Data.csv',
+                    mime='text/csv',
+                    key="buffertt1"
+                )
+                buffer_tt = io.BytesIO()
+                with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
+                    df_show.to_excel(writer, sheet_name='Sheet1', index=False)
+                    writer.close()
+                    download2 = st.download_button(
+                        label="Download Men TS data as Excel",
+                        data=buffer_tt,
+                        file_name='Men_TS_Data.xlsx',
+                        mime='application/vnd.ms-excel',
+                        key="buffertt2"
+                    )
+                ##Download buttons complete
+    
+    
+                with c2:
+                    date_range = st.slider(
+            "Restrict date range?",
+                    value = (datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y')),
+                        min_value = datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),
+                        max_value = datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y'),
+                    format="DD/MM/YY")
+                    
+                    time_range = st.slider(
+            "Restrict time range?",
+                    value = (df_master["Time"][len(df_master)-1],df_master["Time"][0]),
+                        max_value = df_master["Time"][0],
+                        min_value = df_master["Time"][len(df_master)-1])
+                    
+                    
+                    df_mask = df.mask(df["Datetime"] < date_range[0])
+                    df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
+                    df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
+                    fig = px.scatter(df_mask, x="DateSerial", y = "Time", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
+                    customdata = np.stack((df_mask['Seconds'], df_mask['Date']), axis=-1)
+                    hovertemplate = ('Time: %{customdata[0]}<br>' + 
+                'Date: %{customdata[1]}<br>' 
+                '<extra></extra>')
+                    fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                    st.plotly_chart(fig, use_container_width=True)
+                    a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                    const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                    x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                    st.write(f"Time = {round(x1,6)}(DateSerial) + {round(const,3)}")
+                    st.write(f"R-squared = {round(a,3)}")
+                    col1,col2=st.columns(2)
+                    with col1:
+                        date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                        date_formatted=date.strftime('%d/%m/%Y')
+                        
+                    with col2:
+                        serial = date - datetime(1899, 12, 30).date()
+            
+                        st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {round(x1*serial.days +const,3)} seconds.")
+        
 
-
-
-
+            else:
+                df= get_medal_data_from_excel()
+                df_master=df
+                df_show = df
+                df_show
+    
+                ##Download buttons
+                def convert_to_csv(df_show):
+                    return df.to_csv(index=False,sep = ",").encode('utf-32')
+                csv = convert_to_csv(df_show)
+                download1 = st.download_button(
+                    label="Download Men TS data as CSV",
+                    data=csv,
+                    file_name='Men_TS_Data.csv',
+                    mime='text/csv',
+                    key="buffertt1"
+                )
+                buffer_tt = io.BytesIO()
+                with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
+                    df_show.to_excel(writer, sheet_name='Sheet1', index=False)
+                    writer.close()
+                    download2 = st.download_button(
+                        label="Download Men TS data as Excel",
+                        data=buffer_tt,
+                        file_name='Men_TS_Data.xlsx',
+                        mime='application/vnd.ms-excel',
+                        key="buffertt2"
+                    )
+                ##Download buttons complete
+    
+    
+                with c2:
+                    date_range = st.slider(
+            "Restrict date range?",
+                    value = (2000,2021),
+                        min_value = 2000,
+                        max_value = 2021)
+                    
+                    time_range = st.slider(
+            "Restrict time range?",
+                    value = (41.369,45.161),
+                        max_value = 45.161,
+                        min_value = 41.369)
+                    
+                    df_mask = df.mask(df["Year"] < date_range[0])
+                    df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+                    df_mask = df_mask.mask(df_mask["Bronze_Time"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Bronze_Time"] > time_range[1])
+                    df_mask = df_mask.mask(df_mask["Silver_Time"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Silver_Time"] > time_range[1])
+                    df_mask = df_mask.mask(df_mask["Gold_Time"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Gold_Time"] > time_range[1])
+                    fig = px.scatter(df_mask, x="Year", y = ["Bronze_Time","Silver_Time","Gold_Time"], title="Men's TS medal winning time progression",labels={"value":"Time (seconds)"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
+                    customdata = np.stack((round(df_mask['Bronze_Time'],3), round(df_mask['Silver_Time'],3),round(df_mask['Gold_Time'],3),df_mask['Year']), axis=-1)
+                    hovertemplate = ('Bronze: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Gold: %{customdata[2]}<br>' +
+                'Year: %{customdata[3]}<br>' 
+                '<extra></extra>')
+                    fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    col1,col2=st.columns(2)
+                    with col1:
+                        bronze_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                        bronze_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                        bronze_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                        silver_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+                        silver_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+                        silver_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+                        gold_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+                        gold_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+                        gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+                        st.write(f"Bronze time = {round(bronze_x1,6)}(Year) + {round(bronze_const,3)}")
+                        st.write(f"R-squared = {round(bronze_a,3)}")
+                        st.write(f"Silver time = {round(silver_x1,6)}(Year) + {round(silver_const,3)}")
+                        st.write(f"R-squared = {round(silver_a,3)}")
+                        st.write(f"Gold time = {round(gold_x1,6)}(Year) + {round(gold_const,3)}")
+                        st.write(f"R-squared = {round(gold_a,3)}")
+                    with col2:
+                        predict_year = st.selectbox("Select year for medal predictions:", [2024,2028,2032,2036,2040,2044,2048])
+                        
+                        
+                    
+        
+                        bronze_m, bronze_s = divmod(bronze_x1*predict_year +bronze_const, 60)
+                        bronze_h, bronze_m = divmod(bronze_m, 60)
+                        bronze_m = int(bronze_m)
+                        bronze_s=round(bronze_s,3)
+                        if bronze_s<10:
+                            bronze_s="0"+str(bronze_s)           
+                        st.write(f"This trend predicts a Bronze medal winning time of {bronze_s} in {predict_year}.")
+                        silver_m, silver_s = divmod(silver_x1*predict_year +silver_const, 60)
+                        silver_h, silver_m = divmod(silver_m, 60)
+                        silver_m = int(silver_m)
+                        silver_s=round(silver_s,3)
+                        if silver_s<10:
+                            silver_s="0"+str(silver_s)           
+                        st.write(f"This trend predicts a Silver medal winning time of {silver_s} in {predict_year}.")
+                        gold_m, gold_s = divmod(gold_x1*predict_year +gold_const, 60)
+                        gold_h, gold_m = divmod(gold_m, 60)
+                        gold_m = int(gold_m)
+                        gold_s=round(gold_s,3)
+                        if gold_s<10:
+                            gold_s="0"+str(gold_s)           
+                        st.write(f"This trend predicts a Gold medal winning time of {gold_s} in {predict_year}.")
+        
+        
+        
+        
 
 
 
@@ -528,104 +651,134 @@ if authentication_status:
 
 
     if race_type=="Men's Team Pursuit":
-        
+        @st.cache_data
+        def get_wr_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Men_TP.xlsx',
+                engine ='openpyxl',
+                sheet_name='Sheet1',
+                skiprows=0,
+                usecols='A:D',
+                nrows=30
+                )
+            #df = df.replace(',','')
+            df["Time"]=((pd.to_datetime(df["Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
+
+            # df["Time"]=df["Time"].astype(str)
+            # df["Time"]=df["Time"].str[1:9]
+            df["Datetime"]=df["Date"]
+            df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
+            return df
+
+        def get_medal_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Medals_Men_TP.xlsx',
+                engine ='openpyxl',
+                sheet_name='Sheet1',
+                skiprows=0,
+                usecols='A:G',
+                nrows=30
+                )
+            #df = df.replace(',','')
+       
+            df["Bronze_Time"]=((pd.to_datetime(df["Bronze_Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
+            df["Silver_Time"]=((pd.to_datetime(df["Silver_Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
+            df["Gold_Time"]=((pd.to_datetime(df["Gold_Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
+            # df["Time"]=df["Time"].astype(str)
+            # df["Time"]=df["Time"].str[1:9]
+            # df["Datetime"]=df["Date"]
+            # df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
+            return df
+    
         c1,c2=st.columns([1,3])
         with c1:
-            @st.cache_data
-            def get_data_from_excel():
-                df = pd.read_excel(
-                    io='pages/WR_progressions/Men_TP.xlsx',
-                    engine ='openpyxl',
-                    sheet_name='Sheet1',
-                    skiprows=0,
-                    usecols='A:D',
-                    nrows=30
-                    )
-                #df = df.replace(',','')
-                df["Time"]=((pd.to_datetime(df["Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
-                # df["Time"]=df["Time"].astype(str)
-                # df["Time"]=df["Time"].str[1:9]
-                df["Datetime"]=df["Date"]
-                df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
-                return df
-            df= get_data_from_excel()
-            df_master=df
-            df_show = df.drop(columns=["DateSerial","Datetime"])
+            trend = st.selectbox("WR or Medal trend?:", ["World Record progression","Medal progression"], key="trend type Selector")
             
-            df_show
-            
-            ##Download buttons
-            def convert_to_csv(df_show):
-                return df.to_csv(index=False,sep = ",").encode('utf-32')
-            csv = convert_to_csv(df_show)
-            download1 = st.download_button(
-                label="Download Men TP WR data as CSV",
-                data=csv,
-                file_name='Men_TP_WR_Data.csv',
-                mime='text/csv',
-                key="buffertt1"
-            )
-            buffer_tt = io.BytesIO()
-            with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
-                df_show.to_excel(writer, sheet_name='Sheet1', index=False)
-                writer.close()
-                download2 = st.download_button(
-                    label="Download Men TP WR data as Excel",
-                    data=buffer_tt,
-                    file_name='Men_TP_WR_Data.xlsx',
-                    mime='application/vnd.ms-excel',
-                    key="buffertt2"
-                )
-            ##Download buttons complete
-
-
-        with c2:
-            date_range = st.slider(
-    "Restrict date range?",
-            value = (datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y')),
-                min_value = datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),
-                max_value = datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y'),
-            format="DD/MM/YY")
-            
-            time_range = st.slider(
-    "Restrict time range?",
-            value = (df_master["Seconds"][len(df_master)-1],df_master["Seconds"][0]),
-            max_value = df_master["Seconds"][0],
-            min_value = df_master["Seconds"][len(df_master)-1])
-            
-            
-            df_mask = df.mask(df["Datetime"] < date_range[0])
-            df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
-            df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
-            df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
-            fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
-            customdata = np.stack((round(df_mask['Seconds'],3), df_mask['Date']), axis=-1)
-            hovertemplate = ('Time: %{customdata[0]}<br>' + 
-        'Date: %{customdata[1]}<br>' 
-        '<extra></extra>')
-            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-            st.plotly_chart(fig, use_container_width=True)
-            a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
-            const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
-            x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
-            st.write(f"Time = {round(x1,6)}(DateSerial) + {round(const,3)}")
-            st.write(f"R-squared = {round(a,3)}")
-            col1,col2=st.columns(2)
-            with col1:
-                date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
-                date_formatted=date.strftime('%d/%m/%Y')
+            if trend=="World Record progression":
+                df= get_wr_data_from_excel()
+                df_master=df
+                df_show = df.drop(columns=["DateSerial","Datetime"])
                 
-            with col2:
-                serial = date - datetime(1899, 12, 30).date()
+                df_show
+                
+                ##Download buttons
+                def convert_to_csv(df_show):
+                    return df.to_csv(index=False,sep = ",").encode('utf-32')
+                csv = convert_to_csv(df_show)
+                download1 = st.download_button(
+                    label="Download Men TP WR data as CSV",
+                    data=csv,
+                    file_name='Men_TP_WR_Data.csv',
+                    mime='text/csv',
+                    key="buffertt1"
+                )
+                buffer_tt = io.BytesIO()
+                with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
+                    df_show.to_excel(writer, sheet_name='Sheet1', index=False)
+                    writer.close()
+                    download2 = st.download_button(
+                        label="Download Men TP WR data as Excel",
+                        data=buffer_tt,
+                        file_name='Men_TP_WR_Data.xlsx',
+                        mime='application/vnd.ms-excel',
+                        key="buffertt2"
+                    )
+                ##Download buttons complete
     
+    
+                with c2:
+                    date_range = st.slider(
+            "Restrict date range?",
+                    value = (datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y')),
+                        min_value = datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),
+                        max_value = datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y'),
+                    format="DD/MM/YY")
+                    
+                    time_range = st.slider(
+            "Restrict time range?",
+                    value = (df_master["Seconds"][len(df_master)-1],df_master["Seconds"][0]),
+                    max_value = df_master["Seconds"][0],
+                    min_value = df_master["Seconds"][len(df_master)-1])
+                    
+                    
+                    df_mask = df.mask(df["Datetime"] < date_range[0])
+                    df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
+                    df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
+                    fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
+                    customdata = np.stack((round(df_mask['Seconds'],3), df_mask['Date']), axis=-1)
+                    hovertemplate = ('Time: %{customdata[0]}<br>' + 
+                'Date: %{customdata[1]}<br>' 
+                '<extra></extra>')
+                    fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                    st.plotly_chart(fig, use_container_width=True)
+                    a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                    const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                    x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                    st.write(f"Time = {round(x1,6)}(DateSerial) + {round(const,3)}")
+                    st.write(f"R-squared = {round(a,3)}")
+                    col1,col2=st.columns(2)
+                    with col1:
+                        date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                        date_formatted=date.strftime('%d/%m/%Y')
+                        
+                    with col2:
+                        serial = date - datetime(1899, 12, 30).date()
+                        
+        
+                        m, s = divmod(x1*serial.days +const, 60)
+                        h, m = divmod(m, 60)
+                        m = int(m)
+                        
+                        s=round(s,3)
+                        if s<10:
+                            s="0"+str(s)
+                        st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {m}:{s}.")
+        
+        
+        
+        
 
-                m, s = divmod(x1*serial.days +const, 60)
-                h, m = divmod(m, 60)
-                m = int(m)
-                s=round(s,3)
-                if s<10:
-                    s="0"+str(s)           
-                st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {m}:{s}.")
 
 
 
@@ -634,6 +787,128 @@ if authentication_status:
 
 
 
+
+
+
+
+
+
+
+            
+            else:
+                df=get_medal_data_from_excel()
+                df_master=df
+                df_show=df
+                # df_show = df.drop(columns=["DateSerial","Datetime"])
+                
+                df_show
+                
+                ##Download buttons
+                def convert_to_csv(df_show):
+                    return df.to_csv(index=False,sep = ",").encode('utf-32')
+                csv = convert_to_csv(df_show)
+                download1 = st.download_button(
+                    label="Download Men TP data as CSV",
+                    data=csv,
+                    file_name='Men_TP_Data.csv',
+                    mime='text/csv',
+                    key="buffertt1"
+                )
+                buffer_tt = io.BytesIO()
+                with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
+                    df_show.to_excel(writer, sheet_name='Sheet1', index=False)
+                    writer.close()
+                    download2 = st.download_button(
+                        label="Download Men TP data as Excel",
+                        data=buffer_tt,
+                        file_name='Men_TP_Data.xlsx',
+                        mime='application/vnd.ms-excel',
+                        key="buffertt2"
+                    )
+                ##Download buttons complete
+    
+    
+                with c2:
+                    date_range = st.slider(
+            "Restrict date range?",
+                    value = (df_master["Year"][0]+1,df_master["Year"][len(df_master)-1]),
+                        max_value = df_master["Year"][0]+1,
+                        min_value = df_master["Year"][len(df_master)-1])
+                    
+                    time_range = st.slider(
+            "Restrict time range?",
+                    value = (222.00,337.01),
+                    max_value = 337.01,
+                    min_value = 222.00)
+                    
+                    
+                    df_mask = df.mask(df["Year"] < date_range[0])
+                    df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+                    df_mask = df_mask.mask(df_mask["Bronze_Seconds"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Bronze_Seconds"] > time_range[1])
+                    df_mask = df_mask.mask(df_mask["Silver_Seconds"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Silver_Seconds"] > time_range[1])
+                    df_mask = df_mask.mask(df_mask["Gold_Seconds"] < time_range[0])
+                    df_mask = df_mask.mask(df_mask["Gold_Seconds"] > time_range[1])
+                    fig = px.scatter(df_mask, x="Year", y = ["Bronze_Seconds","Silver_Seconds","Gold_Seconds"], title="Men's TP medal winning time progression",labels={"value":"Time (seconds)"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
+                    customdata = np.stack((round(df_mask['Bronze_Seconds'],3), round(df_mask['Silver_Seconds'],3),round(df_mask['Gold_Seconds'],3),df_mask['Year']), axis=-1)
+                    hovertemplate = ('Bronze: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Gold: %{customdata[2]}<br>' +
+                'Year: %{customdata[3]}<br>' 
+                '<extra></extra>')
+                    fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    col1,col2=st.columns(2)
+                    with col1:
+                        bronze_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                        bronze_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                        bronze_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                        silver_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+                        silver_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+                        silver_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+                        gold_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+                        gold_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+                        gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+                        st.write(f"Bronze time = {round(bronze_x1,6)}(Year) + {round(bronze_const,3)}")
+                        st.write(f"R-squared = {round(bronze_a,3)}")
+                        st.write(f"Silver time = {round(silver_x1,6)}(Year) + {round(silver_const,3)}")
+                        st.write(f"R-squared = {round(silver_a,3)}")
+                        st.write(f"Gold time = {round(gold_x1,6)}(Year) + {round(gold_const,3)}")
+                        st.write(f"R-squared = {round(gold_a,3)}")
+                    with col2:
+                        predict_year = st.selectbox("Select year for medal predictions:", [2024,2028,2032,2036,2040,2044,2048])
+                        
+                        
+                    
+        
+                        bronze_m, bronze_s = divmod(bronze_x1*predict_year +bronze_const, 60)
+                        bronze_h, bronze_m = divmod(bronze_m, 60)
+                        bronze_m = int(bronze_m)
+                        bronze_s=round(bronze_s,3)
+                        if bronze_s<10:
+                            bronze_s="0"+str(bronze_s)           
+                        st.write(f"This trend predicts a Bronze medal winning time of {bronze_m}:{bronze_s} in {predict_year}.")
+                        silver_m, silver_s = divmod(silver_x1*predict_year +silver_const, 60)
+                        silver_h, silver_m = divmod(silver_m, 60)
+                        silver_m = int(silver_m)
+                        silver_s=round(silver_s,3)
+                        if silver_s<10:
+                            silver_s="0"+str(silver_s)           
+                        st.write(f"This trend predicts a Silver medal winning time of {silver_m}:{silver_s} in {predict_year}.")
+                        gold_m, gold_s = divmod(gold_x1*predict_year +gold_const, 60)
+                        gold_h, gold_m = divmod(gold_m, 60)
+                        gold_m = int(gold_m)
+                        gold_s=round(gold_s,3)
+                        if gold_s<10:
+                            gold_s="0"+str(gold_s)           
+                        st.write(f"This trend predicts a Gold medal winning time of {gold_m}:{gold_s} in {predict_year}.")
+        
+        
+        
+    
+    
+    
+    
 
 
 
