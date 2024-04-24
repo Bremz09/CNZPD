@@ -126,7 +126,7 @@ if authentication_status:
             df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
             df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
             df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
-            fig = px.scatter(df_mask, x="DateSerial", y = "Time", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline='ols',trendline_color_override="red")
+            fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="Men's Flying 200m World Record Progression",labels={"value":"Splits (seconds)"},trendline='ols',trendline_color_override="red")
             customdata = np.stack((df_mask['Seconds'], df_mask['Date']), axis=-1)
             hovertemplate = ('Time: %{customdata[0]}<br>' + 
         'Date: %{customdata[1]}<br>' 
@@ -246,7 +246,7 @@ if authentication_status:
             df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
             df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
             df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
-            fig = px.scatter(df_mask, x="DateSerial", y = "Time", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
+            fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="Women's Flying 200m World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
             customdata = np.stack((df_mask['Seconds'], df_mask['Date']), axis=-1)
             hovertemplate = ('Time: %{customdata[0]}<br>' + 
         'Date: %{customdata[1]}<br>' 
@@ -382,7 +382,7 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
                     df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
-                    fig = px.scatter(df_mask, x="DateSerial", y = "Time", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
+                    fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="Men's Team Sprint World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
                     customdata = np.stack((df_mask['Seconds'], df_mask['Date']), axis=-1)
                     hovertemplate = ('Time: %{customdata[0]}<br>' + 
                 'Date: %{customdata[1]}<br>' 
@@ -457,7 +457,7 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["Silver_Time"] > time_range[1])
                     df_mask = df_mask.mask(df_mask["Gold_Time"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["Gold_Time"] > time_range[1])
-                    fig = px.scatter(df_mask, x="Year", y = ["Bronze_Time","Silver_Time","Gold_Time"], title="Men's TS medal winning time progression",labels={"value":"Time (seconds)"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
+                    fig = px.scatter(df_mask, x="Year", y = ["Bronze_Time","Silver_Time","Gold_Time"], title="Men's Team Sprint Olympic Medal Winning Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
                     customdata = np.stack((round(df_mask['Bronze_Time'],3), round(df_mask['Silver_Time'],3),round(df_mask['Gold_Time'],3),df_mask['Year']), axis=-1)
                     hovertemplate = ('Bronze: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Gold: %{customdata[2]}<br>' +
                 'Year: %{customdata[3]}<br>' 
@@ -601,7 +601,7 @@ if authentication_status:
             df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
             df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
             df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
-            fig = px.scatter(df_mask, x="DateSerial", y = "Time", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
+            fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="Women's Team Sprint World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
             customdata = np.stack((df_mask['Seconds'], df_mask['Date']), axis=-1)
             hovertemplate = ('Time: %{customdata[0]}<br>' + 
         'Date: %{customdata[1]}<br>' 
@@ -745,7 +745,7 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
                     df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
-                    fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
+                    fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="Men's Team Pursuit World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
                     customdata = np.stack((round(df_mask['Seconds'],3), df_mask['Date']), axis=-1)
                     hovertemplate = ('Time: %{customdata[0]}<br>' + 
                 'Date: %{customdata[1]}<br>' 
@@ -776,24 +776,6 @@ if authentication_status:
                         st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {m}:{s}.")
         
         
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             
             else:
                 df=get_medal_data_from_excel()
@@ -850,7 +832,7 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["Silver_Seconds"] > time_range[1])
                     df_mask = df_mask.mask(df_mask["Gold_Seconds"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["Gold_Seconds"] > time_range[1])
-                    fig = px.scatter(df_mask, x="Year", y = ["Bronze_Seconds","Silver_Seconds","Gold_Seconds"], title="Men's TP medal winning time progression",labels={"value":"Time (seconds)"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
+                    fig = px.scatter(df_mask, x="Year", y = ["Bronze_Seconds","Silver_Seconds","Gold_Seconds"], title="Men's Team Pursuit Olympic Medal Winning Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
                     customdata = np.stack((round(df_mask['Bronze_Seconds'],3), round(df_mask['Silver_Seconds'],3),round(df_mask['Gold_Seconds'],3),df_mask['Year']), axis=-1)
                     hovertemplate = ('Bronze: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Gold: %{customdata[2]}<br>' +
                 'Year: %{customdata[3]}<br>' 
@@ -987,7 +969,7 @@ if authentication_status:
             df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
             df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
             df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
-            fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
+            fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="Women's Team Pursuit World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
             customdata = np.stack((round(df_mask['Seconds'],3), df_mask['Date']), axis=-1)
             hovertemplate = ('Time: %{customdata[0]}<br>' + 
         'Date: %{customdata[1]}<br>' 

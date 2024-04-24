@@ -178,6 +178,7 @@ if authentication_status:
 
 
         if len(selections) !=0:
+            avg_speed_dists=[]
             df_combine = pd.DataFrame()
             for count,event_count in enumerate(selections):
                 st.markdown("---")
@@ -356,7 +357,28 @@ if authentication_status:
                         'xanchor': 'center',
                         'yanchor': 'top',
                         'font':dict(size=25)})
+                    av_speed=3.6*62.5/average
+                    
+                    
+                    av_idx=1
+                    below_av = df_small["Del_Speed"][av_idx]
+                    above_av=below_av
+                    while below_av <av_speed:
+                        below_av=df_small["Del_Speed"][av_idx]
+                        av_idx+=1
+                    above_av=df_small["Del_Speed"][av_idx-1]
+                    below_av=df_small["Del_Speed"][av_idx-2]
+                    
+                    
+                    below_av_dist = df_small["Distance"][av_idx-2]
+                    
+                    if below_av==above_av:
+                        av_speed_dist = below_av_dist
+                    else:
+                        av_speed_dist = below_av_dist + 62.5*(av_speed-below_av)/(above_av-below_av)
+                    avg_speed_dists.extend([av_speed_dist for i in range(4)])
                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    fig.add_vline(x=round(av_speed_dist,2), line_dash="dash",line_color="yellow",annotation_text=f"Avg speed at {round(av_speed_dist,2)}m")
                     yaxis_min = yaxis_min #min(df_temp["Avg_Speed"][1:])-1
                     yaxis_max = yaxis_max #max(df_temp["Avg_Speed"])+1
                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
@@ -379,6 +401,7 @@ if authentication_status:
                         'yanchor': 'top',
                         'font':dict(size=25)})
                     fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
+                    fig_gm.add_vline(x=round(av_speed_dist,2), line_dash="dash",line_color="yellow",annotation_text=f"Avg speed at {round(av_speed_dist,2)}m")
                     fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     fig_gm.update_traces(textfont_size=24, cliponaxis=False)
                     st.plotly_chart(fig_gm, use_container_width=True)
@@ -528,6 +551,7 @@ if authentication_status:
                     df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
             # df_full_summary.sort_values("Event_Count",ascending=True)
             st.header("Full Summary")
+            df_full_summary["Dist_to_avg_speed"]=avg_speed_dists
             df_full_summary
             buffer = io.BytesIO()
 
@@ -845,6 +869,7 @@ if authentication_status:
             st.markdown("[Jump to Full Summary](#full-summary)", unsafe_allow_html=True)
         with c2:
             if len(ath_filt)>0:
+                
                 options=[]
                 for race in df_small["Title"].unique():
                     for name in ath_filt:
@@ -867,6 +892,7 @@ if authentication_status:
 
         st.markdown("---")
         if len(selections) !=0:
+            avg_speed_dists=[]
             df_combine = pd.DataFrame()
             for event_count in range(len(selections)):
                 col_1,col_2=st.columns(2)
@@ -1047,6 +1073,28 @@ if authentication_status:
                         'xanchor': 'center',
                         'yanchor': 'top',
                         'font':dict(size=25)})
+
+                    av_speed=3.6*62.5/average
+                    
+                    
+                    av_idx=1
+                    below_av = df_small["Del_Speed"][av_idx]
+                    above_av=below_av
+                    while below_av <av_speed:
+                        below_av=df_small["Del_Speed"][av_idx]
+                        av_idx+=1
+                    above_av=df_small["Del_Speed"][av_idx-1]
+                    below_av=df_small["Del_Speed"][av_idx-2]
+                    
+                    
+                    below_av_dist = df_small["Distance"][av_idx-2]
+                    
+                    if below_av==above_av:
+                        av_speed_dist = below_av_dist
+                    else:
+                        av_speed_dist = below_av_dist + 62.5*(av_speed-below_av)/(above_av-below_av)
+                    avg_speed_dists.extend([av_speed_dist for i in range(4)])
+                    fig.add_vline(x=round(av_speed_dist,2), line_dash="dash",line_color="yellow",annotation_text=f"Avg speed at {round(av_speed_dist,2)}m")
                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
                     yaxis_min = yaxis_min #min(df_temp["Avg_Speed"][1:])-1
                     yaxis_max = yaxis_max #max(df_temp["Avg_Speed"])+1
@@ -1067,6 +1115,7 @@ if authentication_status:
                         'xanchor': 'center',
                         'yanchor': 'top',
                         'font':dict(size=25)})
+                    fig_gm.add_vline(x=round(av_speed_dist,2), line_dash="dash",line_color="yellow",annotation_text=f"Avg speed at {round(av_speed_dist,2)}m")
                     fig_gm.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
                     fig_gm.update_layout(yaxis_range=[yaxis_min,yaxis_max])
                     fig_gm.update_traces(textfont_size=24, cliponaxis=False)
@@ -1156,6 +1205,7 @@ if authentication_status:
                     df_summ_full["2k"]=round(df_kilos["Split"][1],3)
                     df_summ_full["3k"]=round(df_kilos["Split"][2],3)
                     df_summ_full["4k"]=round(df_kilos["Split"][3],3)
+                    
                     avg_del_split=df_summ_full['Avg_Del_Split'].mean()
                     df_summ_full.insert(11,"Avg_Del_Split_%",round(100*df_summ_full["Avg_Del_Split"]/avg_del_split,2))
                     
@@ -1182,7 +1232,7 @@ if authentication_status:
                     df_full_summary = pd.concat([df_full_summary, df_summ_full], ignore_index=True)
             st.header("Full Summary")
             
-            
+            df_full_summary["Dist_to_avg_speed"]=avg_speed_dists
             df_full_summary
             
             buffer = io.BytesIO()
@@ -1290,6 +1340,8 @@ if authentication_status:
             df_full_summary["Date"]=df_full_summary["Event"].str[0:8]
             df_full_summary=df_full_summary.sort_values(by="Date")
             df_full_summary["EventName"]=df_full_summary["Event"].str[9:]
+            
+            
             if show_event == "Yes":
                 fig_summary = px.line(df_full_summary, x="Date", color="Rider",y=f'{variable}',markers=True,text="EventName",hover_data=["EventName"])
             else:
