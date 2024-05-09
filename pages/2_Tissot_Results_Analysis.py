@@ -2156,7 +2156,7 @@ if authentication_status:
 
             #Fourth Figure - Ranges
 
-            fig_ranges_CH = px.line(df_countryHistory, x=df_splits_CH.columns[1:], y = [125,250,375,500,625,750], title="The Ranges",markers=True)
+            fig_ranges_CH = px.line(df_countryHistory, x=df_splits_CH.columns[1:], y = ["125m","250m","375m","500m","625m","750m"], title="The Ranges",markers=True)
             st.plotly_chart(fig_ranges_CH, use_container_width=True)
 
 
@@ -2221,8 +2221,8 @@ if authentication_status:
 
 
         ###Ranges
-
-        fig_event = px.line(df_an, y=[125,250,375,500,625,750], x = df_worm.columns[1:], title="The Ranges", markers=True)
+        
+        fig_event = px.line(df_an, y=["125m","250m","375m","500m","625m","750m"], x = df_worm.columns[1:], title="The Ranges", markers=True)
         st.plotly_chart(fig_event, use_container_width=True)
 
     if race_type=="Men's Omnium":
