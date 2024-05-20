@@ -157,20 +157,56 @@ if authentication_status:
                 seated_fatigue_rate = st.number_input("Seated Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.20, step=1e-2, format="%.2f",key="4_4")
             with c5:
                 fatigue_onset = st.number_input("Onset of Fatigue (s):", min_value=0.1, max_value=2.0,value=1.0, step=0.1, format="%.1f",key="4_5")
+            
+            c1,c2,c3,c4,c5 =st.columns(5)
+            with c1:
+                circumferences = [250,333,500]
+                track_circumference = st.selectbox("Track Circumference:", circumferences, key="Track_circumference")
+            with c2:
+                straight_bank_angle = st.number_input("Straight Bank Angle:", min_value=0.00, max_value=90.00,value=13.00)
+            with c4:
+                pl_to_trans = st.number_input("Distance from Pursuit Line to Transition:", min_value=0.00, max_value=90.00,value=31.25)
+            with c5:
+                transition_length = st.number_input("Transition length:", min_value=0.00, max_value=90.00,value=10.00)
+            with c3:
+                bend_bank_angle = st.number_input("Bend Bank Angle:", min_value=0.00, max_value=90.00,value=46.13)
             submitted = st.form_submit_button("Update Specs")
-
-        st.write(f"P1 Gear = {27*chainring_1/sprocket_1}")
-        st.write(f"P2 Gear = {27*chainring_2/sprocket_2}")
-        st.write(f"P3 Gear = {27*chainring_3/sprocket_3}")
+            
+        class Athlete:
+            def __init__(self, seat_Max_RPM, seat_Max_Torque, stand_CdA, seat_CdA, total_mass, gear, max_power):
+                self.seat_Max_RPM = seat_Max_RPM
+                self.seat_Max_Torque = seat_Max_Torque
+                self.stand_CdA = stand_CdA
+                self.seat_CdA = seat_CdA
+                self.total_mass = total_mass
+                self.gear = gear
+                self.max_power = max_power
+                
+        p1 = Athlete(seat_Max_RPM_1,seat_Max_Torque_1,stand_CdA_1,seat_CdA_1,total_mass_1,27*chainring_1/sprocket_1, seat_Max_RPM_1*seat_Max_Torque_1*math.pi/120)
+        p2 = Athlete(seat_Max_RPM_2,seat_Max_Torque_2,stand_CdA_2,seat_CdA_2,total_mass_2,27*chainring_2/sprocket_2, seat_Max_RPM_2*seat_Max_Torque_2*math.pi/120)
+        p3 = Athlete(seat_Max_RPM_3,seat_Max_Torque_3,stand_CdA_3,seat_CdA_3,total_mass_3,27*chainring_3/sprocket_3, seat_Max_RPM_3*seat_Max_Torque_3*math.pi/120)
+        # p1_gear = 27*chainring_1/sprocket_1
+        # p2_gear = 27*chainring_2/sprocket_2
+        # p3_gear = 27*chainring_3/sprocket_3
+        # p1_max_power = seat_Max_RPM_1*seat_Max_Torque_1*math.pi/120
+        # p2_max_power = seat_Max_RPM_2*seat_Max_Torque_2*math.pi/120
+        # p3_max_power = seat_Max_RPM_3*seat_Max_Torque_3*math.pi/120
+        st.write(f"P1 Gear = {p1.gear} inches (old school)")
+        st.write(f"P2 Gear = {p2.gear} inches (old school)")
+        st.write(f"P3 Gear = {p3.gear} inches (old school)")
+        st.write(f"P1 Max Power = {round(p1.max_power,2)} W")
+        st.write(f"P2 Max Power = {round(p2.max_power,2)} W")
+        st.write(f"P3 Max Power = {round(p3.max_power,2)} W")
         time = 0
-        p1_speed = 2
-        p1_power = 0
-        p1_cadence = 0
-        p1_cadence = 0
-        p1_cadence = 0
-        p1_cadence = 0
-        p1_cadence = 0
-        p1_cadence = 0
+        p1.speed = 0       
+        p1.power = 0
+        p1.cadence = 0
+        p1.prop_force = 0
+        p1.aero_drag_rr = 0
+        p1.accel = 0
+        p1.COM = 0
+        p1.dist = 0
+        p1.lean = 0 
         
 
 

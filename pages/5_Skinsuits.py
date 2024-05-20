@@ -161,7 +161,7 @@ if authentication_status:
         with c2:
             ath2 = st.selectbox(
                 "Athlete 2:",
-                options=df["Athlete"].loc[(df["Image"].notnull()) & (df["Athlete"]!=ath1)]
+                options=df["Athlete"].loc[(df["Image"].notnull())]
                 ) 
         submitted = st.form_submit_button("Compare")
 
