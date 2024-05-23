@@ -94,63 +94,80 @@ if authentication_status:
     if Calc == "Female Team Sprint":
         with st.form("my_form"):
             st.subheader("Position 1 specs")
+            c1,c2,c3,c4,c5,c6 =st.columns(6)
+            with c1:
+                seat_max_RPM_1 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=235.00,key="1_1")
+            with c2:
+                seat_max_torque_1 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=207.00,key="1_2")
+            with c3:
+                seat_CdA_1 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2000, step=1e-4, format="%.4f",key="1_3")
+            with c4:
+                stand_max_RPM_1 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=240.00,key="1_4")
+            with c5:
+                stand_max_torque_1 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=223.00,key="1_5")
+            with c6:
+                stand_CdA_1 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.3200, step=1e-4, format="%.4f",key="1_6")
             c1,c2,c3,c4 =st.columns(4)
             with c1:
-                seat_Max_RPM_1 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=260.00,key="1_1")
+                total_mass_1 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=84.0, step=0.1, format="%.1f",key="1_7")
             with c2:
-                seat_Max_Torque_1 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=350.00,key="1_2")
+                sprocket_1 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="1_8")
             with c3:
-                stand_CdA_1 = st.number_input("Standing CdA:", min_value=0.0001, max_value=2.0000,value=0.2380, step=1e-4, format="%.4f",key="1_3")
+                chainring_1 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=56, step=1,key="1_9")
             with c4:
-                seat_CdA_1 = st.number_input("Seated CdA:", min_value=0.00, max_value=20.00,value=0.2975, step=1e-4, format="%.4f",key="1_4")
-            c1,c2,c3 =st.columns(3)
-            with c1:
-                total_mass_1 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=85.0, step=0.1, format="%.1f",key="1_5")
-            with c2:
-                sprocket_1 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="1_6")
-            with c3:
-                chainring_1 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=56, step=1,key="1_7")
+                seat_height_1 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.00,key="1_10")
             st.subheader("Position 2 specs")
+            c1,c2,c3,c4,c5,c6 =st.columns(6)
+            with c1:
+                seat_max_RPM_2 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=260.00,key="2_1")
+            with c2:
+                seat_max_torque_2 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=250.00,key="2_2")
+            with c3:
+                seat_CdA_2 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2380, step=1e-4, format="%.4f",key="2_3")
+            with c4:
+                stand_max_RPM_2 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=260.00,key="2_4")
+            with c5:
+                stand_max_torque_2 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=350.00,key="2_5")
+            with c6:
+                stand_CdA_2 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2975, step=1e-4, format="%.4f",key="2_6")
             c1,c2,c3,c4 =st.columns(4)
             with c1:
-                seat_Max_RPM_2 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=260.00,key="2_1")
+                total_mass_2 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=85.0, step=0.1, format="%.1f",key="2_7")
             with c2:
-                seat_Max_Torque_2 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=350.00,key="2_2")
+                sprocket_2 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="2_8")
             with c3:
-                stand_CdA_2 = st.number_input("Standing CdA:", min_value=0.0001, max_value=2.0000,value=0.2380, step=1e-4, format="%.4f",key="2_3")
+                chainring_2 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=56, step=1,key="2_9")
             with c4:
-                seat_CdA_2 = st.number_input("Seated CdA:", min_value=0.00, max_value=20.00,value=0.2975, step=1e-4, format="%.4f",key="2_4")
-            c1,c2,c3 =st.columns(3)
-            with c1:
-                total_mass_2 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=85.0, step=0.1, format="%.1f",key="2_5")
-            with c2:
-                sprocket_2 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="2_6")
-            with c3:
-                chainring_2 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=56, step=1,key="2_7")
+                seat_height_2 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.00,key="2_10")
             st.subheader("Position 3 specs")
+            c1,c2,c3,c4,c5,c6 =st.columns(6)
+            with c1:
+                seat_max_RPM_3 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=260.00,key="3_1")
+            with c2:
+                seat_max_torque_3 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=250.00,key="3_2")
+            with c3:
+                seat_CdA_3 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2380, step=1e-4, format="%.4f",key="3_3")
+            with c4:
+                stand_max_RPM_3 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=260.00,key="3_4")
+            with c5:
+                stand_max_torque_3 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=350.00,key="3_5")
+            with c6:
+                stand_CdA_3 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2975, step=1e-4, format="%.4f",key="3_6")
             c1,c2,c3,c4 =st.columns(4)
             with c1:
-                seat_Max_RPM_3 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=260.00,key="3_1")
+                total_mass_3 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=85.0, step=0.1, format="%.1f",key="3_7")
             with c2:
-                seat_Max_Torque_3 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=350.00,key="3_2")
+                sprocket_3 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="3_8")
             with c3:
-                stand_CdA_3 = st.number_input("Standing CdA:", min_value=0.0001, max_value=2.0000,value=0.2380, step=1e-4, format="%.4f",key="3_3")
+                chainring_3 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=56, step=1,key="3_9")
             with c4:
-                seat_CdA_3 = st.number_input("Seated CdA:", min_value=0.00, max_value=20.00,value=0.2975, step=1e-4, format="%.4f",key="3_4")
-            c1,c2,c3 =st.columns(3)
-            with c1:
-                total_mass_3 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=85.0, step=0.1, format="%.1f",key="3_5")
-            with c2:
-                sprocket_3 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="3_6")
-            with c3:
-                chainring_3 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=56, step=1,key="3_7")
-                
+                seat_height_3 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.00,key="3_10")
             st.subheader("Global specs")
             c1,c2,c3,c4,c5 =st.columns(5)
             with c1:
                 air_Density = st.number_input("Air Density:", min_value=0.001, max_value=3.200,value=1.168,key="4_1")
             with c2:
-                dist_At_Sit = st.number_input("Distance at sit:", min_value=0.01, max_value=750.0,value=150.00, step=0.1, format="%.1f",key="4_2")
+                dist_at_sit = st.number_input("Distance at sit:", min_value=0.01, max_value=750.0,value=150.00, step=0.1, format="%.1f",key="4_2")
             with c3:
                 standing_fatigue_rate = st.number_input("Standing Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.20, step=1e-2, format="%.2f",key="4_3")
             with c4:
@@ -173,50 +190,290 @@ if authentication_status:
             submitted = st.form_submit_button("Update Specs")
             
         class Athlete:
-            def __init__(self, seat_Max_RPM, seat_Max_Torque, stand_CdA, seat_CdA, total_mass, gear, max_power):
-                self.seat_Max_RPM = seat_Max_RPM
-                self.seat_Max_Torque = seat_Max_Torque
+            def __init__(self, seat_max_RPM, seat_max_torque, stand_max_RPM, stand_max_torque, stand_CdA, seat_CdA, total_mass, gear, seat_height, max_power,stand_TC_slope, seat_TC_slope):
+                self.seat_max_RPM = seat_max_RPM
+                self.seat_max_torque = seat_max_torque
+                self.stand_max_RPM = stand_max_RPM
+                self.stand_max_torque = stand_max_torque
                 self.stand_CdA = stand_CdA
                 self.seat_CdA = seat_CdA
                 self.total_mass = total_mass
                 self.gear = gear
+                self.seat_height = seat_height
                 self.max_power = max_power
+                self.stand_TC_slope = stand_TC_slope
+                self.seat_TC_slope = seat_TC_slope
                 
-        p1 = Athlete(seat_Max_RPM_1,seat_Max_Torque_1,stand_CdA_1,seat_CdA_1,total_mass_1,27*chainring_1/sprocket_1, seat_Max_RPM_1*seat_Max_Torque_1*math.pi/120)
-        p2 = Athlete(seat_Max_RPM_2,seat_Max_Torque_2,stand_CdA_2,seat_CdA_2,total_mass_2,27*chainring_2/sprocket_2, seat_Max_RPM_2*seat_Max_Torque_2*math.pi/120)
-        p3 = Athlete(seat_Max_RPM_3,seat_Max_Torque_3,stand_CdA_3,seat_CdA_3,total_mass_3,27*chainring_3/sprocket_3, seat_Max_RPM_3*seat_Max_Torque_3*math.pi/120)
-        # p1_gear = 27*chainring_1/sprocket_1
-        # p2_gear = 27*chainring_2/sprocket_2
-        # p3_gear = 27*chainring_3/sprocket_3
-        # p1_max_power = seat_Max_RPM_1*seat_Max_Torque_1*math.pi/120
-        # p2_max_power = seat_Max_RPM_2*seat_Max_Torque_2*math.pi/120
-        # p3_max_power = seat_Max_RPM_3*seat_Max_Torque_3*math.pi/120
-        st.write(f"P1 Gear = {p1.gear} inches (old school)")
-        st.write(f"P2 Gear = {p2.gear} inches (old school)")
-        st.write(f"P3 Gear = {p3.gear} inches (old school)")
-        st.write(f"P1 Max Power = {round(p1.max_power,2)} W")
-        st.write(f"P2 Max Power = {round(p2.max_power,2)} W")
-        st.write(f"P3 Max Power = {round(p3.max_power,2)} W")
+        p1 = Athlete(seat_max_RPM_1,seat_max_torque_1,stand_max_RPM_1,stand_max_torque_1,stand_CdA_1,seat_CdA_1,total_mass_1,27*chainring_1/sprocket_1, seat_height_1, seat_max_RPM_1*seat_max_torque_1*math.pi/120,-stand_max_torque_1/stand_max_RPM_1,-seat_max_torque_1/seat_max_RPM_1)
+        p2 = Athlete(seat_max_RPM_2,seat_max_torque_2,stand_max_RPM_2,stand_max_torque_2,stand_CdA_2,seat_CdA_2,total_mass_2,27*chainring_2/sprocket_2, seat_height_2, seat_max_RPM_2*seat_max_torque_2*math.pi/120,-stand_max_torque_2/stand_max_RPM_2,-seat_max_torque_2/seat_max_RPM_2)
+        p3 = Athlete(seat_max_RPM_3,seat_max_torque_3,stand_max_RPM_3,stand_max_torque_3,stand_CdA_3,seat_CdA_3,total_mass_3,27*chainring_3/sprocket_3, seat_height_3, seat_max_RPM_3*seat_max_torque_3*math.pi/120,-stand_max_torque_3/stand_max_RPM_3,-seat_max_torque_3/seat_max_RPM_3)
+
+
+        wheel_circ=2.096
+        ks=0.0072
+        mu_rr = 0.0016
         time = 0
-        p1.speed = 0       
-        p1.power = 0
+        increment=0.1
+        efficiency = 0.97
+        rad_of_curve = (250 - 4*(pl_to_trans))/(2*math.pi)
+        deg_to_rad = math.pi/180
+        rad_to_deg = 180/math.pi
+        p1.COM_speed = 2    
+        p1.COM_dist = 0
+        p1.CdA = p1.stand_CdA
         p1.cadence = 0
-        p1.prop_force = 0
-        p1.aero_drag_rr = 0
-        p1.accel = 0
-        p1.COM = 0
-        p1.dist = 0
+        p1.torque = stand_max_torque_1
+        p1.power_input = p1.cadence*p1.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
+        p1.power_usable = p1.power_input*efficiency
+        p1.acc_fatigue = 0
+        p1.bank = straight_bank_angle
         p1.lean = 0 
+        p1.camber = abs(p1.bank-p1.lean)
+        p1.r_wh = 0 # wheel radius of curvature
+        p1.r_cm = 0 #COM radius of curvature
         
+        p1.prop_force = 2*math.pi*p1.torque/(2.096*(p1.gear/27)) #from Caddy2015
+        #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
+        
+        p1.aero_drag = (0.5*air_Density*p1.stand_CdA*p1.COM_speed**2)
+        p1.weight_force = 9.81*p1.total_mass
+        p1.centripetal_force = 0
+        p1.reaction_force = math.sqrt(p1.weight_force**2 + p1.centripetal_force**2)
+        p1.normal_force = p1.reaction_force*math.cos(deg_to_rad*p1.camber)
+        p1.rr = p1.normal_force*mu_rr*(1+ (p1.camber*ks))
+        
+        p1.wheel_speed = 0
+        p1.wheel_dist = 0
+        p1.segment = p1.wheel_dist%125
+        p1.accel = (p1.prop_force-(p1.rr+p1.aero_drag))/p1.total_mass
+
+        
+        
+        def get_bank_lean_camber(segment,lean_initial,v_com,seat_height):
+            bend_length = 125 - 2*(pl_to_trans+transition_length)
+            r_wh = rad_of_curve
+            if (segment < pl_to_trans) or (segment>125-pl_to_trans):
+                bank = straight_bank_angle
+                r_wh = 1000000
+                r_cm = 1000000
+            elif segment <= pl_to_trans + transition_length:
+                pct_through_trans = (segment-pl_to_trans)/transition_length
+                bank = straight_bank_angle + pct_through_trans*(bend_bank_angle-straight_bank_angle)
+                
+            elif segment<=pl_to_trans + transition_length + bend_length:
+                bank = bend_bank_angle
+                
+            else:
+                pct_through_trans = (segment-(pl_to_trans+transition_length+bend_length))/transition_length
+                bank = bend_bank_angle + pct_through_trans*(straight_bank_angle-bend_bank_angle)
+                
+            lean_final = rad_to_deg*math.atan((v_com**2)/(9.81*(r_wh-(seat_height*math.sin(deg_to_rad*lean_initial)))))
+            while lean_final-lean_initial>0.1:
+                # st.write(lean_initial)
+                # st.write(lean_final)
+                # st.write("Those are the inital and final lean angles")
+                lean_initial = lean_final
+                lean_final = rad_to_deg*math.atan((v_com**2)/(9.81*(r_wh-(seat_height*math.sin(deg_to_rad*lean_final)))))
+            # st.write(lean_initial)
+            # st.write(lean_final)
+            # st.write("These angles are close enough")
+            if r_wh==rad_of_curve:
+                r_cm = r_wh - seat_height*math.sin(deg_to_rad*lean_final)
+
+            camber = bank - lean_final
+            
+            return bank, r_wh, r_cm, lean_final, camber
+        df=pd.DataFrame()
+        times = [time]
+        COM_speed=[p1.COM_speed]    
+        COM_dist=[p1.COM_dist]  
+        bank=[p1.bank]  
+        r_wh=[p1.r_wh]  
+        r_cm=[p1.r_cm]  
+        lean=[p1.lean]  
+        camber=[p1.camber]  
+        wheel_speed=[p1.wheel_speed]  
+        wheel_dist=[p1.wheel_dist]  
+        cadence=[p1.cadence]  
+        torque=[p1.torque]  
+        power_input=[p1.power_input]  
+        power_usable=[p1.power_usable]  
+        prop_force=[p1.prop_force]  
+        aero_drag=[p1.aero_drag]  
+        weight_force=[p1.weight_force]  
+        segment=[p1.segment]  
+        centripetal_force=[p1.centripetal_force]  
+        reaction_force=[p1.reaction_force]  
+        normal_force=[p1.normal_force]  
+        rr=[p1.rr]  
+        accel=[p1.accel]  
+        
+        while p1.wheel_dist<dist_at_sit:
+            time+=increment
+            p1.COM_speed += increment*p1.accel     
+            p1.COM_dist += p1.COM_speed*increment
+            p1.bank, p1.r_wh, p1.r_cm, p1.lean, p1.camber = get_bank_lean_camber(p1.segment,p1.lean,p1.COM_speed,p1.seat_height)
+            p1.wheel_speed = p1.COM_speed*(p1.r_wh/p1.r_cm)
+            p1.wheel_dist += p1.wheel_speed*increment
+            p1.cadence = 60*p1.wheel_speed/((p1.gear/27)*wheel_circ)
+            if time<fatigue_onset:
+                p1.torque = p1.stand_max_torque + p1.stand_TC_slope*p1.cadence
+            else:
+                p1.acc_fatigue += increment*standing_fatigue_rate/100
+                p1.torque = p1.stand_max_torque*(1 - p1.acc_fatigue) + (p1.stand_TC_slope*p1.cadence)
+            p1.power_input = p1.cadence*p1.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
+            p1.power_usable = p1.power_input*efficiency
+            p1.prop_force = 2*math.pi*p1.torque/(2.096*(p1.gear/27)) #from Caddy2015
+            #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
+            p1.aero_drag = (0.5*air_Density*p1.stand_CdA*p1.COM_speed**2)
+            p1.weight_force = 9.81*p1.total_mass
+            p1.segment = p1.wheel_dist%125
+            if (p1.segment< pl_to_trans) or (p1.segment>125-pl_to_trans):
+                p1.centripetal_force = 0
+            else:
+                p1.centripetal_force = (p1.total_mass*p1.COM_speed**2)/p1.r_cm
+            p1.reaction_force = math.sqrt(p1.weight_force**2 + p1.centripetal_force**2)
+            p1.normal_force = p1.reaction_force*math.cos(deg_to_rad*p1.camber)
+            p1.rr = p1.normal_force*mu_rr*(1+ (abs(p1.camber)*ks))
+            p1.accel = (p1.prop_force-(p1.rr+p1.aero_drag))/p1.total_mass
+
+            COM_speed.append(p1.COM_speed)    
+            COM_dist.append(p1.COM_dist)
+            bank.append(p1.bank)
+            r_wh.append(p1.r_wh)
+            r_cm.append(p1.r_cm)
+            lean.append(p1.lean)
+            camber.append(p1.camber)
+            wheel_speed.append(p1.wheel_speed)
+            wheel_dist.append(p1.wheel_dist)
+            cadence.append(p1.cadence)
+            torque.append(p1.torque)
+            power_input.append(p1.power_input)
+            power_usable.append(p1.power_usable)
+            prop_force.append(p1.prop_force)
+            aero_drag.append(p1.aero_drag)
+            weight_force.append(p1.weight_force)
+            segment.append(p1.segment)
+            centripetal_force.append(p1.centripetal_force)
+            reaction_force.append(p1.reaction_force)
+            normal_force.append(p1.normal_force)
+            rr.append(p1.rr)
+            accel.append(p1.accel)
+            times.append(time)
+        p1.CdA = p1.seat_CdA
+        while p1.wheel_dist<500:
+            time+=increment
+            p1.COM_speed += increment*p1.accel     
+            p1.COM_dist += p1.COM_speed*increment
+            p1.bank, p1.r_wh, p1.r_cm, p1.lean, p1.camber = get_bank_lean_camber(p1.segment,p1.lean,p1.COM_speed,p1.seat_height)
+            p1.wheel_speed = p1.COM_speed*(p1.r_wh/p1.r_cm)
+            p1.wheel_dist += p1.wheel_speed*increment
+            p1.cadence = 60*p1.wheel_speed/((p1.gear/27)*wheel_circ)
+            p1.acc_fatigue += increment*seated_fatigue_rate/100
+            p1.torque = p1.seat_max_torque*(1 - p1.acc_fatigue) + (p1.seat_TC_slope*p1.cadence)
+            p1.power_input = p1.cadence*p1.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
+            p1.power_usable = p1.power_input*efficiency
+            p1.prop_force = 2*math.pi*p1.torque/(2.096*(p1.gear/27)) #from Caddy2015
+            #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
+            p1.aero_drag = (0.5*air_Density*p1.stand_CdA*p1.COM_speed**2)
+            p1.weight_force = 9.81*p1.total_mass
+            p1.segment = p1.wheel_dist%125
+            if (p1.segment< pl_to_trans) or (p1.segment>125-pl_to_trans):
+                p1.centripetal_force = 0
+            else:
+                p1.centripetal_force = (p1.total_mass*p1.COM_speed**2)/p1.r_cm
+            p1.reaction_force = math.sqrt(p1.weight_force**2 + p1.centripetal_force**2)
+            p1.normal_force = p1.reaction_force*math.cos(deg_to_rad*p1.camber)
+            p1.rr = p1.normal_force*mu_rr*(1+ (abs(p1.camber)*ks))
+            p1.accel = (p1.prop_force-(p1.rr+p1.aero_drag))/p1.total_mass       
+    
+    
+            #Appending
+
+            COM_speed.append(p1.COM_speed)    
+            COM_dist.append(p1.COM_dist)
+            bank.append(p1.bank)
+            r_wh.append(p1.r_wh)
+            r_cm.append(p1.r_cm)
+            lean.append(p1.lean)
+            camber.append(p1.camber)
+            wheel_speed.append(p1.wheel_speed)
+            wheel_dist.append(p1.wheel_dist)
+            cadence.append(p1.cadence)
+            torque.append(p1.torque)
+            power_input.append(p1.power_input)
+            power_usable.append(p1.power_usable)
+            prop_force.append(p1.prop_force)
+            aero_drag.append(p1.aero_drag)
+            weight_force.append(p1.weight_force)
+            segment.append(p1.segment)
+            centripetal_force.append(p1.centripetal_force)
+            reaction_force.append(p1.reaction_force)
+            normal_force.append(p1.normal_force)
+            rr.append(p1.rr)
+            accel.append(p1.accel)
+            times.append(time)
+        df["Time"]=times
+        df["COM_speed"]=COM_speed
+        df["COM_dist"]=COM_dist
+        df["bank"]=bank
+        df["r_wh"]=r_wh
+        df["r_cm"]=r_cm
+        df["lean"]=lean
+        df["camber"]=camber
+        df["wheel_speed"]=wheel_speed
+        df["wheel_dist"]=wheel_dist
+        df["cadence"]=cadence
+        df["torque"]=torque
+        df["power_input"]=power_input
+        
+        df["power_usable"]=power_usable
+        df["prop_force"]=prop_force
+        df["aero_drag"]=aero_drag
+        df["weight_force"]=weight_force
+        df["segment"]=segment
+        df["centripetal_force"]=centripetal_force
+        df["reaction_force"]=reaction_force
+        df["normal_force"]=normal_force
+        df["rr"]=rr
+        df["accel"]=accel
 
 
+        df
 
+        fig = go.Figure()
+ 
+        fig.add_trace(go.Line(x=df["Time"], y=df["power_input"], 
+                             name="Power", yaxis='y'))
+         
+        fig.add_trace(go.Line(x=df["Time"], y=df["wheel_speed"], 
+                              name="Wheel speed", yaxis="y2"))
+         
+        # Create axis objects
+        fig.update_layout(xaxis=dict(domain=[0.0, 1.0]),
+            #create 1st y axis              
+            yaxis=dict(
+                title="Power (W)",
+                titlefont=dict(color="#1f77b4"),
+                tickfont=dict(color="#1f77b4")),
+                           
+            #create 2nd y axis       
+            yaxis2=dict(title="Wheel speed",overlaying="y",
+                        side="right",position=1.0))
+         
+        # title
+        fig.update_layout(
+            title_text="Power and Wheel speed"
+        )
+         
+        st.plotly_chart(fig, use_container_width=True)
 
-
-
-
-
-
+        
+        # fig = px.line(df,x="Time", y = "power_input", title="5 Minute Power")
+        # fig.update_xaxes(title="Seconds")
+        # fig.update_yaxes(title="Power (W)")
+        # st.plotly_chart(fig, use_container_width=True)
+        
 
 
 

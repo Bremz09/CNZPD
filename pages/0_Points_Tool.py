@@ -138,9 +138,9 @@ if authentication_status:
     ###This script is in "Daily Scrape"
     def get_para_points_data_from_excel():
         df_Para = pd.read_excel(
-            io='pages/Para_Points_All_PREDICTION.xlsx',
+            io='pages/Para_Points_All_FINAL.xlsx',
             engine ='openpyxl',
-            sheet_name='Para_Points_All_PREDICTION',
+            sheet_name='Para_Points_All_FINAL',
             skiprows=0,
             usecols='A:L',
             nrows=6000
