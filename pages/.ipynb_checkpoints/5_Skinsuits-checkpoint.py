@@ -89,17 +89,27 @@ if authentication_status:
     
     df['Squad'].replace('Mean', squad, inplace=True)
     df['Image'].replace('Mean', None, inplace=True)
+    df_fill=df.copy(deep=True)
+
     
     
     df_pct = df[["Athlete","Squad"]]
     df_rank = df[["Athlete","Squad"]][:-1]
+    df_pct_filled = df_fill[["Athlete","Squad"]]
+    df_rank_filled = df_fill[["Athlete","Squad"]][:-1]
     for i in range(2,len(df.columns)-1):
+        av = df_fill[f"{df_fill.columns[i]}"][:-1].mean()
+        df_fill[f"{df_fill.columns[i]}"].fillna(av, inplace=True)
         x=df[f"{df.columns[i]}"][:-1].mean()
         df[f'{df.columns[i]}'].replace('Mean', x, inplace=True)
         df_pct[f'{df.columns[i]}']=abs(1-df[f'{df.columns[i]}']/df[f'{df.columns[i]}'].iloc[len(df[f'{df.columns[i]}'])-1])*100
         df_rank[f'{df.columns[i]}']=df[f'{df.columns[i]}'][:-1].rank()
-    
-    
+
+        x_fill=df_fill[f"{df_fill.columns[i]}"][:-1].mean()
+        df_fill[f'{df_fill.columns[i]}'].replace('Mean', x_fill, inplace=True)
+        df_pct_filled[f'{df_fill.columns[i]}']=abs(1-df_fill[f'{df_fill.columns[i]}']/df_fill[f'{df_fill.columns[i]}'].iloc[len(df_fill[f'{df_fill.columns[i]}'])-1])*100
+        df_rank_filled[f'{df_fill.columns[i]}']=df_fill[f'{df_fill.columns[i]}'][:-1].rank()
+    st.header("Original data")
     df
 
     ##Download buttons
@@ -124,28 +134,51 @@ if authentication_status:
             mime='application/vnd.ms-excel'
         )
     ##Download buttons complete
+    
+    st.header("Filled data")
+    df_fill
+    
 
     
     df_pct['Mean deviation'] = df_pct.iloc[:, 2:].mean(axis=1)
-    st.subheader("Absolute deviation from average as a percentage")
+    st.subheader("Absolute deviation from average as a percentage - Original Data")
     df_pct[:-1]
-    st.subheader("Rankings")
+    df_pct_filled['Mean deviation'] = df_pct_filled.iloc[:, 2:].mean(axis=1)
+    st.subheader("Absolute deviation from average as a percentage - Filled Data")
+    df_pct_filled[:-1]
+    st.subheader("Rankings - Original Data")
+    # df_rank.dropna(axis=1,inplace=True)
     df_rank['Mean rank'] = df_rank.iloc[:, 2:].mean(axis=1)
     df_rank
+    st.subheader("Rankings - Filled Data")
+    # df_rank_filled.dropna(axis=1,inplace=True)
+    df_rank_filled['Mean rank'] = df_rank_filled.iloc[:, 2:].mean(axis=1)
+    df_rank_filled
     
     
-    c1,c2=st.columns(2)
+    c1,c2,c3,c4=st.columns(4)
     with c1:
-        st.subheader("Order of averageness")
+        st.subheader("Average Deviation - Original Data")
         df_av=df_pct.sort_values('Mean deviation', ascending=True).iloc[1:].reset_index()
         df_av[["Athlete","Mean deviation"]]
     with c2:
-        st.subheader("Average ranks")
+        st.subheader("Average Deviation - Filled Data")
+        df_av_filled=df_pct_filled.sort_values('Mean deviation', ascending=True).iloc[1:].reset_index()
+        df_av_filled[["Athlete","Mean deviation"]]
+    with c3:
+        st.subheader("Average ranks - Original Data")
         
         df_av_rank=df_rank
         df_av_rank["Mean rank deviation"]=abs(((len(df_av_rank)/2) + 0.5)-df_av_rank["Mean rank"])
         df_av_rank=df_av_rank.sort_values('Mean rank deviation', ascending=True).iloc[0:].reset_index()
         df_av_rank[["Athlete","Mean rank","Mean rank deviation"]]
+    with c4:
+        st.subheader("Average ranks - Filled Data")
+        
+        df_av_rank_filled=df_rank_filled
+        df_av_rank_filled["Mean rank deviation"]=abs(((len(df_av_rank_filled)/2) + 0.5)-df_av_rank_filled["Mean rank"])
+        df_av_rank_filled=df_av_rank_filled.sort_values('Mean rank deviation', ascending=True).iloc[0:].reset_index()
+        df_av_rank_filled[["Athlete","Mean rank","Mean rank deviation"]]
     st.markdown("---")
     st.header("Compare Images")
 
