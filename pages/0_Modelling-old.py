@@ -194,7 +194,7 @@ if authentication_status:
         bike_length = 1.7122
         ks=0.0072
         mu_rr = 0.0016
-        lean_smoothing=10
+        lean_smoothing=1
         increment=0.1
         efficiency = 0.97
         rad_of_curve = (250 - 4*(pl_to_trans))/(2*math.pi)
@@ -203,7 +203,7 @@ if authentication_status:
 
         ###P1 Initialisation###
         p1.time = 0
-        p1.COM_speed = 2    
+        p1.COM_speed = 2  
         p1.COM_dist = 0
         p1.CdA = p1.stand_CdA
         p1.cadence = 0
@@ -214,8 +214,8 @@ if authentication_status:
         p1.bank = straight_bank_angle
         p1.lean = 0 
         p1.camber = abs(p1.bank-p1.lean)
-        p1.r_wh = 0 # wheel radius of curvature
-        p1.r_cm = 0 #COM radius of curvature
+        p1.r_wh = 2*rad_of_curve # wheel radius of curvature
+        p1.r_cm = 2*rad_of_curve #COM radius of curvature
         p1.prop_force = 2*math.pi*p1.torque/(2.096*(p1.gear/27)) #from Caddy2015 F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
         p1.aero_drag = (0.5*air_density*p1.stand_CdA*p1.COM_speed**2)
         p1.weight_force = 9.81*p1.total_mass
@@ -235,14 +235,14 @@ if authentication_status:
         p2.CdA = p2.stand_CdA
         p2.cadence = 0
         p2.torque = stand_max_torque_2
-        p2.power_input = p2.cadence*p2.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
+        p2.power_input = p2.cadence*p2.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity
         p2.power_usable = p2.power_input*efficiency
         p2.acc_fatigue = 0
         p2.bank = straight_bank_angle
         p2.lean = 0 
         p2.camber = abs(p2.bank-p2.lean)
-        p2.r_wh = 0 # wheel radius of curvature
-        p2.r_cm = 0 #COM radius of curvature
+        p2.r_wh = 2*rad_of_curve # wheel radius of curvature
+        p2.r_cm = 2*rad_of_curve #COM radius of curvature
         
         p2.prop_force = 2*math.pi*p2.torque/(2.096*(p2.gear/27)) #from Caddy2015
         #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
@@ -274,8 +274,8 @@ if authentication_status:
         p3.bank = straight_bank_angle
         p3.lean = 0 
         p3.camber = abs(p3.bank-p3.lean)
-        p3.r_wh = 0 # wheel radius of curvature
-        p3.r_cm = 0 #COM radius of curvature
+        p3.r_wh = 2*rad_of_curve # wheel radius of curvature
+        p3.r_cm = 2*rad_of_curve #COM radius of curvature
         
         p3.prop_force = 2*math.pi*p3.torque/(2.096*(p3.gear/27)) #from Caddy2015
         #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
@@ -300,30 +300,24 @@ if authentication_status:
             r_wh = rad_of_curve
             if (segment < pl_to_trans) or (segment>125-pl_to_trans):
                 bank = straight_bank_angle
-                r_wh = 1000000
-                r_cm = 1000000
+                r_wh = 2*rad_of_curve
+                r_cm = 2*rad_of_curve
             elif segment <= pl_to_trans + transition_length:
                 pct_through_trans = (segment-pl_to_trans)/transition_length
                 bank = straight_bank_angle + pct_through_trans*(bend_bank_angle-straight_bank_angle)
-                
+                r_wh = 2*rad_of_curve - pct_through_trans*rad_of_curve
             elif segment<=pl_to_trans + transition_length + bend_length:
                 bank = bend_bank_angle
                 
             else:
                 pct_through_trans = (segment-(pl_to_trans+transition_length+bend_length))/transition_length
                 bank = bend_bank_angle + pct_through_trans*(straight_bank_angle-bend_bank_angle)
-                
+                r_wh = rad_of_curve + pct_through_trans*rad_of_curve
             lean_final = rad_to_deg*math.atan((v_com**2)/(9.81*(r_wh-(seat_height*math.sin(deg_to_rad*lean_initial)))))
             while lean_final-lean_initial>0.1:
-                # st.write(lean_initial)
-                # st.write(lean_final)
-                # st.write("Those are the inital and final lean angles")
                 lean_initial = lean_final
                 lean_final = rad_to_deg*math.atan((v_com**2)/(9.81*(r_wh-(seat_height*math.sin(deg_to_rad*lean_final)))))
-            # st.write(lean_initial)
-            # st.write(lean_final)
-            # st.write("These angles are close enough")
-            if r_wh==rad_of_curve:
+            if r_wh<2*rad_of_curve:
                 r_cm = r_wh - seat_height*math.sin(deg_to_rad*lean_final)
 
             camber = bank - lean_final
@@ -909,7 +903,7 @@ if authentication_status:
         df_p3["aero_demand"] = p3_aero_demand
         df_p3["power_demand"] = p3_power_demand
         
-        fig_dem_v_supp = px.line(df_p3,x="Time",y=[df_p3["camber"]])
+        fig_dem_v_supp = px.line(df_p3,x="Time",y=[df_p3["r_wh"]])
         st.plotly_chart(fig_dem_v_supp, use_container_width=True)
         
         st.header("Summary")
