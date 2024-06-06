@@ -170,6 +170,7 @@ if authentication_status:
                 selections = st.multiselect(
                 "Select past effort(s):",
                 options=df_master["Title"].unique())
+                st.write("PTA")
             
                 
         with c3:
