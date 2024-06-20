@@ -84,7 +84,7 @@ if authentication_status:
                 stand_CdA_1 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2563, step=1e-4, format="%.4f",key="1_6")
             c1,c2,c3,c4 =st.columns(4)
             with c1:
-                total_mass_1 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=71.3, step=0.1, format="%.1f",key="1_7")
+                total_mass_1 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=71.9, step=0.1, format="%.1f",key="1_7")
             with c2:
                 sprocket_1 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="1_8")
             with c3:
@@ -109,7 +109,7 @@ if authentication_status:
                 stand_CdA_2 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2925, step=1e-4, format="%.4f",key="2_6")
             c1,c2,c3,c4 =st.columns(4)
             with c1:
-                total_mass_2 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=91.33, step=0.1, format="%.1f",key="2_7")
+                total_mass_2 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=91.8, step=0.1, format="%.1f",key="2_7")
             with c2:
                 sprocket_2 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="2_8")
             with c3:
@@ -134,7 +134,7 @@ if authentication_status:
                 stand_CdA_3 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2725, step=1e-4, format="%.4f",key="3_6")
             c1,c2,c3,c4 =st.columns(4)
             with c1:
-                total_mass_3 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=90.33, step=0.1, format="%.1f",key="3_7")
+                total_mass_3 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=86.9, step=0.1, format="%.1f",key="3_7")
             with c2:
                 sprocket_3 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="3_8")
             with c3:
@@ -203,7 +203,7 @@ if authentication_status:
 
         ###P1 Initialisation###
         p1.time = 0
-        p1.COM_speed = 2  
+        p1.COM_speed = 1.8
         p1.COM_dist = 0
         p1.CdA = p1.stand_CdA
         p1.cadence = 0
@@ -230,7 +230,7 @@ if authentication_status:
         
         ###P2 initialisation###
         p2.time = 0
-        p2.COM_speed = 1   
+        p2.COM_speed = 1.6
         p2.COM_dist = 0
         p2.CdA = p2.stand_CdA
         p2.cadence = 0
@@ -259,11 +259,11 @@ if authentication_status:
         p2.segment = p2.wheel_dist%125
         p2.accel = (p2.prop_force-(p2.rr+p2.aero_drag))/p2.total_mass
         p2.air_speed = 0
-        p2.gap = 0
+        p2.gap = -bike_length
 
         ###p3 initialisation###
         p3.time = 0
-        p3.COM_speed = 1 
+        p3.COM_speed = 1.6
         p3.COM_dist = 0
         p3.CdA = p3.stand_CdA
         p3.cadence = 0
@@ -292,7 +292,7 @@ if authentication_status:
         p3.segment = p3.wheel_dist%125
         p3.accel = (p3.prop_force-(p3.rr+p3.aero_drag))/p3.total_mass
         p3.air_speed = 0
-        p3.gap = 0
+        p3.gap = -bike_length
 
         
         def get_bank_lean_camber(segment,lean_initial,v_com,seat_height):
@@ -412,6 +412,7 @@ if authentication_status:
         p3_rr_demand = [0]
         p3_aero_demand = [0]
         p3_power_demand = [0]
+        p3_dem_sup = [1]
         
         while p1.wheel_dist<dist_at_sit:
             p1.time+=increment
@@ -568,10 +569,11 @@ if authentication_status:
                 p2.gap = df_p1["wheel_dist"][count]-p2.wheel_dist - bike_length
             else:
                 p2.gap=0
-            if p2.gap > 0.2:
-                p2.air_speed = p2.COM_speed - df_p1["COM_speed"][count]*0.2/math.sqrt(p2.gap)
-            else:
-                p2.air_speed = p2.COM_speed
+#             if p2.gap > 0.2:
+#                 p2.air_speed = p2.COM_speed - df_p1["COM_speed"][count]*0.2/math.sqrt(p2.gap)
+#             else:
+#                 p2.air_speed = p2.COM_speed
+            p2.air_speed = p2.COM_speed
             p2.cadence = 60*p2.wheel_speed/((p2.gear/27)*wheel_circ)
             if p2.time<fatigue_onset:
                 p2.torque = p2.stand_max_torque + p2.stand_TC_slope*p2.cadence
@@ -583,6 +585,10 @@ if authentication_status:
             p2.prop_force = 2*math.pi*efficiency*p2.torque/(2.096*(p2.gear/27)) #from Caddy2015
             #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
             p2.aero_drag = (0.5*air_density*p2.stand_CdA*p2.air_speed**2)
+            if p2.gap > 0.2:
+                p2.aero_drag = p2.aero_drag*(100-(-8.1136*p2.gap + 50.051))/100 ## From Barry thesis interaction of drafting cyclists
+            else:
+                p2.aero_drag = p2.aero_drag
             p2.weight_force = 9.81*p2.total_mass
             p2.segment = p2.wheel_dist%125
             if (p2.segment< pl_to_trans) or (p2.segment>125-pl_to_trans):
@@ -635,18 +641,26 @@ if authentication_status:
                 p2.gap = df_p1["wheel_dist"][count]-p2.wheel_dist - bike_length
             else:
                 p2.gap=0
-            if p2.gap > 0.2:
-                p2.air_speed = p2.COM_speed - df_p1["COM_speed"][count]*0.2/math.sqrt(p2.gap)
-            else:
-                p2.air_speed = p2.COM_speed
+#             if p2.gap > 0.2:
+#                 p2.air_speed = p2.COM_speed - df_p1["COM_speed"][count]*0.2/math.sqrt(p2.gap)
+#             else:
+#                 p2.air_speed = p2.COM_speed
+            p2.air_speed = p2.COM_speed
             p2.cadence = 60*p2.wheel_speed/((p2.gear/27)*wheel_circ)
-            p2.acc_fatigue += increment*seated_fatigue_rate/100
-            p2.torque = p2.seat_max_torque*(1 - p2.acc_fatigue) + (p2.seat_TC_slope*p2.cadence)
+            if p2.time<fatigue_onset:
+                p2.torque = p2.seat_max_torque + p2.seat_TC_slope*p2.cadence
+            else:
+                p2.acc_fatigue += increment*seated_fatigue_rate/100
+                p2.torque = p2.seat_max_torque*(1 - p2.acc_fatigue) + (p2.seat_TC_slope*p2.cadence)
             p2.power_input = p2.cadence*p2.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
             p2.power_usable = p2.power_input*efficiency
             p2.prop_force = 2*math.pi*efficiency*p2.torque/(2.096*(p2.gear/27)) #from Caddy2015
             #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
             p2.aero_drag = (0.5*air_density*p2.seat_CdA*p2.air_speed**2)
+            if p2.gap > 0.2:
+                p2.aero_drag = p2.aero_drag*(100-(-8.1136*p2.gap + 50.051))/100 ## From Barry thesis interaction of drafting cyclists
+            else:
+                p2.aero_drag = p2.aero_drag
             p2.weight_force = 9.81*p2.total_mass
             p2.segment = p2.wheel_dist%125
             if (p2.segment< pl_to_trans) or (p2.segment>125-pl_to_trans):
@@ -713,9 +727,19 @@ if authentication_status:
         df_p2["gap"]=p2_gap
         df_p2["COM_speed"]=p2_COM_speed
         df_p2["air_speed"] = p2_air_speed
-        count=0
+        count=1
         while p3.wheel_dist<dist_at_sit:
             p3.time+=increment
+            if count<len(df_p2): ## Power demand
+                p3.accel_demand = p3.total_mass*df_p2["accel"][count]*df_p2["wheel_speed"][count] ##unsure if this should be COM or wheel
+                p3.rr_demand = p3.rr*df_p2["wheel_speed"][count] ##This should obviously be wheel speed
+                p3.aero_demand = 0.5*air_density*p3.CdA*p3.COM_speed*p3.air_speed**2
+                p3.power_demand = p3.accel_demand + p3.rr_demand + p3.aero_demand
+            else:
+                p3.accel_demand = 0
+                p3.rr_demand = 0
+                p3.aero_demand = 0
+                p3.power_demand = 0  
             p3.COM_speed += increment*p3.accel     
             p3.COM_dist += p3.COM_speed*increment
             p3.bank, p3.r_wh, p3.r_cm, p3.lean, p3.camber = get_bank_lean_camber(p3.segment,p3.lean,p3.COM_speed,p3.seat_height)
@@ -729,21 +753,30 @@ if authentication_status:
                 p3.gap = df_p2["wheel_dist"][count]-p3.wheel_dist - bike_length
             else:
                 p3.gap=0
-            if p3.gap > 0.2:
-                p3.air_speed = p3.COM_speed - df_p2["COM_speed"][count]*0.2/math.sqrt(p3.gap)
-            else:
-                p3.air_speed = p3.COM_speed
+#             if p3.gap > 0.2:
+#                 p3.air_speed = p3.COM_speed - df_p2["COM_speed"][count]*0.2/math.sqrt(p3.gap)
+#             else:
+#                 p3.air_speed = p3.COM_speed
+            p3.air_speed = p3.COM_speed
             p3.cadence = 60*p3.wheel_speed/((p3.gear/27)*wheel_circ)
             if p3.time<fatigue_onset:
                 p3.torque = p3.stand_max_torque + p3.stand_TC_slope*p3.cadence
             else:
-                p3.acc_fatigue += increment*standing_fatigue_rate/100
+                p3.acc_fatigue += increment*p3.dem_sup*standing_fatigue_rate/100
                 p3.torque = p3.stand_max_torque*(1 - p3.acc_fatigue) + (p3.stand_TC_slope*p3.cadence)
             p3.power_input = p3.cadence*p3.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
             p3.power_usable = p3.power_input*efficiency
             p3.prop_force = 2*math.pi*efficiency*p3.torque/(2.096*(p3.gear/27)) #from Caddy2015
+            if p3.power_usable > p3.power_demand:
+                
+                p3.dem_sup = p3.power_demand/p3.power_usable
+            else:
+                p3.dem_sup = 1
+                
             #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
             p3.aero_drag = (0.5*air_density*p3.stand_CdA*p3.air_speed**2)
+            if p3.gap > 0.2:
+                p3.aero_drag = p3.aero_drag*(100-(-8.1136*p3.gap + 50.051))/100 ## From Barry thesis interaction of drafting cyclists
             p3.weight_force = 9.81*p3.total_mass
             p3.segment = p3.wheel_dist%125
             if (p3.segment< pl_to_trans) or (p3.segment>125-pl_to_trans):
@@ -754,12 +787,10 @@ if authentication_status:
             p3.normal_force = p3.reaction_force*math.cos(deg_to_rad*p3.camber)
             p3.rr = p3.normal_force*mu_rr*(1+ (abs(p3.camber)*ks))
             p3.accel = (p3.prop_force-(p3.rr+p3.aero_drag))/p3.total_mass
-            if count<len(df_p2):
-                p3.accel_demand = p3.total_mass*df_p2["accel"][count]*df_p2["wheel_speed"][count] ##unsure if this should be COM or wheel
-                p3.rr_demand = p3.rr*df_p2["wheel_speed"][count] ##This should obviously be wheel speed
-                p3.aero_demand = 0.5*air_density*p3.CdA*p3.COM_speed*p3.air_speed**2
-                p3.power_demand = p3.accel_demand + p3.rr_demand + p3.aero_demand
+
             count+=1
+            
+            
             
             p3_COM_speed.append(p3.COM_speed)    
             p3_COM_dist.append(p3.COM_dist)
@@ -790,8 +821,19 @@ if authentication_status:
             p3_rr_demand.append(p3.rr_demand)
             p3_aero_demand.append(p3.aero_demand)
             p3_power_demand.append(p3.power_demand)
+            p3_dem_sup.append(p3.dem_sup)
         p3.CdA = p3.seat_CdA
         while p3.wheel_dist<750:
+            if count<len(df_p2):
+                p3.accel_demand = p3.total_mass*df_p2["accel"][count]*df_p2["wheel_speed"][count] ##unsure if this should be COM or wheel
+                p3.rr_demand = p3.rr*df_p2["wheel_speed"][count] ##This should obviously be wheel speed
+                p3.aero_demand = 0.5*air_density*p3.CdA*p3.COM_speed*p3.air_speed**2
+                p3.power_demand = p3.accel_demand + p3.rr_demand + p3.aero_demand
+            else:
+                p3.accel_demand = 0
+                p3.rr_demand = 0
+                p3.aero_demand = 0
+                p3.power_demand = 0               
             p3.time+=increment
             p3.COM_speed += increment*p3.accel     
             p3.COM_dist += p3.COM_speed*increment
@@ -806,18 +848,25 @@ if authentication_status:
                 p3.gap = df_p2["wheel_dist"][count]-p3.wheel_dist - bike_length
             else:
                 p3.gap=0
-            if p3.gap > 0.2:
-                p3.air_speed = p3.COM_speed - df_p2["COM_speed"][count]*0.2/math.sqrt(p3.gap)
-            else:
-                p3.air_speed = p3.COM_speed
+#             if p3.gap > 0.2:
+#                 p3.air_speed = p3.COM_speed - df_p2["COM_speed"][count]*0.2/math.sqrt(p3.gap)
+#             else:
+#                 p3.air_speed = p3.COM_speed
+            p3.air_speed = p3.COM_speed
             p3.cadence = 60*p3.wheel_speed/((p3.gear/27)*wheel_circ)
-            p3.acc_fatigue += increment*seated_fatigue_rate/100
+            p3.acc_fatigue += increment*p3.dem_sup*seated_fatigue_rate/100
             p3.torque = p3.seat_max_torque*(1 - p3.acc_fatigue) + (p3.seat_TC_slope*p3.cadence)
             p3.power_input = p3.cadence*p3.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
             p3.power_usable = p3.power_input*efficiency
             p3.prop_force = 2*math.pi*efficiency*p3.torque/(2.096*(p3.gear/27)) #from Caddy2015
+            if p3.power_usable > p3.power_demand:
+                p3.dem_sup = p3.power_demand/p3.power_usable
+            else:
+                p3.dem_sup = 1
             #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
             p3.aero_drag = (0.5*air_density*p3.seat_CdA*p3.air_speed**2)
+            if p3.gap > 0.2:
+                p3.aero_drag = p3.aero_drag*(100-(-8.1136*p3.gap + 50.051))/100 ## From Barry thesis interaction of drafting cyclists
             p3.weight_force = 9.81*p3.total_mass
             p3.segment = p3.wheel_dist%125
             if (p3.segment< pl_to_trans) or (p3.segment>125-pl_to_trans):
@@ -828,11 +877,7 @@ if authentication_status:
             p3.normal_force = p3.reaction_force*math.cos(deg_to_rad*p3.camber)
             p3.rr = p3.normal_force*mu_rr*(1+ (abs(p3.camber)*ks))
             p3.accel = (p3.prop_force-(p3.rr+p3.aero_drag))/p3.total_mass 
-            if count<len(df_p2):
-                p3.accel_demand = p3.total_mass*df_p2["accel"][count]*df_p2["wheel_speed"][count] ##unsure if this should be COM or wheel
-                p3.rr_demand = p3.rr*df_p2["wheel_speed"][count] ##This should obviously be wheel speed
-                p3.aero_demand = 0.5*air_density*p3.CdA*p3.COM_speed*p3.air_speed**2
-                p3.power_demand = p3.accel_demand + p3.rr_demand + p3.aero_demand
+
             count+=1
     
             #Appending
@@ -866,6 +911,7 @@ if authentication_status:
             p3_rr_demand.append(p3.rr_demand)
             p3_aero_demand.append(p3.aero_demand)
             p3_power_demand.append(p3.power_demand)
+            p3_dem_sup.append(p3.dem_sup)
 
 
 
@@ -902,8 +948,9 @@ if authentication_status:
         df_p3["rr_demand"] = p3_rr_demand
         df_p3["aero_demand"] = p3_aero_demand
         df_p3["power_demand"] = p3_power_demand
+        df_p3["dem_sup"] = p3_dem_sup
         
-        fig_dem_v_supp = px.line(df_p3,x="Time",y=[df_p3["r_wh"]])
+        fig_dem_v_supp = px.line(df_p3,x="Time",y=[df_p3["dem_sup"],df_p3["COM_speed"],df_p3["gap"]])
         st.plotly_chart(fig_dem_v_supp, use_container_width=True)
         
         st.header("Summary")
@@ -1114,6 +1161,18 @@ if authentication_status:
 
         fig = go.Figure()
  
+        fig.add_trace(go.Line(x=df_p1["Time"], y=df_p1["power_usable"], 
+                             name="p1 Power", yaxis='y'))
+         
+        fig.add_trace(go.Line(x=df_p3["Time"], y=df_p3["wheel_speed"], 
+                              name="p1 Wheel speed", yaxis="y2"))
+
+        fig.add_trace(go.Line(x=df_p2["Time"], y=df_p2["power_usable"], 
+                             name="p2 Power", yaxis='y'))
+         
+        fig.add_trace(go.Line(x=df_p2["Time"], y=df_p2["wheel_speed"], 
+                              name="p2 Wheel speed", yaxis="y2"))
+     
         fig.add_trace(go.Line(x=df_p3["Time"], y=df_p3["power_usable"], 
                              name="p3 Power", yaxis='y'))
          
