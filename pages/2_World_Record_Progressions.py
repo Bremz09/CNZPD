@@ -1651,7 +1651,7 @@ if authentication_status:
 
                 df_mask = df_mask.mask(df_mask["8th_seconds"] < time_range[0])
                 df_mask = df_mask.mask(df_mask["8th_seconds"] > time_range[1])
-                fig = px.scatter(df_mask, x="Year", y = ["1st_seconds","2nd_seconds","3rd_seconds","8th_seconds"], title="Women's IP World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
+                fig = px.scatter(df_mask, x="Year", y = ["1st_seconds","2nd_seconds","3rd_seconds","8th_seconds"], title="Women's TP World Champs & Olympics Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
                 customdata = np.stack((round(df_mask['1st_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['3rd_seconds'],3), round(df_mask['8th_seconds'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
                 hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' +
             'Year: %{customdata[4]}<br>' +
