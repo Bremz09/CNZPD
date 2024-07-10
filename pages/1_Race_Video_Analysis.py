@@ -2518,8 +2518,10 @@ if authentication_status:
                 
                 
                 df_table = pd.DataFrame([1,2,3],columns=["Position"])
+                df_table.insert(0,"Event",df_temp["Title"][0:3])
                 df_table["Rider"]=df_temp["Riders"][0:3]
                 df_table["Gear"]=df_temp["Gears"][0:3]
+                
                 ind1=df_temp.index[df_temp['Row'] == "Rider 1 Forward"].tolist()[0]
                 ind2=df_temp.index[df_temp['Row'] == "Rider 2 Forward"].tolist()[0]
                 ind3=df_temp.index[df_temp['Row'] == "Rider 3 Forward"].tolist()[0]
