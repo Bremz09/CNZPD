@@ -67,108 +67,218 @@ if authentication_status:
     
 
     if Calc == "Female Team Sprint":
-        with st.form("my_form"):
-            st.subheader("Position 1 specs")
-            c1,c2,c3,c4,c5,c6 =st.columns(6)
-            with c1:
-                seat_max_RPM_1 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=235.00,key="1_1")
-            with c2:
-                seat_max_torque_1 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=207.00,key="1_2")
-            with c3:
-                seat_CdA_1 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2050, step=1e-4, format="%.4f",key="1_3")
-            with c4:
-                stand_max_RPM_1 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=240.00,key="1_4")
-            with c5:
-                stand_max_torque_1 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=223.00,key="1_5")
-            with c6:
-                stand_CdA_1 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2563, step=1e-4, format="%.4f",key="1_6")
-            c1,c2,c3,c4 =st.columns(4)
-            with c1:
-                total_mass_1 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=71.9, step=0.1, format="%.1f",key="1_7")
-            with c2:
-                sprocket_1 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="1_8")
-            with c3:
-                chainring_1 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=54, step=1,key="1_9")
-            with c4:
-                seat_height_1 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=0.96,key="1_10")
+        order = ["Petch, Shaane, Ellesse","Shaane, Petch, Ellesse"]
+        Order = st.selectbox("Select Order:", order, key="Order_selector")
+        if Order == order[0]:
+            with st.form("my_form"):
+                st.subheader("Petch specs")
+                c1,c2,c3,c4,c5,c6 =st.columns(6)
+                with c1:
+                    seat_max_RPM_1 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=235.00,key="1_1")
+                with c2:
+                    seat_max_torque_1 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=207.00,key="1_2")
+                with c3:
+                    seat_CdA_1 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2050, step=1e-4, format="%.4f",key="1_3")
+                with c4:
+                    stand_max_RPM_1 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=240.00,key="1_4")
+                with c5:
+                    stand_max_torque_1 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=223.00,key="1_5")
+                with c6:
+                    stand_CdA_1 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2563, step=1e-4, format="%.4f",key="1_6")
+                c1,c2,c3,c4 =st.columns(4)
+                with c1:
+                    total_mass_1 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=71.9, step=0.1, format="%.1f",key="1_7")
+                with c2:
+                    sprocket_1 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="1_8")
+                with c3:
+                    chainring_1 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=54, step=1,key="1_9")
+                with c4:
+                    seat_height_1 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=0.96,key="1_10")
 
-            
-            st.subheader("Position 2 specs")
-            c1,c2,c3,c4,c5,c6 =st.columns(6)
-            with c1:
-                seat_max_RPM_2 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=233.00,key="2_1")
-            with c2:
-                seat_max_torque_2 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=253.00,key="2_2")
-            with c3:
-                seat_CdA_2 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2340, step=1e-4, format="%.4f",key="2_3")
-            with c4:
-                stand_max_RPM_2 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=227.00,key="2_4")
-            with c5:
-                stand_max_torque_2 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=289.00,key="2_5")
-            with c6:
-                stand_CdA_2 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2925, step=1e-4, format="%.4f",key="2_6")
-            c1,c2,c3,c4 =st.columns(4)
-            with c1:
-                total_mass_2 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=91.8, step=0.1, format="%.1f",key="2_7")
-            with c2:
-                sprocket_2 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="2_8")
-            with c3:
-                chainring_2 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=62, step=1,key="2_9")
-            with c4:
-                seat_height_2 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.04,key="2_10")
 
-            
-            st.subheader("Position 3 specs")
-            c1,c2,c3,c4,c5,c6 =st.columns(6)
-            with c1:
-                seat_max_RPM_3 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=238.00,key="3_1")
-            with c2:
-                seat_max_torque_3 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=202.00,key="3_2")
-            with c3:
-                seat_CdA_3 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2180, step=1e-4, format="%.4f",key="3_3")
-            with c4:
-                stand_max_RPM_3 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=217.00,key="3_4")
-            with c5:
-                stand_max_torque_3 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=270.00,key="3_5")
-            with c6:
-                stand_CdA_3 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2725, step=1e-4, format="%.4f",key="3_6")
-            c1,c2,c3,c4 =st.columns(4)
-            with c1:
-                total_mass_3 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=86.9, step=0.1, format="%.1f",key="3_7")
-            with c2:
-                sprocket_3 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="3_8")
-            with c3:
-                chainring_3 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=63, step=1,key="3_9")
-            with c4:
-                seat_height_3 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.01,key="3_10")
+                st.subheader("Shaane specs")
+                c1,c2,c3,c4,c5,c6 =st.columns(6)
+                with c1:
+                    seat_max_RPM_2 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=233.00,key="2_1")
+                with c2:
+                    seat_max_torque_2 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=253.00,key="2_2")
+                with c3:
+                    seat_CdA_2 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2340, step=1e-4, format="%.4f",key="2_3")
+                with c4:
+                    stand_max_RPM_2 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=227.00,key="2_4")
+                with c5:
+                    stand_max_torque_2 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=289.00,key="2_5")
+                with c6:
+                    stand_CdA_2 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2925, step=1e-4, format="%.4f",key="2_6")
+                c1,c2,c3,c4 =st.columns(4)
+                with c1:
+                    total_mass_2 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=91.8, step=0.1, format="%.1f",key="2_7")
+                with c2:
+                    sprocket_2 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="2_8")
+                with c3:
+                    chainring_2 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=62, step=1,key="2_9")
+                with c4:
+                    seat_height_2 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.04,key="2_10")
 
+
+                st.subheader("Ellesse specs")
+                c1,c2,c3,c4,c5,c6 =st.columns(6)
+                with c1:
+                    seat_max_RPM_3 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=238.00,key="3_1")
+                with c2:
+                    seat_max_torque_3 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=202.00,key="3_2")
+                with c3:
+                    seat_CdA_3 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2180, step=1e-4, format="%.4f",key="3_3")
+                with c4:
+                    stand_max_RPM_3 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=217.00,key="3_4")
+                with c5:
+                    stand_max_torque_3 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=270.00,key="3_5")
+                with c6:
+                    stand_CdA_3 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2725, step=1e-4, format="%.4f",key="3_6")
+                c1,c2,c3,c4 =st.columns(4)
+                with c1:
+                    total_mass_3 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=86.9, step=0.1, format="%.1f",key="3_7")
+                with c2:
+                    sprocket_3 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="3_8")
+                with c3:
+                    chainring_3 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=63, step=1,key="3_9")
+                with c4:
+                    seat_height_3 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.01,key="3_10")
+
+
+                st.subheader("Global specs")
+                c1,c2,c3,c4,c5 =st.columns(5)
+                with c1:
+                    air_density = st.number_input("Air Density:", min_value=0.001, max_value=3.200,value=1.168, step=1e-3, format="%.3f",key="4_1")
+                with c2:
+                    dist_at_sit = st.number_input("Distance at sit:", min_value=0.01, max_value=750.0,value=150.00, step=0.1, format="%.1f",key="4_2")
+                with c3:
+                    standing_fatigue_rate = st.number_input("Standing Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.00, step=1e-2, format="%.2f",key="4_3")
+                with c4:
+                    seated_fatigue_rate = st.number_input("Seated Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.00, step=1e-2, format="%.2f",key="4_4")
+                with c5:
+                    fatigue_onset = st.number_input("Onset of Fatigue (s):", min_value=0.1, max_value=2.0,value=1.0, step=0.1, format="%.1f",key="4_5")
+
+                c1,c2,c3,c4,c5 =st.columns(5)
+                with c1:
+                    circumferences = [250,333,500]
+                    track_circumference = st.selectbox("Track Circumference:", circumferences, key="Track_circumference")
+                with c2:
+                    straight_bank_angle = st.number_input("Straight Bank Angle:", min_value=0.00, max_value=90.00,value=13.00)
+                with c4:
+                    pl_to_trans = st.number_input("Distance from Pursuit Line to Transition:", min_value=0.00, max_value=90.00,value=31.25)
+                with c5:
+                    transition_length = st.number_input("Transition length:", min_value=0.00, max_value=90.00,value=10.00)
+                with c3:
+                    bend_bank_angle = st.number_input("Bend Bank Angle:", min_value=0.00, max_value=90.00,value=46.13)
+                submitted = st.form_submit_button("Update Specs")
+                
+                
+        else:  ## Shaane starting
             
-            st.subheader("Global specs")
-            c1,c2,c3,c4,c5 =st.columns(5)
-            with c1:
-                air_density = st.number_input("Air Density:", min_value=0.001, max_value=3.200,value=1.168, step=1e-3, format="%.3f",key="4_1")
-            with c2:
-                dist_at_sit = st.number_input("Distance at sit:", min_value=0.01, max_value=750.0,value=150.00, step=0.1, format="%.1f",key="4_2")
-            with c3:
-                standing_fatigue_rate = st.number_input("Standing Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.00, step=1e-2, format="%.2f",key="4_3")
-            with c4:
-                seated_fatigue_rate = st.number_input("Seated Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.00, step=1e-2, format="%.2f",key="4_4")
-            with c5:
-                fatigue_onset = st.number_input("Onset of Fatigue (s):", min_value=0.1, max_value=2.0,value=1.0, step=0.1, format="%.1f",key="4_5")
             
-            c1,c2,c3,c4,c5 =st.columns(5)
-            with c1:
-                circumferences = [250,333,500]
-                track_circumference = st.selectbox("Track Circumference:", circumferences, key="Track_circumference")
-            with c2:
-                straight_bank_angle = st.number_input("Straight Bank Angle:", min_value=0.00, max_value=90.00,value=13.00)
-            with c4:
-                pl_to_trans = st.number_input("Distance from Pursuit Line to Transition:", min_value=0.00, max_value=90.00,value=31.25)
-            with c5:
-                transition_length = st.number_input("Transition length:", min_value=0.00, max_value=90.00,value=10.00)
-            with c3:
-                bend_bank_angle = st.number_input("Bend Bank Angle:", min_value=0.00, max_value=90.00,value=46.13)
-            submitted = st.form_submit_button("Update Specs")
+            with st.form("my_form"):
+                st.subheader("Shaane specs")
+                c1,c2,c3,c4,c5,c6 =st.columns(6)
+                with c1:
+                    seat_max_RPM_1 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=233.00,key="1_1")
+                with c2:
+                    seat_max_torque_1 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=253.00,key="1_2")
+                with c3:
+                    seat_CdA_1 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2340, step=1e-4, format="%.4f",key="1_3")
+                with c4:
+                    stand_max_RPM_1 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=227.00,key="1_4")
+                with c5:
+                    stand_max_torque_1 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=289.00,key="1_5")
+                with c6:
+                    stand_CdA_1 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2925, step=1e-4, format="%.4f",key="1_6")
+                c1,c2,c3,c4 =st.columns(4)
+                with c1:
+                    total_mass_1 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=91.8, step=0.1, format="%.1f",key="1_7")
+                with c2:
+                    sprocket_1 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="1_8")
+                with c3:
+                    chainring_1 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=54, step=1,key="1_9")
+                with c4:
+                    seat_height_1 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.04,key="1_10")
+
+
+                st.subheader("Petch specs")
+                c1,c2,c3,c4,c5,c6 =st.columns(6)
+                with c1:
+                    seat_max_RPM_2 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=235.00,key="2_1")
+                with c2:
+                    seat_max_torque_2 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=207.00,key="2_2")
+                with c3:
+                    seat_CdA_2 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2050, step=1e-4, format="%.4f",key="2_3")
+                with c4:
+                    stand_max_RPM_2 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=240.00,key="2_4")
+                with c5:
+                    stand_max_torque_2 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=223.00,key="2_5")
+                with c6:
+                    stand_CdA_2 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2563, step=1e-4, format="%.4f",key="2_6")
+                c1,c2,c3,c4 =st.columns(4)
+                with c1:
+                    total_mass_2 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=71.9, step=0.1, format="%.1f",key="2_7")
+                with c2:
+                    sprocket_2 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="2_8")
+                with c3:
+                    chainring_2 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=62, step=1,key="2_9")
+                with c4:
+                    seat_height_2 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=0.96,key="2_10")
+
+
+                st.subheader("Ellesse specs")
+                c1,c2,c3,c4,c5,c6 =st.columns(6)
+                with c1:
+                    seat_max_RPM_3 = st.number_input("Seated Max RPM:", min_value=0.01, max_value=500.00,value=238.00,key="3_1")
+                with c2:
+                    seat_max_torque_3 = st.number_input("Seated Max Torque:", min_value=0.01, max_value=500.00,value=202.00,key="3_2")
+                with c3:
+                    seat_CdA_3 = st.number_input("Seated CdA:", min_value=0.0001, max_value=2.0000,value=0.2180, step=1e-4, format="%.4f",key="3_3")
+                with c4:
+                    stand_max_RPM_3 = st.number_input("Standing Max RPM:", min_value=0.01, max_value=500.00,value=217.00,key="3_4")
+                with c5:
+                    stand_max_torque_3 = st.number_input("Standing Max Torque:", min_value=0.01, max_value=500.00,value=270.00,key="3_5")
+                with c6:
+                    stand_CdA_3 = st.number_input("Standing CdA:", min_value=0.00, max_value=20.00,value=0.2725, step=1e-4, format="%.4f",key="3_6")
+                c1,c2,c3,c4 =st.columns(4)
+                with c1:
+                    total_mass_3 = st.number_input("Total Mass:", min_value=40.0, max_value=150.0,value=86.9, step=0.1, format="%.1f",key="3_7")
+                with c2:
+                    sprocket_3 = st.number_input("Sprocket:", min_value=12, max_value=22,value=15, step=1,key="3_8")
+                with c3:
+                    chainring_3 = st.number_input("Chain Ring:", min_value=40, max_value=100,value=63, step=1,key="3_9")
+                with c4:
+                    seat_height_3 = st.number_input("Seat Height:", min_value=0.50, max_value=2.00,value=1.01,key="3_10")
+
+
+                st.subheader("Global specs")
+                c1,c2,c3,c4,c5 =st.columns(5)
+                with c1:
+                    air_density = st.number_input("Air Density:", min_value=0.001, max_value=3.200,value=1.168, step=1e-3, format="%.3f",key="4_1")
+                with c2:
+                    dist_at_sit = st.number_input("Distance at sit:", min_value=0.01, max_value=750.0,value=150.00, step=0.1, format="%.1f",key="4_2")
+                with c3:
+                    standing_fatigue_rate = st.number_input("Standing Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.00, step=1e-2, format="%.2f",key="4_3")
+                with c4:
+                    seated_fatigue_rate = st.number_input("Seated Fatigue Rate (%):", min_value=0.01, max_value=99.99,value=1.00, step=1e-2, format="%.2f",key="4_4")
+                with c5:
+                    fatigue_onset = st.number_input("Onset of Fatigue (s):", min_value=0.1, max_value=2.0,value=1.0, step=0.1, format="%.1f",key="4_5")
+
+                c1,c2,c3,c4,c5 =st.columns(5)
+                with c1:
+                    circumferences = [250,333,500]
+                    track_circumference = st.selectbox("Track Circumference:", circumferences, key="Track_circumference")
+                with c2:
+                    straight_bank_angle = st.number_input("Straight Bank Angle:", min_value=0.00, max_value=90.00,value=13.00)
+                with c4:
+                    pl_to_trans = st.number_input("Distance from Pursuit Line to Transition:", min_value=0.00, max_value=90.00,value=31.25)
+                with c5:
+                    transition_length = st.number_input("Transition length:", min_value=0.00, max_value=90.00,value=10.00)
+                with c3:
+                    bend_bank_angle = st.number_input("Bend Bank Angle:", min_value=0.00, max_value=90.00,value=46.13)
+                submitted = st.form_submit_button("Update Specs")
             
         class Athlete:
             def __init__(self, seat_max_RPM, seat_max_torque, stand_max_RPM, stand_max_torque, stand_CdA, seat_CdA, total_mass, gear, seat_height, max_power,stand_TC_slope, seat_TC_slope):
@@ -1164,7 +1274,7 @@ if authentication_status:
         fig.add_trace(go.Line(x=df_p1["Time"], y=df_p1["power_usable"], 
                              name="p1 Power", yaxis='y'))
          
-        fig.add_trace(go.Line(x=df_p3["Time"], y=df_p3["wheel_speed"], 
+        fig.add_trace(go.Line(x=df_p1["Time"], y=df_p3["wheel_speed"], 
                               name="p1 Wheel speed", yaxis="y2"))
 
         fig.add_trace(go.Line(x=df_p2["Time"], y=df_p2["power_usable"], 
