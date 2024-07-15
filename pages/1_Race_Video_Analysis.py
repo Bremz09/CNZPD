@@ -364,7 +364,7 @@ if authentication_status:
                     av_idx=1
                     below_av = df_small["Del_Speed"][av_idx]
                     above_av=below_av
-                    while below_av <av_speed:
+                    while (below_av <av_speed) or (av_idx<2) :
                         below_av=df_small["Del_Speed"][av_idx]
                         av_idx+=1
                     above_av=df_small["Del_Speed"][av_idx-1]
@@ -1060,9 +1060,9 @@ if authentication_status:
                 with col_2:
                     c1sub,c2sub=st.columns(2)
                     with c1sub:
-                        yaxis_min = st.number_input("Y-axis Minimum:", min_value=0.00, max_value=None,value=min(df_temp["Avg_Speed"][1:])-1)
+                        yaxis_min = st.number_input("Y-axis Minimum:", min_value=0.00, max_value=None,value=min(df_temp["Avg_Speed"][1:])-1,key = f"{event_count}ymin")
                     with c2sub:
-                        yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1)
+                        yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1,key = f"{event_count}ymax")
                     average = df_small.Split.iloc[4:].mean()
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data={'Split':':.2f', 'Avg_Speed':':.2f', 'Del_Speed':':.2f'})
                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
