@@ -1081,7 +1081,7 @@ if authentication_status:
                     av_idx=1
                     below_av = df_small["Del_Speed"][av_idx]
                     above_av=below_av
-                    while below_av <av_speed:
+                    while (below_av <av_speed) or (av_idx<2) :
                         below_av=df_small["Del_Speed"][av_idx]
                         av_idx+=1
                     above_av=df_small["Del_Speed"][av_idx-1]
