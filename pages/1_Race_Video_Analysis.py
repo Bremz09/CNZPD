@@ -170,7 +170,7 @@ if authentication_status:
                 selections = st.multiselect(
                 "Select past effort(s):",
                 options=df_master["Title"].unique())
-                st.write("PTA")
+                
             
                 
         with c3:
@@ -623,8 +623,8 @@ if authentication_status:
             with col_one:
                 show_names = ["No","Yes"]
                 Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
-                df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
-
+                df_combine["Initial"]=df_combine["Front"].apply(lambda x: ''.join(i[0] for i in x.split()))#.replace('[^A-Z]', '') 
+                df_combine
             if Names == "Yes":
                 fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",text="Initial",markers="Front")
                 fig_tt.update_traces(textposition='top center')
@@ -1371,7 +1371,7 @@ if authentication_status:
             with col_one:
                 show_names = ["No","Yes"]
                 Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
-                df_combine["Initial"]=df_combine["Front"].str.replace('[^A-Z]', '')
+                df_combine["Initial"]=df_combine["Front"].apply(lambda x: ''.join(i[0] for i in x.split()))
             
             if Names == "Yes":
                 fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",text="Initial",markers="Front")
