@@ -624,7 +624,7 @@ if authentication_status:
                 show_names = ["No","Yes"]
                 Names = st.selectbox("Show Athlete Names?", show_names, key="Show_Names")
                 df_combine["Initial"]=df_combine["Front"].apply(lambda x: ''.join(i[0] for i in x.split()))#.replace('[^A-Z]', '') 
-                df_combine
+                
             if Names == "Yes":
                 fig_tt = px.line(df_combine, x="Distance", y = "Del_Speed", title="Comparison",color="Title",text="Initial",markers="Front")
                 fig_tt.update_traces(textposition='top center')
