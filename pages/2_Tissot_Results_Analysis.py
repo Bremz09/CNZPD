@@ -574,7 +574,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sprint',
                 skiprows=0,
-                usecols='A:S',
+                usecols='A:V',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -591,7 +591,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sprint_Trueskill',
                 skiprows=0,
-                usecols='A:R',
+                usecols='A:S',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -609,7 +609,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[-1]
+                default=df["Year"].unique()[0]
             )    
         if year:
             df = df.query(
@@ -645,7 +645,7 @@ if authentication_status:
         else:
             df=df_orig
 
-
+        
         st.dataframe(df, use_container_width=True)
 
         ##Download buttons
@@ -710,7 +710,7 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final Rank", title = "Rank by Date", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_Rank", title = "Rank by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
@@ -720,7 +720,7 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_Rank", title = "Final Rank by Age", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history, use_container_width=True)
@@ -874,7 +874,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sprint_Trueskill',
                 skiprows=0,
-                usecols='A:R',
+                usecols='A:S',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -2863,22 +2863,22 @@ if authentication_status:
                 df_mean_tempo_transpose[f"{var}"]=df_mean_tempo.iloc[i][3:39].values
 
             ##Points scoring average plot
-            df_mean_points
-            df_mean_points_transpose
+#             df_mean_points
+#             df_mean_points_transpose
             fig_point_mean = px.line(df_mean_points_transpose, x="Marker", y = df_mean_points_transpose.columns[1:], title="Points Scoring Average", markers=True)
             st.plotly_chart(fig_point_mean,use_container_width=True)
 
             ##Tempo scoring average plot
-            df_mean_tempo
-            df_mean_tempo_transpose
+#             df_mean_tempo
+#             df_mean_tempo_transpose
             fig_tempo_mean = px.line(df_mean_tempo_transpose, x="Marker", y = df_mean_tempo_transpose.columns[1:], title="Tempo Scoring Average", markers=True)
             st.plotly_chart(fig_tempo_mean,use_container_width=True)
 
 
 
             ##Overall Averages plot
-            df_mean_total
-            df_mean_total_transpose
+#             df_mean_total
+#             df_mean_total_transpose
             fig_overall_mean = px.line(df_mean_total_transpose, x="Marker", y = df_mean_total_transpose.columns[1:], title="Overall Averages", markers=True)
             st.plotly_chart(fig_overall_mean,use_container_width=True)
 
