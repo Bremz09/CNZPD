@@ -243,6 +243,10 @@ if authentication_status:
             for i in range(len(df_athleteHistory)):
                 var = str(i+1)+" " +str(df_athleteHistory["Athlete"].iloc[i]) + " " + str(df_athleteHistory["Year"].iloc[i]) + " " +str(df_athleteHistory["Event"].iloc[i]) + " " +str(df_athleteHistory["Location"].iloc[i])
                 df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][8:10].values
+#             df_tester = pd.read_excel('C:\\Users\\SamB\\M Sp Q traces Paris.xlsx',sheet_name="Sheet1")
+#             df_tester
+#             fig = px.line(df_tester, x="Marker", y = df_tester.columns[1:])
+#             st.plotly_chart(fig, use_container_width=True)
             fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="All Rides",labels={"value":"Splits (seconds)"},markers=True)
             st.plotly_chart(fig_CH, use_container_width=True)
             
@@ -254,7 +258,7 @@ if authentication_status:
             fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Rank", title = "Rank by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
             st.plotly_chart(fig_athlete_history,use_container_width=True)
-
+            df_athleteHistory
             ##Fourth Figure -- 200m times by Age
             fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "200m", title = "Times by Age", 
                                           markers = "True", color="Athlete",labels={"200m":"200m (seconds)"})
