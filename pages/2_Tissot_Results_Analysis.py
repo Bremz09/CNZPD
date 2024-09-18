@@ -4980,7 +4980,7 @@ if authentication_status:
         )
         if len(country)>0:
             df_countryHistory = df_countryHistory.sort_values("Date")
-            df_countryHistory.insert(54,'Final Time',df_countryHistory.iloc[:,22:54].sum(axis=1))
+            df_countryHistory.insert(55,'Final Time',df_countryHistory.iloc[:,23:55].sum(axis=1))
             df_countryHistory=df_countryHistory.reset_index(drop=True)
             st.dataframe(df_countryHistory)
 
@@ -5029,10 +5029,11 @@ if authentication_status:
             df_worm_CH["Marker"] = marker
             for i in range(len(df_countryHistory)):
                 var = str(i+1)+" "+str(df_countryHistory["Country"].iloc[i])+" "+str(df_countryHistory["Location"].iloc[i]) + " " + str(df_countryHistory["Year"].iloc[i]) + " " +str(df_countryHistory["Event"].iloc[i]) + " " +str(df_countryHistory["Stage"].iloc[i])
-                df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][22:54].values
-                df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][22:54].values.cumsum()
+                df_splits_CH[f"{var}"]=df_countryHistory.iloc[i][23:55].values
+                df_worm_CH[f"{var}"]=df_countryHistory.iloc[i][23:55].values.cumsum()
 
-
+            df_splits_CH
+            df_worm_CH
             fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits",labels={
                      "value": "Running Time (Seconds)"
                     

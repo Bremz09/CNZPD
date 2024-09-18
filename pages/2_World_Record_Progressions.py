@@ -92,6 +92,7 @@ if authentication_status:
         c1,c2=st.columns([1,3])
         with c1:
             trend = st.selectbox("WR or Placings trend?:", ["World Record progression","Placing progression"], key="MSP trend type Selector")
+            
 
             if trend=="World Record progression":
                 df= get_wr_data_from_excel()
@@ -172,6 +173,12 @@ if authentication_status:
                 df = get_placing_data_from_excel()
                 df_master=df
                 df_show=df
+                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
+                if comp == "Just OLY":
+                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
+                elif comp == "Just WCH":
+                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                df=df_show
                 df_show
                 
                 ##Download buttons
@@ -200,13 +207,13 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2023),
+                    value = (2000,2024),
                         min_value = 2000,
                         max_value = 2021)
                     
                     time_range = st.slider(
             "Restrict time range?",
-                    value = (9.100,11.000),
+                    value = (9.088,11.000),
                         max_value = 11.000,
                         min_value = 9.100)
                     
@@ -222,6 +229,7 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["16th"] > time_range[1])
                     df_mask = df_mask.mask(df_mask["8th"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
+
                     fig = px.scatter(df_mask, x="Year", y = ["1st","2nd","3rd","8th","16th"], title="Men's Sprint Olympic and World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
                     customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
                     hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' + '16th: %{customdata[4]}<br>' +
@@ -446,6 +454,12 @@ if authentication_status:
                 df = get_placing_data_from_excel()
                 df_master=df
                 df_show=df
+                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
+                if comp == "Just OLY":
+                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
+                elif comp == "Just WCH":
+                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                df=df_show
                 df_show
                 
                 ##Download buttons
@@ -474,15 +488,15 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2023),
+                    value = (2000,2024),
                         min_value = 2000,
-                        max_value = 2021)
+                        max_value = 2024)
                     
                     time_range = st.slider(
             "Restrict time range?",
-                    value = (10.100,12.200),
+                    value = (10.029,12.200),
                         max_value = 12.200,
-                        min_value = 10.100)
+                        min_value = 10.029)
                     
                     df_mask = df.mask(df["Year"] < date_range[0])
                     df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
@@ -723,6 +737,12 @@ if authentication_status:
                 df= get_medal_data_from_excel()
                 df_master=df
                 df_show = df
+                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
+                if comp == "Just OLY":
+                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
+                elif comp == "Just WCH":
+                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                df=df_show
                 df_show
     
                 ##Download buttons
@@ -753,15 +773,15 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2023),
+                    value = (2000,2024),
                         min_value = 2000,
                         max_value = 2023)
                     
                     time_range = st.slider(
             "Restrict time range?",
-                    value = (41.369,45.161),
+                    value = (41.279,45.161),
                         max_value = 45.161,
-                        min_value = 41.369)
+                        min_value = 41.279)
                     
                     df_mask = df.mask(df["Year"] < date_range[0])
                     df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
@@ -957,6 +977,12 @@ if authentication_status:
                     df= get_medal_data_from_excel()
                     df_master=df
                     df_show = df
+                    comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
+                    if comp == "Just OLY":
+                            df_show=df_show.loc[df_show["Competition"]=="OLY"]
+                    elif comp == "Just WCH":
+                            df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                    df=df_show
                     df_show
 
                     ##Download buttons
@@ -987,15 +1013,15 @@ if authentication_status:
                     with c2:
                         date_range = st.slider(
                 "Restrict date range?",
-                        value = (2021,2023),
+                        value = (2021,2024),
                             min_value = 2021,
                             max_value = 2023)
 
                         time_range = st.slider(
                 "Restrict time range?",
-                        value = (46.072,55.653),
+                        value = (45.472,55.653),
                             max_value = 55.653,
-                            min_value = 46.072)
+                            min_value = 45.472)
 
                         df_mask = df.mask(df["Year"] < date_range[0])
                         df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
@@ -1602,6 +1628,12 @@ if authentication_status:
                 df = get_placing_data_from_excel()
                 df_master=df
                 df_show=df
+                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
+                if comp == "Just OLY":
+                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
+                elif comp == "Just WCH":
+                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                df=df_show
                 df_show
 
                 ##Download buttons
@@ -1630,15 +1662,15 @@ if authentication_status:
             with c2:
                 date_range = st.slider(
         "Restrict date range?",
-                value = (2000,2023),
+                value = (2000,2024),
                     min_value = 2000,
                     max_value = 2021)
 
                 time_range = st.slider(
         "Restrict time range?",
-                value = (247.000,284.000),
+                value = (243.000,284.000),
                     max_value = 284.000,
-                    min_value = 247.000)
+                    min_value = 243.000)
 
                 df_mask = df.mask(df["Year"] < date_range[0])
                 df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
