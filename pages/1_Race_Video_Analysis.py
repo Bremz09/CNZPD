@@ -1012,9 +1012,9 @@ if authentication_status:
                     while j <len(df_small) and r4[j] == 1:
                         four_turn_3+=1
                         j+=1
-                    first_turns=[one_turn_1,two_turn_1,three_turn_1,four_turn_1]
-                    second_turns=[one_turn_2,two_turn_2,three_turn_2,four_turn_2]
-                    third_turns=[one_turn_3,two_turn_3,three_turn_3,four_turn_3]
+                    first_turns=[one_turn_1/4,two_turn_1/4,three_turn_1/4,four_turn_1/4]
+                    second_turns=[one_turn_2/4,two_turn_2/4,three_turn_2/4,four_turn_2/4]
+                    third_turns=[one_turn_3/4,two_turn_3/4,three_turn_3/4,four_turn_3/4]
                     df_small["Rider1"]=r1
                     df_small["Rider2"]=r2
                     df_small["Rider3"]=r3
@@ -1024,7 +1024,7 @@ if authentication_status:
                     df_small["Rider2WS"]=r2WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
                     df_small["Rider3WS"]=r3WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
                     df_small["Rider4WS"]=r4WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
-
+                    
                     df_small
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
                     
@@ -1064,6 +1064,7 @@ if authentication_status:
                     with c2sub:
                         yaxis_max = st.number_input("Y-axis Maximum:", min_value=min(df_temp["Avg_Speed"])-1, max_value=None,value=max(df_temp["Avg_Speed"])+1,key = f"{event_count}ymax")
                     average = df_small.Split.iloc[4:].mean()
+                    
                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data={'Split':':.2f', 'Avg_Speed':':.2f', 'Del_Speed':':.2f'})
                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
                     fig.update_layout(
@@ -1133,10 +1134,10 @@ if authentication_status:
                     df_summ.columns=["Rider"]
                     df_summ=df_summ.dropna(axis=0)
                     front=[]
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][0]]))
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][1]]))
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][2]]))
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][3]]))
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][0]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][1]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][2]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][3]])/4)
                     wind_scores = []
                     df_small['Rider1WS'].fillna(0)
                     wind_scores.append(round(sum(df_small['Rider1WS'].fillna(0),1)))
@@ -1147,6 +1148,7 @@ if authentication_status:
                     df_summ["Turn_1"]=first_turns
                     df_summ["Turn_2"]=second_turns
                     df_summ["Turn_3"]=third_turns
+                    df_summ["1&2"]=[(df_small['Rider1'].value_counts()[1]+df_small['Rider1'].value_counts()[2])/4,(df_small['Rider2'].value_counts()[1]+df_small['Rider2'].value_counts()[2])/4,(df_small['Rider3'].value_counts()[1]+df_small['Rider3'].value_counts()[2])/4,(df_small['Rider4'].value_counts()[1]+df_small['Rider4'].value_counts()[2])/4]
                     df_summ["Wind_Score"] = wind_scores
                     
                     # Calculating Splits based off delivery speeds - 900 is a conversion factor
@@ -1197,6 +1199,7 @@ if authentication_status:
                     #df_summ_full["Wind_Share_%"]=100*df_summ_full["Wind_Score"]/total_wind
                     df_summ_full["Team_consistency"]=round(consistency,2)
                     df_summ_full.insert(1,"Position",[1,2,3,4])
+                    df_summ_full["1&2"]=df_summ["1&2"]
                     df_summ_full.insert(3,"Time",df_kilos['Total'][3])
                     df_summ_full["62.5"]=round(df_small["Split"][0],3)
                     df_summ_full["125"]=round(df_start["Total"][1],3)
@@ -1736,7 +1739,7 @@ if authentication_status:
         "Name == @riders"
         )
         
-            df_riders=df_riders.sort_values(by=["Name","Start time"])
+            df_riders=df_riders.sort_values(by=["Event","Name","Start time"])
             df_riders=df_riders.reset_index(drop=True)
             df_riders["Initials"]=df_riders["Name"].apply(lambda x: ''.join(i[0] for i in x.split()))
             #df_riders
@@ -1759,8 +1762,10 @@ if authentication_status:
             start=df_riders["Start time"][0]
             videos=[df_riders["Video"][0]]
             times=[df_riders["Start time"][0]-start]
+            df_riders
             df_worm=pd.DataFrame()
             df_worm["To Go"]=["3 Laps","2.5 Laps","2 Laps","1.5 Laps","1 Lap","0.5 Laps","15m"]
+            df_worm
             for i in range(1,len(df_riders)):
                 if count<6:
                     times.append(df_riders["Start time"][i]-start)
@@ -1776,7 +1781,7 @@ if authentication_status:
                     times.append(df_riders["Start time"][i]-start)
                     videos.append(df_riders["Video"][i])
             df_worm[tags[tag_count]]=times
-
+            
             df_worm
             
             fig_worm = px.line(df_worm, x="To Go", y = df_worm.columns, title="Worms",markers=True,labels={"value":"Seconds"})
