@@ -1757,7 +1757,7 @@ if authentication_status:
                 sheet_name='Sheet1',
                 skiprows=0,
                 usecols='A:D',
-                nrows=30
+                nrows=100
                 )
             #df = df.replace(',','')
             df["Time"]=((pd.to_datetime(df["Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
@@ -1774,8 +1774,8 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sheet1',
                 skiprows=0,
-                usecols='A:G',
-                nrows=30
+                usecols='A:Q',
+                nrows=100
                 )
             #df = df.replace(',','')
        
@@ -1876,8 +1876,15 @@ if authentication_status:
         
             
             else:
+                medal_or_qual = st.selectbox("Medal or Qual times:", ["Qual times","Medal times","Fastest time"], key="medal_or_qual_MTP")
+                oly_or_wch = st.selectbox("Select competitions:", ["OLY and WCH","OLY only","WCH only"], key="mtp_comps")
                 df=get_medal_data_from_excel()
                 df_master=df
+                if oly_or_wch == "OLY only":
+                    df = df.loc[df["Event"]=="OLY"]
+                elif oly_or_wch == "WCH only":
+                    df = df.loc[df["Event"]=="WCH"]
+
                 df_show=df
                 # df_show = df.drop(columns=["DateSerial","Datetime"])
                 
@@ -1907,87 +1914,231 @@ if authentication_status:
                     )
                 ##Download buttons complete
     
-    
-                with c2:
-                    date_range = st.slider(
-            "Restrict date range?",
-                    value = (df_master["Year"][0]+1,df_master["Year"][len(df_master)-1]),
-                        max_value = df_master["Year"][0]+1,
-                        min_value = df_master["Year"][len(df_master)-1])
-                    
-                    time_range = st.slider(
-            "Restrict time range?",
-                    value = (222.00,337.01),
-                    max_value = 337.01,
-                    min_value = 222.00)
-                    
-                    
-                    df_mask = df.mask(df["Year"] < date_range[0])
-                    df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
-                    df_mask = df_mask.mask(df_mask["Bronze_Seconds"] < time_range[0])
-                    df_mask = df_mask.mask(df_mask["Bronze_Seconds"] > time_range[1])
-                    df_mask = df_mask.mask(df_mask["Silver_Seconds"] < time_range[0])
-                    df_mask = df_mask.mask(df_mask["Silver_Seconds"] > time_range[1])
-                    df_mask = df_mask.mask(df_mask["Gold_Seconds"] < time_range[0])
-                    df_mask = df_mask.mask(df_mask["Gold_Seconds"] > time_range[1])
-                    fig = px.scatter(df_mask, x="Year", y = ["Bronze_Seconds","Silver_Seconds","Gold_Seconds"], title="Men's Team Pursuit Olympic Medal Winning Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
-                    customdata = np.stack((round(df_mask['Bronze_Seconds'],3), round(df_mask['Silver_Seconds'],3),round(df_mask['Gold_Seconds'],3),df_mask['Year']), axis=-1)
-                    hovertemplate = ('Bronze: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Gold: %{customdata[2]}<br>' +
-                'Year: %{customdata[3]}<br>' 
-                '<extra></extra>')
-                    fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                    col1,col2=st.columns(2)
-                    with col1:
-                        bronze_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
-                        bronze_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
-                        bronze_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
-                        silver_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
-                        silver_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
-                        silver_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
-                        gold_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
-                        gold_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
-                        gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
-                        st.write(f"Bronze time = {round(bronze_x1,6)}(Year) + {round(bronze_const,3)}")
-                        st.write(f"R-squared = {round(bronze_a,3)}")
-                        st.write(f"Silver time = {round(silver_x1,6)}(Year) + {round(silver_const,3)}")
-                        st.write(f"R-squared = {round(silver_a,3)}")
-                        st.write(f"Gold time = {round(gold_x1,6)}(Year) + {round(gold_const,3)}")
-                        st.write(f"R-squared = {round(gold_a,3)}")
-                    with col2:
-                        predict_year = st.selectbox("Select year for medal predictions:", [2024,2028,2032,2036,2040,2044,2048])
-                        
-                        
-                    
+                if medal_or_qual=="Medal times":
+                    with c2:
+                        date_range = st.slider(
+                "Restrict date range?",
+                        value = (df_master["Year"][0]+1,df_master["Year"][len(df_master)-1]),
+                            max_value = df_master["Year"][0]+1,
+                            min_value = df_master["Year"][len(df_master)-1])
+
+                        time_range = st.slider(
+                "Restrict time range?",
+                        value = (222.00,337.01),
+                        max_value = 337.01,
+                        min_value = 222.00)
+
+
+                        df_mask = df.mask(df["Year"] < date_range[0])
+                        df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+                        df_mask = df_mask.mask(df_mask["Bronze_Seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["Bronze_Seconds"] > time_range[1])
+                        df_mask = df_mask.mask(df_mask["Silver_Seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["Silver_Seconds"] > time_range[1])
+                        df_mask = df_mask.mask(df_mask["Gold_Seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["Gold_Seconds"] > time_range[1])
+                        fig = px.scatter(df_mask, x="Year", y = ["Bronze_Seconds","Silver_Seconds","Gold_Seconds"], title="Men's Team Pursuit  Medal Winning Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
+                        customdata = np.stack((round(df_mask['Bronze_Seconds'],3), round(df_mask['Silver_Seconds'],3),round(df_mask['Gold_Seconds'],3),df_mask['Year']), axis=-1)
+                        hovertemplate = ('Bronze: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Gold: %{customdata[2]}<br>' +
+                    'Year: %{customdata[3]}<br>' 
+                    '<extra></extra>')
+                        fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+
+                        st.plotly_chart(fig, use_container_width=True)
+                        col1,col2=st.columns(2)
+                        with col1:
+                            bronze_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                            bronze_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                            bronze_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                            silver_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+                            silver_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+                            silver_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+                            gold_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+                            gold_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+                            gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+                            
+                            
+                            st.write(f"Gold time = {round(gold_x1,6)}(Year) + {round(gold_const,3)}")
+                            st.write(f"R-squared = {round(gold_a,3)}")
+                            st.write(f"Silver time = {round(silver_x1,6)}(Year) + {round(silver_const,3)}")
+                            st.write(f"R-squared = {round(silver_a,3)}")
+                            st.write(f"Bronze time = {round(bronze_x1,6)}(Year) + {round(bronze_const,3)}")
+                            st.write(f"R-squared = {round(bronze_a,3)}")
+                        with col2:
+                            if oly_or_wch == "OLY only":
+                                predict_year = st.selectbox("Select year for fastest time prediction:", [2024,2028,2032,2036,2040,2044,2048])
+                                
+                            else:
+                                predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+
+
+                            bronze_m, bronze_s = divmod(bronze_x1*predict_year +bronze_const, 60)
+                            bronze_h, bronze_m = divmod(bronze_m, 60)
+                            bronze_m = int(bronze_m)
+                            bronze_s=round(bronze_s,3)
+                            if bronze_s<10:
+                                bronze_s="0"+str(bronze_s)           
+                            
+                            silver_m, silver_s = divmod(silver_x1*predict_year +silver_const, 60)
+                            silver_h, silver_m = divmod(silver_m, 60)
+                            silver_m = int(silver_m)
+                            silver_s=round(silver_s,3)
+                            if silver_s<10:
+                                silver_s="0"+str(silver_s)           
+                            
+                            gold_m, gold_s = divmod(gold_x1*predict_year +gold_const, 60)
+                            gold_h, gold_m = divmod(gold_m, 60)
+                            gold_m = int(gold_m)
+                            gold_s=round(gold_s,3)
+                            if gold_s<10:
+                                gold_s="0"+str(gold_s)           
+                            st.write(f"This trend predicts a Gold medal winning time of {gold_m}:{gold_s} in {predict_year}.")
+                            st.write(f"This trend predicts a Silver medal winning time of {silver_m}:{silver_s} in {predict_year}.")
+                            st.write(f"This trend predicts a Bronze medal winning time of {bronze_m}:{bronze_s} in {predict_year}.")
         
-                        bronze_m, bronze_s = divmod(bronze_x1*predict_year +bronze_const, 60)
-                        bronze_h, bronze_m = divmod(bronze_m, 60)
-                        bronze_m = int(bronze_m)
-                        bronze_s=round(bronze_s,3)
-                        if bronze_s<10:
-                            bronze_s="0"+str(bronze_s)           
-                        st.write(f"This trend predicts a Bronze medal winning time of {bronze_m}:{bronze_s} in {predict_year}.")
-                        silver_m, silver_s = divmod(silver_x1*predict_year +silver_const, 60)
-                        silver_h, silver_m = divmod(silver_m, 60)
-                        silver_m = int(silver_m)
-                        silver_s=round(silver_s,3)
-                        if silver_s<10:
-                            silver_s="0"+str(silver_s)           
-                        st.write(f"This trend predicts a Silver medal winning time of {silver_m}:{silver_s} in {predict_year}.")
-                        gold_m, gold_s = divmod(gold_x1*predict_year +gold_const, 60)
-                        gold_h, gold_m = divmod(gold_m, 60)
-                        gold_m = int(gold_m)
-                        gold_s=round(gold_s,3)
-                        if gold_s<10:
-                            gold_s="0"+str(gold_s)           
-                        st.write(f"This trend predicts a Gold medal winning time of {gold_m}:{gold_s} in {predict_year}.")
-        
-        
-        
-    
-    
-    
+                elif medal_or_qual=="Qual times":
+                    with c2:
+                        date_range = st.slider(
+                "Restrict date range?",
+                        value = (df_master["Year"][0]+1,df_master["Year"][len(df_master)-1]),
+                            max_value = df_master["Year"][0]+1,
+                            min_value = df_master["Year"][len(df_master)-1])
+
+                        time_range = st.slider(
+                "Restrict time range?",
+                        value = (222.00,337.01),
+                        max_value = 337.01,
+                        min_value = 222.00)
+
+
+                        df_mask = df.mask(df["Year"] < date_range[0])
+                        df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+                        df_mask = df_mask.mask(df_mask["Q3_seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["Q3_seconds"] > time_range[1])
+                        df_mask = df_mask.mask(df_mask["Q2_seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["Q2_seconds"] > time_range[1])
+                        df_mask = df_mask.mask(df_mask["Q1_seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["Q1_seconds"] > time_range[1])
+                        fig = px.scatter(df_mask, x="Year", y = ["Q3_seconds","Q2_seconds","Q1_seconds"], title="Men's Team Pursuit Qualifying Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
+                        customdata = np.stack((round(df_mask['Q3_seconds'],3), round(df_mask['Q2_seconds'],3),round(df_mask['Q1_seconds'],3),df_mask['Year']), axis=-1)
+                        hovertemplate = ('Q3: %{customdata[0]}<br>' + 'Q2: %{customdata[1]}<br>' + 'Q1: %{customdata[2]}<br>' +
+                    'Year: %{customdata[3]}<br>' 
+                    '<extra></extra>')
+                        fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+
+                        st.plotly_chart(fig, use_container_width=True)
+                        col1,col2=st.columns(2)
+                        with col1:
+                            bronze_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                            bronze_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                            bronze_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                            silver_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+                            silver_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+                            silver_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+                            gold_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+                            gold_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+                            gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+                            
+                            
+                            st.write(f"Q1 time = {round(gold_x1,6)}(Year) + {round(gold_const,3)}")
+                            st.write(f"R-squared = {round(gold_a,3)}")
+                            st.write(f"Q2 time = {round(silver_x1,6)}(Year) + {round(silver_const,3)}")
+                            st.write(f"R-squared = {round(silver_a,3)}")
+                            st.write(f"Q3 time = {round(bronze_x1,6)}(Year) + {round(bronze_const,3)}")
+                            st.write(f"R-squared = {round(bronze_a,3)}")
+                        with col2:
+                            if oly_or_wch == "OLY only":
+                                predict_year = st.selectbox("Select year for fastest time prediction:", [2024,2028,2032,2036,2040,2044,2048])
+                                
+                            else:
+                                predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+
+
+                            bronze_m, bronze_s = divmod(bronze_x1*predict_year +bronze_const, 60)
+                            bronze_h, bronze_m = divmod(bronze_m, 60)
+                            bronze_m = int(bronze_m)
+                            bronze_s=round(bronze_s,3)
+                            if bronze_s<10:
+                                bronze_s="0"+str(bronze_s)           
+                            
+                            silver_m, silver_s = divmod(silver_x1*predict_year +silver_const, 60)
+                            silver_h, silver_m = divmod(silver_m, 60)
+                            silver_m = int(silver_m)
+                            silver_s=round(silver_s,3)
+                            if silver_s<10:
+                                silver_s="0"+str(silver_s)           
+                            
+                            gold_m, gold_s = divmod(gold_x1*predict_year +gold_const, 60)
+                            gold_h, gold_m = divmod(gold_m, 60)
+                            gold_m = int(gold_m)
+                            gold_s=round(gold_s,3)
+                            if gold_s<10:
+                                gold_s="0"+str(gold_s)           
+                            st.write(f"This trend predicts a Q1 time of {gold_m}:{gold_s} in {predict_year}.")
+                            st.write(f"This trend predicts a Q2 time of {silver_m}:{silver_s} in {predict_year}.")
+                            st.write(f"This trend predicts a Q3 time of {bronze_m}:{bronze_s} in {predict_year}.")
+
+                    
+                elif medal_or_qual=="Fastest time":
+                    with c2:
+                        date_range = st.slider(
+                "Restrict date range?",
+                        value = (df_master["Year"][0]+1,df_master["Year"][len(df_master)-1]),
+                            max_value = df_master["Year"][0]+1,
+                            min_value = df_master["Year"][len(df_master)-1])
+
+                        time_range = st.slider(
+                "Restrict time range?",
+                        value = (222.00,337.01),
+                        max_value = 337.01,
+                        min_value = 222.00)
+
+
+                        df_mask = df.mask(df["Year"] < date_range[0])
+                        df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+                        df_mask = df_mask.mask(df_mask["Fastest_seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["Fastest_seconds"] > time_range[1])
+
+                        fig = px.scatter(df_mask, x="Year", y = ["Fastest_seconds"], title="Men's Team Pursuit Competition Fastest Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=["gold"])
+                        customdata = np.stack((round(df_mask['Fastest_seconds'],3),df_mask['Year']), axis=-1)
+                        hovertemplate = ('Fastest: %{customdata[0]}<br>' +
+                    'Year: %{customdata[1]}<br>' 
+                    '<extra></extra>')
+                        fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+
+                        st.plotly_chart(fig, use_container_width=True)
+                        col1,col2=st.columns(2)
+                        with col1:
+                            fastest_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                            fastest_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                            fastest_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                            
+                            st.write(f"Q3 time = {round(fastest_x1,6)}(Year) + {round(fastest_const,3)}")
+                            st.write(f"R-squared = {round(fastest_a,3)}")
+
+                        with col2:
+                            if oly_or_wch == "OLY only":
+                                predict_year = st.selectbox("Select year for fastest time prediction:", [2024,2028,2032,2036,2040,2044,2048])
+                                
+                            else:
+                                predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+                                
+
+
+
+
+                            fastest_m, fastest_s = divmod(fastest_x1*predict_year +fastest_const, 60)
+                            fastest_h, fastest_m = divmod(fastest_m, 60)
+                            fastest_m = int(fastest_m)
+                            fastest_s=round(fastest_s,3)
+                            if fastest_s<10:
+                                fastest_s="0"+str(fastest_s)           
+                            st.write(f"This trend predicts a fastest time of {fastest_m}:{fastest_s} in {predict_year}.")
+                            
     
 
 

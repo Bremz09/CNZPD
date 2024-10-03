@@ -297,9 +297,9 @@ if authentication_status:
                     while j <df_small["Time"].count() and r4[j] == 1:
                         four_turn_3+=1
                         j+=1
-                    first_turns=[one_turn_1,two_turn_1,three_turn_1,four_turn_1]
-                    second_turns=[one_turn_2,two_turn_2,three_turn_2,four_turn_2]
-                    third_turns=[one_turn_3,two_turn_3,three_turn_3,four_turn_3]
+                    first_turns=[one_turn_1/4,two_turn_1/4,three_turn_1/4,four_turn_1/4]
+                    second_turns=[one_turn_2/4,two_turn_2/4,three_turn_2/4,four_turn_2/4]
+                    third_turns=[one_turn_3/4,two_turn_3/4,three_turn_3/4,four_turn_3/4]
                     df_small["Rider1"]=r1
                     df_small["Rider2"]=r2
                     df_small["Rider3"]=r3
@@ -436,10 +436,10 @@ if authentication_status:
                     df_summ.columns=["Rider"]
                     df_summ=df_summ.dropna(axis=0)
                     front=[]
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][0]]))
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][1]]))
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][2]]))
-                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][3]]))
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][0]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][1]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][2]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][3]])/4)
                     wind_scores = []
                     df_small['Rider1WS'].fillna(0)
                     wind_scores.append(round(sum(df_small['Rider1WS'].fillna(0),1)))
@@ -466,7 +466,10 @@ if authentication_status:
                     st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
                     st.write("We then sum all values to get the Wind_Score shown below:")
 
+                    
+                    df_summ.insert(5, "1&2", [(r1.count(1)+r1.count(2))/4,(r2.count(1)+r2.count(2))/4,(r3.count(1)+r3.count(2))/4,(r4.count(1)+r4.count(2))/4], True)
                     df_summ
+                    
                     
                                  
                     st.subheader("Start Splits")
@@ -499,7 +502,7 @@ if authentication_status:
                     df_kilos["Total"]=df_kilos["Split"].cumsum()
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
-                    df_summ
+                    
                     df_summ_full = df_summ
                     
                     df_summ_full.insert(1,"Event",df_temp["Title"].iloc[0])
