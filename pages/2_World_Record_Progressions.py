@@ -1957,12 +1957,23 @@ if authentication_status:
                             gold_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
                             gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
                             
+                            #ERRORS
+                            df_mask["Gold_Error"]=abs(df_mask["Gold_Seconds"]-((df_mask["Year"]*gold_x1) +gold_const))
+                            df_mask["Silver_Error"]=abs(df_mask["Silver_Seconds"]-((df_mask["Year"]*silver_x1) +silver_const))
+                            df_mask["Bronze_Error"]=abs(df_mask["Bronze_Seconds"]-((df_mask["Year"]*bronze_x1) +bronze_const))
+                            
+                            gold_std=round(df_mask['Gold_Error'].std(),2)
+                            silver_std=round(df_mask['Silver_Error'].std(),2)
+                            bronze_std=round(df_mask['Bronze_Error'].std(),2)
                             
                             st.write(f"Gold time = {round(gold_x1,6)}(Year) + {round(gold_const,3)}")
+                            st.write(f"One standard deviation of the absolute errors is {gold_std} seconds")
                             st.write(f"R-squared = {round(gold_a,3)}")
                             st.write(f"Silver time = {round(silver_x1,6)}(Year) + {round(silver_const,3)}")
+                            st.write(f"One standard deviation of the absolute errors is {silver_std} seconds")
                             st.write(f"R-squared = {round(silver_a,3)}")
                             st.write(f"Bronze time = {round(bronze_x1,6)}(Year) + {round(bronze_const,3)}")
+                            st.write(f"One standard deviation of the absolute errors is {bronze_std} seconds")
                             st.write(f"R-squared = {round(bronze_a,3)}")
                         with col2:
                             if oly_or_wch == "OLY only":
@@ -1979,25 +1990,74 @@ if authentication_status:
                             bronze_m = int(bronze_m)
                             bronze_s=round(bronze_s,3)
                             if bronze_s<10:
-                                bronze_s="0"+str(bronze_s)           
+                                bronze_s="0"+str(bronze_s)   
+                                
+                            bronze_m_lower, bronze_s_lower = divmod(bronze_x1*predict_year +bronze_const - 2*bronze_std, 60)
+                            bronze_h_lower, bronze_m_lower = divmod(bronze_m_lower, 60)
+                            bronze_m_lower = int(bronze_m_lower)
+                            bronze_s_lower=round(bronze_s_lower,3)
+                            if bronze_s_lower<10:
+                                bronze_s_lower="0"+str(bronze_s_lower)  
+                                
+                            bronze_m_higher, bronze_s_higher = divmod(bronze_x1*predict_year +bronze_const +2*bronze_std, 60)
+                            bronze_h_higher, bronze_m_higher = divmod(bronze_m_higher, 60)
+                            bronze_m_higher = int(bronze_m_higher)
+                            bronze_s_higher=round(bronze_s_higher,3)
+                            if bronze_s_higher<10:
+                                bronze_s_higher="0"+str(bronze_s_higher)  
+
                             
                             silver_m, silver_s = divmod(silver_x1*predict_year +silver_const, 60)
                             silver_h, silver_m = divmod(silver_m, 60)
                             silver_m = int(silver_m)
                             silver_s=round(silver_s,3)
                             if silver_s<10:
-                                silver_s="0"+str(silver_s)           
+                                silver_s="0"+str(silver_s)   
+                                
+                            silver_m_lower, silver_s_lower = divmod(silver_x1*predict_year +silver_const - 2*silver_std, 60)
+                            silver_h_lower, silver_m_lower = divmod(silver_m_lower, 60)
+                            silver_m_lower = int(silver_m_lower)
+                            silver_s_lower=round(silver_s_lower,3)
+                            if silver_s_lower<10:
+                                silver_s_lower="0"+str(silver_s_lower)  
+                                
+                            silver_m_higher, silver_s_higher = divmod(silver_x1*predict_year +silver_const +2*silver_std, 60)
+                            silver_h_higher, silver_m_higher = divmod(silver_m_higher, 60)
+                            silver_m_higher = int(silver_m_higher)
+                            silver_s_higher=round(silver_s_higher,3)
+                            if silver_s_higher<10:
+                                silver_s_higher="0"+str(silver_s_higher)  
                             
                             gold_m, gold_s = divmod(gold_x1*predict_year +gold_const, 60)
                             gold_h, gold_m = divmod(gold_m, 60)
                             gold_m = int(gold_m)
                             gold_s=round(gold_s,3)
                             if gold_s<10:
-                                gold_s="0"+str(gold_s)           
+                                gold_s="0"+str(gold_s)    
+                                
+                                
+                            gold_m_lower, gold_s_lower = divmod(gold_x1*predict_year +gold_const - 2*gold_std, 60)
+                            gold_h_lower, gold_m_lower = divmod(gold_m_lower, 60)
+                            gold_m_lower = int(gold_m_lower)
+                            gold_s_lower=round(gold_s_lower,3)
+                            if gold_s_lower<10:
+                                gold_s_lower="0"+str(gold_s_lower)  
+                                
+                            gold_m_higher, gold_s_higher = divmod(gold_x1*predict_year +gold_const +2*gold_std, 60)
+                            gold_h_higher, gold_m_higher = divmod(gold_m_higher, 60)
+                            gold_m_higher = int(gold_m_higher)
+                            gold_s_higher=round(gold_s_higher,3)
+                            if gold_s_higher<10:
+                                gold_s_higher="0"+str(gold_s_higher)                                  
+                                
+
                             st.write(f"This trend predicts a Gold medal winning time of {gold_m}:{gold_s} in {predict_year}.")
+                            st.write(f"We can be 95% confident the time will be between {gold_m_lower}:{gold_s_lower} and {gold_m_higher}:{gold_s_higher}")
+                            
                             st.write(f"This trend predicts a Silver medal winning time of {silver_m}:{silver_s} in {predict_year}.")
+                            st.write(f"We can be 95% confident the time will be between {silver_m_lower}:{silver_s_lower} and {silver_m_higher}:{silver_s_higher}")
                             st.write(f"This trend predicts a Bronze medal winning time of {bronze_m}:{bronze_s} in {predict_year}.")
-        
+                            st.write(f"We can be 95% confident the time will be between {bronze_m_lower}:{bronze_s_lower} and {bronze_m_higher}:{bronze_s_higher}")
                 elif medal_or_qual=="Qual times":
                     with c2:
                         date_range = st.slider(
