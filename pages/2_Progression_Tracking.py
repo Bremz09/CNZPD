@@ -53,7 +53,7 @@ if authentication_status == None:
     st.warning("Please enter your username and password")
 
 if authentication_status:
-    race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Team Sprint","Women's Team Sprint","Men's Team Pursuit","Women's Team Pursuit","Men's Individual Pursuit","Women's Individual Pursuit"]
+    race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Team Sprint","Women's Team Sprint","Men's Team Pursuit","Women's Team Pursuit","Men's Individual Pursuit","Women's Individual Pursuit","Junior Men's Sprint Qualifying","Junior Women's Sprint Qualifying","Junior Men's Team Sprint","Junior Women's Team Sprint","Junior Men's Team Pursuit","Junior Women's Team Pursuit","Junior Men's Individual Pursuit","Junior Women's Individual Pursuit","Junior Men's Kilo","Junior Women's 500TT"]
     race_type = st.selectbox("Select Event:", race_types, key="Event Selector")
     if race_type=="Men's Sprint Qualifying":
         
@@ -2101,12 +2101,24 @@ if authentication_status:
                             gold_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
                             gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
                             
+                            #ERRORS
+                            df_mask["Q1_Error"]=abs(df_mask["Q1_seconds"]-((df_mask["Year"]*gold_x1) +gold_const))
+                            df_mask["Q2_Error"]=abs(df_mask["Q2_seconds"]-((df_mask["Year"]*silver_x1) +silver_const))
+                            df_mask["Q3_Error"]=abs(df_mask["Q3_seconds"]-((df_mask["Year"]*bronze_x1) +bronze_const))
+                            
+                            q1_std=round(df_mask['Q1_Error'].std(),2)
+                            q2_std=round(df_mask['Q2_Error'].std(),2)
+                            q3_std=round(df_mask['Q3_Error'].std(),2)
+                            
                             
                             st.write(f"Q1 time = {round(gold_x1,6)}(Year) + {round(gold_const,3)}")
+                            st.write(f"One standard deviation of the absolute errors is {q1_std} seconds")
                             st.write(f"R-squared = {round(gold_a,3)}")
                             st.write(f"Q2 time = {round(silver_x1,6)}(Year) + {round(silver_const,3)}")
+                            st.write(f"One standard deviation of the absolute errors is {q2_std} seconds")
                             st.write(f"R-squared = {round(silver_a,3)}")
                             st.write(f"Q3 time = {round(bronze_x1,6)}(Year) + {round(bronze_const,3)}")
+                            st.write(f"One standard deviation of the absolute errors is {q3_std} seconds")
                             st.write(f"R-squared = {round(bronze_a,3)}")
                         with col2:
                             if oly_or_wch == "OLY only":
@@ -2123,24 +2135,75 @@ if authentication_status:
                             bronze_m = int(bronze_m)
                             bronze_s=round(bronze_s,3)
                             if bronze_s<10:
-                                bronze_s="0"+str(bronze_s)           
+                                bronze_s="0"+str(bronze_s)   
+                                
+                            bronze_m_lower, bronze_s_lower = divmod(bronze_x1*predict_year +bronze_const - 2*q3_std, 60)
+                            bronze_h_lower, bronze_m_lower = divmod(bronze_m_lower, 60)
+                            bronze_m_lower = int(bronze_m_lower)
+                            bronze_s_lower=round(bronze_s_lower,3)
+                            if bronze_s_lower<10:
+                                bronze_s_lower="0"+str(bronze_s_lower)  
+                                
+                            bronze_m_higher, bronze_s_higher = divmod(bronze_x1*predict_year +bronze_const +2*q3_std, 60)
+                            bronze_h_higher, bronze_m_higher = divmod(bronze_m_higher, 60)
+                            bronze_m_higher = int(bronze_m_higher)
+                            bronze_s_higher=round(bronze_s_higher,3)
+                            if bronze_s_higher<10:
+                                bronze_s_higher="0"+str(bronze_s_higher)  
+
                             
                             silver_m, silver_s = divmod(silver_x1*predict_year +silver_const, 60)
                             silver_h, silver_m = divmod(silver_m, 60)
                             silver_m = int(silver_m)
                             silver_s=round(silver_s,3)
                             if silver_s<10:
-                                silver_s="0"+str(silver_s)           
+                                silver_s="0"+str(silver_s)   
+                                
+                            silver_m_lower, silver_s_lower = divmod(silver_x1*predict_year +silver_const - 2*q2_std, 60)
+                            silver_h_lower, silver_m_lower = divmod(silver_m_lower, 60)
+                            silver_m_lower = int(silver_m_lower)
+                            silver_s_lower=round(silver_s_lower,3)
+                            if silver_s_lower<10:
+                                silver_s_lower="0"+str(silver_s_lower)  
+                                
+                            silver_m_higher, silver_s_higher = divmod(silver_x1*predict_year +silver_const +2*q2_std, 60)
+                            silver_h_higher, silver_m_higher = divmod(silver_m_higher, 60)
+                            silver_m_higher = int(silver_m_higher)
+                            silver_s_higher=round(silver_s_higher,3)
+                            if silver_s_higher<10:
+                                silver_s_higher="0"+str(silver_s_higher)  
                             
                             gold_m, gold_s = divmod(gold_x1*predict_year +gold_const, 60)
                             gold_h, gold_m = divmod(gold_m, 60)
                             gold_m = int(gold_m)
                             gold_s=round(gold_s,3)
                             if gold_s<10:
-                                gold_s="0"+str(gold_s)           
+                                gold_s="0"+str(gold_s)    
+                                
+                                
+                            gold_m_lower, gold_s_lower = divmod(gold_x1*predict_year +gold_const - 2*q1_std, 60)
+                            gold_h_lower, gold_m_lower = divmod(gold_m_lower, 60)
+                            gold_m_lower = int(gold_m_lower)
+                            gold_s_lower=round(gold_s_lower,3)
+                            if gold_s_lower<10:
+                                gold_s_lower="0"+str(gold_s_lower)  
+                                
+                            gold_m_higher, gold_s_higher = divmod(gold_x1*predict_year +gold_const +2*q1_std, 60)
+                            gold_h_higher, gold_m_higher = divmod(gold_m_higher, 60)
+                            gold_m_higher = int(gold_m_higher)
+                            gold_s_higher=round(gold_s_higher,3)
+                            if gold_s_higher<10:
+                                gold_s_higher="0"+str(gold_s_higher)                                  
+                                
+
                             st.write(f"This trend predicts a Q1 time of {gold_m}:{gold_s} in {predict_year}.")
+                            st.write(f"We can be 95% confident the time will be between {gold_m_lower}:{gold_s_lower} and {gold_m_higher}:{gold_s_higher}")
+                            
                             st.write(f"This trend predicts a Q2 time of {silver_m}:{silver_s} in {predict_year}.")
+                            st.write(f"We can be 95% confident the time will be between {silver_m_lower}:{silver_s_lower} and {silver_m_higher}:{silver_s_higher}")
                             st.write(f"This trend predicts a Q3 time of {bronze_m}:{bronze_s} in {predict_year}.")
+                            st.write(f"We can be 95% confident the time will be between {bronze_m_lower}:{bronze_s_lower} and {bronze_m_higher}:{bronze_s_higher}")         
+
 
                     
                 elif medal_or_qual=="Fastest time":
@@ -2177,7 +2240,15 @@ if authentication_status:
                             fastest_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
                             fastest_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
                             
+                            #ERRORS
+                            df_mask["Fastest_Error"]=abs(df_mask["Fastest_seconds"]-((df_mask["Year"]*fastest_x1) +fastest_const))
+
+                            
+                            fastest_std=round(df_mask['Fastest_Error'].std(),2)
+
+                            
                             st.write(f"Q3 time = {round(fastest_x1,6)}(Year) + {round(fastest_const,3)}")
+                            st.write(f"One standard deviation of the absolute errors is {fastest_std} seconds")
                             st.write(f"R-squared = {round(fastest_a,3)}")
 
                         with col2:
@@ -2197,12 +2268,24 @@ if authentication_status:
                             fastest_s=round(fastest_s,3)
                             if fastest_s<10:
                                 fastest_s="0"+str(fastest_s)           
-                            st.write(f"This trend predicts a fastest time of {fastest_m}:{fastest_s} in {predict_year}.")
                             
-    
+                            
+                            fastest_m_lower, fastest_s_lower = divmod(fastest_x1*predict_year +fastest_const - 2*fastest_std, 60)
+                            fastest_h_lower, fastest_m_lower = divmod(fastest_m_lower, 60)
+                            fastest_m_lower = int(fastest_m_lower)
+                            fastest_s_lower=round(fastest_s_lower,3)
+                            if fastest_s_lower<10:
+                                fastest_s_lower="0"+str(fastest_s_lower)  
+                                
+                            fastest_m_higher, fastest_s_higher = divmod(fastest_x1*predict_year +fastest_const +2*fastest_std, 60)
+                            fastest_h_higher, fastest_m_higher = divmod(fastest_m_higher, 60)
+                            fastest_m_higher = int(fastest_m_higher)
+                            fastest_s_higher=round(fastest_s_higher,3)
+                            if fastest_s_higher<10:
+                                fastest_s_higher="0"+str(fastest_s_higher)     
 
-
-
+                            st.write(f"This trend predicts a fastest time of {fastest_m}:{fastest_s} in {predict_year}.")
+                            st.write(f"We can be 95% confident the time will be between {fastest_m_lower}:{fastest_s_lower} and {fastest_m_higher}:{fastest_s_higher}")
 
 
 
@@ -2952,106 +3035,2035 @@ if authentication_status:
 
 
 
-
-
-
-
-        
-        
-#         c1,c2=st.columns([1,3])
-#         with c1:
-#             @st.cache_data
-#             def get_data_from_excel():
-#                 df = pd.read_excel(
-#                     io='pages/WR_progressions/Men_IP.xlsx',
-#                     engine ='openpyxl',
-#                     sheet_name='Sheet1',
-#                     skiprows=0,
-#                     usecols='A:D',
-#                     nrows=30
-#                     )
-#                 #df = df.replace(',','')
-#                 df["Time"]=((pd.to_datetime(df["Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
-#                 # df["Time"]=df["Time"].astype(str)
-#                 # df["Time"]=df["Time"].str[1:9]
-#                 df["Datetime"]=df["Date"]
-#                 df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
-#                 return df
-#             df= get_data_from_excel()
-#             df_master=df
-#             df_show = df.drop(columns=["DateSerial","Datetime"])
-            
-#             df_show
-            
-#             ##Download buttons
-#             def convert_to_csv(df_show):
-#                 return df.to_csv(index=False,sep = ",").encode('utf-32')
-#             csv = convert_to_csv(df_show)
-#             download1 = st.download_button(
-#                 label="Download Men IP WR data as CSV",
-#                 data=csv,
-#                 file_name='Men_IP_WR_Data.csv',
-#                 mime='text/csv',
-#                 key="buffertt1"
-#             )
-#             buffer_tt = io.BytesIO()
-#             with pd.ExcelWriter(buffer_tt, engine='xlsxwriter') as writer:
-#                 df_show.to_excel(writer, sheet_name='Sheet1', index=False)
-#                 writer.close()
-#                 download2 = st.download_button(
-#                     label="Download Men IP WR data as Excel",
-#                     data=buffer_tt,
-#                     file_name='Men_IP_WR_Data.xlsx',
-#                     mime='application/vnd.ms-excel',
-#                     key="buffertt2"
-#                 )
-#             ##Download buttons complete
-
-
-#         with c2:
-#             date_range = st.slider(
-#     "Restrict date range?",
-#             value = (datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y')),
-#                 min_value = datetime.strptime(df_master["Date"][0], '%d/%m/%Y'),
-#                 max_value = datetime.strptime(df_master["Date"][len(df_master)-1], '%d/%m/%Y'),
-#             format="DD/MM/YY")
-            
-#             time_range = st.slider(
-#     "Restrict time range?",
-#             value = (df_master["Seconds"][len(df_master)-1],df_master["Seconds"][0]),
-#             max_value = df_master["Seconds"][0],
-#             min_value = df_master["Seconds"][len(df_master)-1])
-            
-            
-#             df_mask = df.mask(df["Datetime"] < date_range[0])
-#             df_mask = df_mask.mask(df_mask["Datetime"] > date_range[1])
-#             df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
-#             df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
-#             fig = px.scatter(df_mask, x="DateSerial", y = "Seconds", title="World Record Progression",labels={"value":"Splits (seconds)"},trendline="ols",trendline_color_override="red")
-#             customdata = np.stack((round(df_mask['Seconds'],3), df_mask['Date']), axis=-1)
-#             hovertemplate = ('Time: %{customdata[0]}<br>' + 
-#         'Date: %{customdata[1]}<br>' 
-#         '<extra></extra>')
-#             fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-#             st.plotly_chart(fig, use_container_width=True)
-#             a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
-#             const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
-#             x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
-#             st.write(f"Time = {round(x1,6)}(DateSerial) + {round(const,3)}")
-#             st.write(f"R-squared = {round(a,3)}")
-#             col1,col2=st.columns(2)
-#             with col1:
-#                 date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
-#                 date_formatted=date.strftime('%d/%m/%Y')
                 
-#             with col2:
-#                 serial = date - datetime(1899, 12, 30).date()
-    
+                
+                
+                
+                
+                
+                
+                
+########################################################Juniors#############################################################
 
-#                 m, s = divmod(x1*serial.days +const, 60)
-#                 h, m = divmod(m, 60)
-#                 m = int(m)
-#                 s=round(s,3)
-#                 if s<10:
-#                     s="0"+str(s)            
-#                 st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {m}:{s}.")
+
+    if race_type=="Junior Men's Sprint Qualifying":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='M SP Q',
+                skiprows=0,
+                usecols='A:F',
+                nrows=300
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) | (df_show["Rank"]==16)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Time"].min(),df_show["Time"].max()),
+                min_value = df_show["Time"].min(),
+                max_value = df_show["Time"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
+            df_mask=df_mask.dropna()
+            
+            
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+            df_flat = df_flat['Time']
+            
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th","16th"], title="Junior Men's Flying 200m World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['16th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +'16th: %{customdata[7]}<br>' +
+        'Date: %{customdata[8]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            sixteenth_a=px.get_trendline_results(fig).px_fit_results.iloc[7].rsquared
+            sixteenth_const = px.get_trendline_results(fig).px_fit_results.iloc[7].params[0]
+            sixteenth_x1=px.get_trendline_results(fig).px_fit_results.iloc[7].params[1]
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+                st.write(f"16th = {round(sixteenth_x1,6)}(Year) + {round(sixteenth_const,3)}")
+                st.write(f"R-squared = {round(sixteenth_a,3)}")
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_s} in {predict_year}.")
+
+            sixteenth_m, sixteenth_s = divmod(sixteenth_x1*predict_year +sixteenth_const, 60)
+            sixteenth_h, sixteenth_m = divmod(sixteenth_m, 60)
+            sixteenth_m = int(sixteenth_m)
+            sixteenth_s=round(sixteenth_s,3)
+            if sixteenth_s<10:
+                sixteenth_s="0"+str(sixteenth_s)           
+            st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_s} in {predict_year}.")
+
+
+
+
+
+    if race_type=="Junior Women's Sprint Qualifying":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='W SP Q',
+                skiprows=0,
+                usecols='A:F',
+                nrows=300
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) | (df_show["Rank"]==16)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Time"].min(),df_show["Time"].max()),
+                min_value = df_show["Time"].min(),
+                max_value = df_show["Time"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
+            df_mask=df_mask.dropna()
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+
+            df_flat = df_flat[ 'Time']
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th","16th"], title="Junior Women's Flying 200m World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['16th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +'16th: %{customdata[7]}<br>' +
+        'Date: %{customdata[8]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            sixteenth_a=px.get_trendline_results(fig).px_fit_results.iloc[7].rsquared
+            sixteenth_const = px.get_trendline_results(fig).px_fit_results.iloc[7].params[0]
+            sixteenth_x1=px.get_trendline_results(fig).px_fit_results.iloc[7].params[1]
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+                st.write(f"16th = {round(sixteenth_x1,6)}(Year) + {round(sixteenth_const,3)}")
+                st.write(f"R-squared = {round(sixteenth_a,3)}")
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_s} in {predict_year}.")
+
+            sixteenth_m, sixteenth_s = divmod(sixteenth_x1*predict_year +sixteenth_const, 60)
+            sixteenth_h, sixteenth_m = divmod(sixteenth_m, 60)
+            sixteenth_m = int(sixteenth_m)
+            sixteenth_s=round(sixteenth_s,3)
+            if sixteenth_s<10:
+                sixteenth_s="0"+str(sixteenth_s)           
+            st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_s} in {predict_year}.")
+
+
+
+            
+    if race_type=="Junior Men's Team Sprint":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='M TS',
+                skiprows=0,
+                usecols='A:F',
+                nrows=150
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Time"].min(),df_show["Time"].max()),
+                min_value = df_show["Time"].min(),
+                max_value = df_show["Time"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
+            df_mask=df_mask.dropna()
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+
+            df_flat = df_flat[ 'Time']
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th"], title="Junior Men's Team Sprint World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +
+        'Date: %{customdata[7]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_s} in {predict_year}.")
+
+
+    if race_type=="Junior Women's Team Sprint":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='W TS',
+                skiprows=0,
+                usecols='A:F',
+                nrows=150
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) ].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Time"].min(),df_show["Time"].max()),
+                min_value = df_show["Time"].min(),
+                max_value = df_show["Time"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
+            df_mask=df_mask.dropna()
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+
+            df_flat = df_flat[ 'Time']
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th"], title="Junior Women's Team Sprint World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>'  +
+        'Date: %{customdata[6]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+
+
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+            with c2:
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+
+
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_s} in {predict_year}.")
+
+            
+            
+            
+            
+            
+    if race_type=="Junior Men's Team Pursuit":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='M TP',
+                skiprows=0,
+                usecols='A:G',
+                nrows=300
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) | (df_show["Rank"]==16)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Seconds"].min(),df_show["Seconds"].max()),
+                min_value = df_show["Seconds"].min(),
+                max_value = df_show["Seconds"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
+            df_mask=df_mask.dropna()
+            
+            
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+            df_flat = df_flat['Seconds']
+            
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th","16th"], title="Junior Men's Team Pursuit World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['16th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +'16th: %{customdata[7]}<br>' +
+        'Date: %{customdata[8]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            sixteenth_a=px.get_trendline_results(fig).px_fit_results.iloc[7].rsquared
+            sixteenth_const = px.get_trendline_results(fig).px_fit_results.iloc[7].params[0]
+            sixteenth_x1=px.get_trendline_results(fig).px_fit_results.iloc[7].params[1]
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+                st.write(f"16th = {round(sixteenth_x1,6)}(Year) + {round(sixteenth_const,3)}")
+                st.write(f"R-squared = {round(sixteenth_a,3)}")
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_m}:{first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_m}:{second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_m}:{third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_m}:{fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_m}:{fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_m}:{sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_m}:{eigth_s} in {predict_year}.")
+
+            sixteenth_m, sixteenth_s = divmod(sixteenth_x1*predict_year +sixteenth_const, 60)
+            sixteenth_h, sixteenth_m = divmod(sixteenth_m, 60)
+            sixteenth_m = int(sixteenth_m)
+            sixteenth_s=round(sixteenth_s,3)
+            if sixteenth_s<10:
+                sixteenth_s="0"+str(sixteenth_s)           
+            st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_m}:{sixteenth_s} in {predict_year}.")
+            
+            
+            
+            
+    if race_type=="Junior Women's Team Pursuit":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='W TP',
+                skiprows=0,
+                usecols='A:G',
+                nrows=300
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) ].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Seconds"].min(),df_show["Seconds"].max()),
+                min_value = df_show["Seconds"].min(),
+                max_value = df_show["Seconds"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
+            df_mask=df_mask.dropna()
+            
+            
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+            df_flat = df_flat['Seconds']
+            
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th"], title="Junior Women's Team Pursuit World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>'  +
+        'Date: %{customdata[7]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_m}:{first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_m}:{second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_m}:{third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_m}:{fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_m}:{fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_m}:{sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_m}:{eigth_s} in {predict_year}.")
+
+
+            
+            
+            
+            
+    if race_type=="Junior Men's Individual Pursuit":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='M IP',
+                skiprows=0,
+                usecols='A:G',
+                nrows=500
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) | (df_show["Rank"]==16)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Seconds"].min(),df_show["Seconds"].max()),
+                min_value = df_show["Seconds"].min(),
+                max_value = df_show["Seconds"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
+            df_mask=df_mask.dropna()
+            
+            
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+            df_flat = df_flat['Seconds']
+            
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th","16th"], title="Junior Men's Individual Pursuit World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['16th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +'16th: %{customdata[7]}<br>' +
+        'Date: %{customdata[8]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            sixteenth_a=px.get_trendline_results(fig).px_fit_results.iloc[7].rsquared
+            sixteenth_const = px.get_trendline_results(fig).px_fit_results.iloc[7].params[0]
+            sixteenth_x1=px.get_trendline_results(fig).px_fit_results.iloc[7].params[1]
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+                st.write(f"16th = {round(sixteenth_x1,6)}(Year) + {round(sixteenth_const,3)}")
+                st.write(f"R-squared = {round(sixteenth_a,3)}")
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_m}:{first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_m}:{second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_m}:{third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_m}:{fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_m}:{fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_m}:{sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_m}:{eigth_s} in {predict_year}.")
+
+            sixteenth_m, sixteenth_s = divmod(sixteenth_x1*predict_year +sixteenth_const, 60)
+            sixteenth_h, sixteenth_m = divmod(sixteenth_m, 60)
+            sixteenth_m = int(sixteenth_m)
+            sixteenth_s=round(sixteenth_s,3)
+            if sixteenth_s<10:
+                sixteenth_s="0"+str(sixteenth_s)           
+            st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_m}:{sixteenth_s} in {predict_year}.")   
+            
+            
+            
+            
+            
+            
+    if race_type=="Junior Women's Individual Pursuit":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='W IP',
+                skiprows=0,
+                usecols='A:G',
+                nrows=400
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) | (df_show["Rank"]==16)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Seconds"].min(),df_show["Seconds"].max()),
+                min_value = df_show["Seconds"].min(),
+                max_value = df_show["Seconds"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
+            df_mask=df_mask.dropna()
+            
+            
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+            df_flat = df_flat['Seconds']
+            
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th","16th"], title="Junior Women's Individual Pursuit World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['16th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +'16th: %{customdata[7]}<br>' +
+        'Date: %{customdata[8]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            sixteenth_a=px.get_trendline_results(fig).px_fit_results.iloc[7].rsquared
+            sixteenth_const = px.get_trendline_results(fig).px_fit_results.iloc[7].params[0]
+            sixteenth_x1=px.get_trendline_results(fig).px_fit_results.iloc[7].params[1]
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+                st.write(f"16th = {round(sixteenth_x1,6)}(Year) + {round(sixteenth_const,3)}")
+                st.write(f"R-squared = {round(sixteenth_a,3)}")
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_m}:{first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_m}:{second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_m}:{third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_m}:{fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_m}:{fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_m}:{sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_m}:{eigth_s} in {predict_year}.")
+
+            sixteenth_m, sixteenth_s = divmod(sixteenth_x1*predict_year +sixteenth_const, 60)
+            sixteenth_h, sixteenth_m = divmod(sixteenth_m, 60)
+            sixteenth_m = int(sixteenth_m)
+            sixteenth_s=round(sixteenth_s,3)
+            if sixteenth_s<10:
+                sixteenth_s="0"+str(sixteenth_s)           
+            st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_m}:{sixteenth_s} in {predict_year}.")  
+            
+            
+            
+            
+    if race_type=="Junior Men's Kilo":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='M Kilo',
+                skiprows=0,
+                usecols='A:G',
+                nrows=700
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) | (df_show["Rank"]==16)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Seconds"].min(),df_show["Seconds"].max()),
+                min_value = df_show["Seconds"].min(),
+                max_value = df_show["Seconds"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Seconds"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Seconds"] > time_range[1])
+            df_mask=df_mask.dropna()
+            
+            
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+            df_flat = df_flat['Seconds']
+            
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th","16th"], title="Junior Men's Kilo World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['16th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +'16th: %{customdata[7]}<br>' +
+        'Date: %{customdata[8]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            sixteenth_a=px.get_trendline_results(fig).px_fit_results.iloc[7].rsquared
+            sixteenth_const = px.get_trendline_results(fig).px_fit_results.iloc[7].params[0]
+            sixteenth_x1=px.get_trendline_results(fig).px_fit_results.iloc[7].params[1]
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+                st.write(f"16th = {round(sixteenth_x1,6)}(Year) + {round(sixteenth_const,3)}")
+                st.write(f"R-squared = {round(sixteenth_a,3)}")
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_m}:{first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_m}:{second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_m}:{third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_m}:{fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_m}:{fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_m}:{sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_m}:{eigth_s} in {predict_year}.")
+
+            sixteenth_m, sixteenth_s = divmod(sixteenth_x1*predict_year +sixteenth_const, 60)
+            sixteenth_h, sixteenth_m = divmod(sixteenth_m, 60)
+            sixteenth_m = int(sixteenth_m)
+            sixteenth_s=round(sixteenth_s,3)
+            if sixteenth_s<10:
+                sixteenth_s="0"+str(sixteenth_s)           
+            st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_m}:{sixteenth_s} in {predict_year}.")  
+            
+            
+            
+            
+    if race_type=="Junior Women's 500TT":
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Junior_Progression.xlsx',
+                engine ='openpyxl',
+                sheet_name='W 500TT',
+                skiprows=0,
+                usecols='A:F',
+                nrows=500
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+
+
+        c1,c2=st.columns([1,3])
+        with c1:
+
+            
+
+
+            df= get_placing_data_from_excel()
+            df_master=df
+            df_show = df
+            df_show=df_show.loc[(df_show["Rank"]==1) | (df_show["Rank"]==2) |(df_show["Rank"]==3) | (df_show["Rank"]==4) |(df_show["Rank"]==5) | (df_show["Rank"]==6) |(df_show["Rank"]==8) | (df_show["Rank"]==16)].reset_index(drop=True)
+            df_show
+                
+                
+
+
+        with c2:
+            date_range = st.slider(
+    "Restrict date range?",
+            value = (df_show["Year"].min(),df_show["Year"].max()),
+                min_value = df_show["Year"].min(),
+                max_value = df_show["Year"].max())
+            
+
+            time_range = st.slider(
+    "Restrict time range?",
+            value = (df_show["Time"].min(),df_show["Time"].max()),
+                min_value = df_show["Time"].min(),
+                max_value = df_show["Time"].max())
+
+            df_mask = df_show.mask(df_show["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask = df_mask.mask(df_mask["Time"] < time_range[0])
+            df_mask = df_mask.mask(df_mask["Time"] > time_range[1])
+            df_mask=df_mask.dropna()
+            
+            
+            df_flat = df_mask.pivot(index='Year', columns='Rank')
+            df_flat = df_flat['Time']
+            
+            df_flat['Year'] = df_flat.index
+            df_flat=df_flat.rename(columns={1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 8: "8th", 16: "16th"})
+            
+            
+
+            fig = px.scatter(df_flat, x="Year", y = ["1st","2nd","3rd","4th","5th","6th","8th","16th"], title="Junior Women's 500TT World Champs Placing Progression",trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal","mediumvioletred","mediumaquamarine","olive"])
+            customdata = np.stack((df_flat['1st'], df_flat['2nd'], df_flat['3rd'],df_flat['4th'],df_flat['5th'],df_flat['6th'],df_flat['8th'],df_flat['16th'],df_flat['Year']), axis=-1)
+            hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' +'3rd: %{customdata[2]}<br>' +'4th: %{customdata[3]}<br>' +'5th: %{customdata[4]}<br>' +'6th: %{customdata[5]}<br>' +'8th: %{customdata[6]}<br>' +'16th: %{customdata[7]}<br>' +
+        'Date: %{customdata[8]}<br>' 
+        '<extra></extra>')
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+        col1,col2=st.columns(2)
+        with col1:
+            first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+            first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+            first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+
+            second_a=px.get_trendline_results(fig).px_fit_results.iloc[1].rsquared
+            second_const = px.get_trendline_results(fig).px_fit_results.iloc[1].params[0]
+            second_x1=px.get_trendline_results(fig).px_fit_results.iloc[1].params[1]
+
+            third_a=px.get_trendline_results(fig).px_fit_results.iloc[2].rsquared
+            third_const = px.get_trendline_results(fig).px_fit_results.iloc[2].params[0]
+            third_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
+            
+            fourth_a=px.get_trendline_results(fig).px_fit_results.iloc[3].rsquared
+            fourth_const = px.get_trendline_results(fig).px_fit_results.iloc[3].params[0]
+            fourth_x1=px.get_trendline_results(fig).px_fit_results.iloc[3].params[1]
+
+            fifth_a=px.get_trendline_results(fig).px_fit_results.iloc[4].rsquared
+            fifth_const = px.get_trendline_results(fig).px_fit_results.iloc[4].params[0]
+            fifth_x1=px.get_trendline_results(fig).px_fit_results.iloc[4].params[1]
+
+            sixth_a=px.get_trendline_results(fig).px_fit_results.iloc[5].rsquared
+            sixth_const = px.get_trendline_results(fig).px_fit_results.iloc[5].params[0]
+            sixth_x1=px.get_trendline_results(fig).px_fit_results.iloc[5].params[1]
+
+            eigth_a=px.get_trendline_results(fig).px_fit_results.iloc[6].rsquared
+            eigth_const = px.get_trendline_results(fig).px_fit_results.iloc[6].params[0]
+            eigth_x1=px.get_trendline_results(fig).px_fit_results.iloc[6].params[1]
+
+            sixteenth_a=px.get_trendline_results(fig).px_fit_results.iloc[7].rsquared
+            sixteenth_const = px.get_trendline_results(fig).px_fit_results.iloc[7].params[0]
+            sixteenth_x1=px.get_trendline_results(fig).px_fit_results.iloc[7].params[1]
+            c1,c2=st.columns(2)
+            with c1:
+                st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                st.write(f"R-squared = {round(first_a,3)}")
+
+                st.write(f"2nd = {round(second_x1,6)}(Year) + {round(second_const,3)}")
+                st.write(f"R-squared = {round(second_a,3)}")
+
+                st.write(f"3rd = {round(third_x1,6)}(Year) + {round(third_const,3)}")
+                st.write(f"R-squared = {round(third_a,3)}")
+
+                st.write(f"4th = {round(fourth_x1,6)}(Year) + {round(fourth_const,3)}")
+                st.write(f"R-squared = {round(fourth_a,3)}")
+            with c2:
+                st.write(f"5th = {round(fifth_x1,6)}(Year) + {round(fifth_const,3)}")
+                st.write(f"R-squared = {round(fifth_a,3)}")
+
+                st.write(f"6th = {round(sixth_x1,6)}(Year) + {round(sixth_const,3)}")
+                st.write(f"R-squared = {round(sixth_a,3)}")
+
+                st.write(f"8th = {round(eigth_x1,6)}(Year) + {round(eigth_const,3)}")
+                st.write(f"R-squared = {round(eigth_a,3)}")
+
+                st.write(f"16th = {round(sixteenth_x1,6)}(Year) + {round(sixteenth_const,3)}")
+                st.write(f"R-squared = {round(sixteenth_a,3)}")
+
+        with col2:
+            predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+
+
+            first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
+            first_h, first_m = divmod(first_m, 60)
+            first_m = int(first_m)
+            first_s=round(first_s,3)
+            if first_s<10:
+                first_s="0"+str(first_s)           
+            st.write(f"This trend predicts a top qualifying time of {first_s} in {predict_year}.")
+
+
+            second_m, second_s = divmod(second_x1*predict_year +second_const, 60)
+            second_h, second_m = divmod(second_m, 60)
+            second_m = int(second_m)
+            second_s=round(second_s,3)
+            if second_s<10:
+                second_s="0"+str(second_s)           
+            st.write(f"This trend predicts a second qualifying time of {second_s} in {predict_year}.")
+
+            third_m, third_s = divmod(third_x1*predict_year +third_const, 60)
+            third_h, third_m = divmod(third_m, 60)
+            third_m = int(third_m)
+            third_s=round(third_s,3)
+            if third_s<10:
+                third_s="0"+str(third_s)           
+            st.write(f"This trend predicts a third qualifying time of {third_s} in {predict_year}.")
+
+
+            fourth_m, fourth_s = divmod(fourth_x1*predict_year +fourth_const, 60)
+            fourth_h, fourth_m = divmod(fourth_m, 60)
+            fourth_m = int(fourth_m)
+            fourth_s=round(fourth_s,3)
+            if fourth_s<10:
+                fourth_s="0"+str(fourth_s)           
+            st.write(f"This trend predicts a fourth qualifying time of {fourth_s} in {predict_year}.")
+
+
+            fifth_m, fifth_s = divmod(fifth_x1*predict_year +fifth_const, 60)
+            fifth_h, fifth_m = divmod(fifth_m, 60)
+            fifth_m = int(fifth_m)
+            fifth_s=round(fifth_s,3)
+            if fifth_s<10:
+                fifth_s="0"+str(fifth_s)           
+            st.write(f"This trend predicts a fifth qualifying time of {fifth_s} in {predict_year}.")
+
+            sixth_m, sixth_s = divmod(sixth_x1*predict_year +sixth_const, 60)
+            sixth_h, sixth_m = divmod(sixth_m, 60)
+            sixth_m = int(sixth_m)
+            sixth_s=round(sixth_s,3)
+            if sixth_s<10:
+                sixth_s="0"+str(sixth_s)           
+            st.write(f"This trend predicts a sixth qualifying time of {sixth_s} in {predict_year}.")
+
+            eigth_m, eigth_s = divmod(eigth_x1*predict_year +eigth_const, 60)
+            eigth_h, eigth_m = divmod(eigth_m, 60)
+            eigth_m = int(eigth_m)
+            eigth_s=round(eigth_s,3)
+            if eigth_s<10:
+                eigth_s="0"+str(eigth_s)           
+            st.write(f"This trend predicts an eigth qualifying time of {eigth_s} in {predict_year}.")
+
+            sixteenth_m, sixteenth_s = divmod(sixteenth_x1*predict_year +sixteenth_const, 60)
+            sixteenth_h, sixteenth_m = divmod(sixteenth_m, 60)
+            sixteenth_m = int(sixteenth_m)
+            sixteenth_s=round(sixteenth_s,3)
+            if sixteenth_s<10:
+                sixteenth_s="0"+str(sixteenth_s)           
+            st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_s} in {predict_year}.") 
