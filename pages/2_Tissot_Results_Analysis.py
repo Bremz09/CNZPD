@@ -595,7 +595,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sprint_Trueskill',
                 skiprows=0,
-                usecols='A:S',
+                usecols='A:U',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -756,10 +756,10 @@ if authentication_status:
 
         ind1 = df_TS.index[df_TS['Athlete'] == ath1]
         ind2 = df_TS.index[df_TS['Athlete'] == ath2]
-        sig1 = df_TS["Sigma"][ind1].item()
-        sig2 = df_TS["Sigma"][ind2].item()
-        mu1 = df_TS["Mu"][ind1].item()
-        mu2 = df_TS["Mu"][ind2].item()
+        sig1 = df_TS["Final_Sigma"][ind1].item()
+        sig2 = df_TS["Final_Sigma"][ind2].item()
+        mu1 = df_TS["Final_Mu"][ind1].item()
+        mu2 = df_TS["Final_Mu"][ind2].item()
         name1 = df_TS["Athlete"][ind1].item()
         name2 = df_TS["Athlete"][ind2].item()
         trials=10000
@@ -822,8 +822,8 @@ if authentication_status:
                 exec(f'scores{j} = []')
                 exec(f'ranks{j} = []')
                 ind = df_TS_multi.index[df_TS_multi['Athlete'] == aths[j]]
-                sig = df_TS_multi["Sigma"][ind].item()
-                mu = df_TS_multi["Mu"][ind].item()
+                sig = df_TS_multi["Final_Sigma"][ind].item()
+                mu = df_TS_multi["Final_Mu"][ind].item()
                 plt.figure(0)
                 plt.plot(x, norm.pdf(x, mu, sig), label=aths[j])
 
@@ -878,7 +878,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sprint_Trueskill',
                 skiprows=0,
-                usecols='A:S',
+                usecols='A:U',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -1043,10 +1043,10 @@ if authentication_status:
         if ath1!=ath2:
             ind1 = df_TS.index[df_TS['Athlete'] == ath1]
             ind2 = df_TS.index[df_TS['Athlete'] == ath2]
-            sig1 = df_TS["Sigma"][ind1].item()
-            sig2 = df_TS["Sigma"][ind2].item()
-            mu1 = df_TS["Mu"][ind1].item()
-            mu2 = df_TS["Mu"][ind2].item()
+            sig1 = df_TS["Final_Sigma"][ind1].item()
+            sig2 = df_TS["Final_Sigma"][ind2].item()
+            mu1 = df_TS["Final_Mu"][ind1].item()
+            mu2 = df_TS["Final_Mu"][ind2].item()
             name1 = df_TS["Athlete"][ind1].item()
             name2 = df_TS["Athlete"][ind2].item()
 
@@ -1108,8 +1108,8 @@ if authentication_status:
                 exec(f'scores{j} = []')
                 exec(f'ranks{j} = []')
                 ind = df_TS_multi.index[df_TS_multi['Athlete'] == aths[j]]
-                sig = df_TS_multi["Sigma"][ind].item()
-                mu = df_TS_multi["Mu"][ind].item()
+                sig = df_TS_multi["Final_Sigma"][ind].item()
+                mu = df_TS_multi["Final_Mu"][ind].item()
                 plt.figure(0)
                 plt.plot(x, norm.pdf(x, mu, sig), label=aths[j])
 
@@ -1412,7 +1412,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:n',
+                usecols='A:Q',
                 nrows=5000
                 )
             df = df.replace(',','')
@@ -1532,7 +1532,7 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
             df_athleteHistory
-            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final CSE", title = "Trueskill by Date", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Trueskill by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -1542,7 +1542,7 @@ if authentication_status:
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
 
-            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final CSE", title = "Trueskill by Age", markers = "True", color="Athlete")
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Final_CSE", title = "Trueskill by Age", markers = "True", color="Athlete")
 
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
@@ -1569,10 +1569,10 @@ if authentication_status:
 
             ind1 = df_TS.index[df_TS['Athlete'] == ath1]
             ind2 = df_TS.index[df_TS['Athlete'] == ath2]
-            sig1 = df_TS["Sigma"][ind1].item()
-            sig2 = df_TS["Sigma"][ind2].item()
-            mu1 = df_TS["Mu"][ind1].item()
-            mu2 = df_TS["Mu"][ind2].item()
+            sig1 = df_TS["Final_Sigma"][ind1].item()
+            sig2 = df_TS["Final_Sigma"][ind2].item()
+            mu1 = df_TS["Final_Mu"][ind1].item()
+            mu2 = df_TS["Final_Mu"][ind2].item()
             name1 = df_TS["Athlete"][ind1].item()
             name2 = df_TS["Athlete"][ind2].item()
 
@@ -1629,8 +1629,8 @@ if authentication_status:
                 exec(f'scores{j} = []')
                 exec(f'ranks{j} = []')
                 ind = df_TS_multi.index[df_TS_multi['Athlete'] == aths[j]]
-                sig = df_TS_multi["Sigma"][ind].item()
-                mu = df_TS_multi["Mu"][ind].item()
+                sig = df_TS_multi["Final_Sigma"][ind].item()
+                mu = df_TS_multi["Final_Mu"][ind].item()
                 plt.figure(0)
                 plt.plot(x, norm.pdf(x, mu, sig), label=aths[j])
 
