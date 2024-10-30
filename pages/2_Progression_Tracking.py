@@ -2740,13 +2740,13 @@ if authentication_status:
             with c2:
                 date_range = st.slider(
         "Restrict date range?",
-                value = (2000,2023),
+                value = (2000,2024),
                     min_value = 2000,
-                    max_value = 2021)
+                    max_value = 2024)
 
                 time_range = st.slider(
         "Restrict time range?",
-                value = (240.000,283.000),
+                value = (239.000,283.000),
                     max_value = 283.000,
                     min_value = 240.000)
 
@@ -2917,15 +2917,15 @@ if authentication_status:
         with c2:
             date_range = st.slider(
     "Restrict date range?",
-            value = (2000,2023),
+            value = (2000,2024),
                 min_value = 2000,
-                max_value = 2021)
+                max_value = 2024)
 
             time_range = st.slider(
     "Restrict time range?",
-            value = (196.000,250.000),
+            value = (195.000,250.000),
                 max_value = 250.000,
-                min_value = 196.000)
+                min_value = 195.000)
 
             df_mask = df.mask(df["Year"] < date_range[0])
             df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
