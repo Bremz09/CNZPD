@@ -595,7 +595,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sprint_Trueskill',
                 skiprows=0,
-                usecols='A:U',
+                usecols='A:W',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -878,7 +878,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Sprint_Trueskill',
                 skiprows=0,
-                usecols='A:U',
+                usecols='A:W',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -1149,7 +1149,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:P',
+                usecols='A:R',
                 nrows=6000
                 )
             df = df.replace(',','')
@@ -1412,7 +1412,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:Q',
+                usecols='A:S',
                 nrows=5000
                 )
             df = df.replace(',','')
@@ -1531,7 +1531,7 @@ if authentication_status:
             fig_athlete_history.update_traces(textposition="top right")
 
             st.plotly_chart(fig_athlete_history,use_container_width=True)
-            df_athleteHistory
+            
             fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Final_CSE", title = "Trueskill by Date", markers = "True", color="Athlete")
             fig_athlete_history.update_traces(textposition="top right")
 
@@ -3844,9 +3844,10 @@ if authentication_status:
         fig_event_mean = px.line(df_splits_mean, x="Marker", y = df_splits.columns, title="Points Scoring Average", markers=True)
 
         st.plotly_chart(fig_event_mean,use_container_width=True)
-        df_mean_total = df_orig[df_orig.Total != "DNF"]
+        df_mean_total = df_orig.loc[(df_orig["Total"] != "DNF")&(df_orig["Total"] != "DSQ")].reset_index()
+  
         df_mean_total = df_mean_total.groupby('Country', as_index=False)["Total"].mean()
-
+        
 
         fig_total_mean = px.bar(df_mean_total, x="Country", y = "Total", title="Total Scoring Average")
         st.plotly_chart(fig_total_mean,use_container_width=True)

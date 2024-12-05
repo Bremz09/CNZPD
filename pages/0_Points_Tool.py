@@ -143,7 +143,7 @@ if authentication_status:
             sheet_name='Para_Points_All_FINAL',
             skiprows=0,
             usecols='A:L',
-            nrows=6000
+            nrows=5816
             )
         df_Para["Points"] = df_Para["Points"].str.replace("*","")
         df_Para = df_Para.replace(',','')

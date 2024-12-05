@@ -132,8 +132,79 @@ if authentication_status:
    
     racetype = st.selectbox(
         "Select Race Type:",
-        options=["Women's TP", "Men's TP", "Women's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP"]
+        options=["Women's TP", "Men's TP", "Women's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP","Bunch"]
         ) 
+    
+    
+    if racetype == "Bunch":
+        @st.cache_data
+        def get_data_from_excel():
+            df = pd.read_excel(
+                io='C:\\Users\\SamB\\OneDrive - SportNZGroup\\Desktop\\2024 Olympics\\Analysis\\W_OM_Moves.xlsx',
+                engine ='openpyxl',
+                sheet_name='Sheet1',
+                skiprows=0,
+                usecols='A:K',
+                nrows=47
+                )
+            df = df.replace(',','')
+            #df['Date'] = pd.to_datetime(df['Date']).dt.date
+            return df
+        df_master= get_data_from_excel()
+        df=df_master
+        
+        c1,c2,c3=st.columns(3)
+        with c1:
+            
+            ath_filt = st.multiselect(
+    'Filter athletes? Leave blank to see all rides',["Ally Wollaston"]
+    )
+
+
+
+        with c2:
+
+            selections = st.multiselect(
+            "Select past effort(s):",
+            options=df["Event"].unique(),#.sort_values(ascending=False)
+            ) 
+
+                
+            
+                
+        with c3:
+            show_vids = ["No","Yes"]
+            Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
+    
+
+        # Ensure datetime columns are properly parsed
+        df['Start'] = pd.to_datetime(df['Start'])
+        df['Finish'] = pd.to_datetime(df['Finish'])
+        
+        # Create the timeline figure
+        fig = px.timeline(df, x_start="Start", x_end="Finish", y="Task", color="Task")
+
+        # Generate ordinal values and labels for the x-axis
+        tick_vals = [date.toordinal() for date in pd.date_range(df['Start'].min(), df['Finish'].max(), freq='D')]
+        tick_text = [date.strftime('%Y-%m-%d') for date in pd.date_range(df['Start'].min(), df['Finish'].max(), freq='D')]
+
+        # Update layout with serialized x-axis
+        fig.update_layout(
+            title="Gantt Chart with Serialized X-Axis Dates",
+            xaxis=dict(
+                tickmode="array",
+                tickvals=tick_vals,  # Explicitly use plain integers
+                ticktext=tick_text,  # Explicitly use plain strings
+                title="Time (Serialized Dates)"
+            ),
+            yaxis_title="Resource",
+            template="plotly_white",
+            showlegend=True
+        )
+        
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
     
     ################################################ Women's Team Pursuit ##########################################################
     
