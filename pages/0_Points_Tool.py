@@ -693,12 +693,17 @@ if authentication_status:
         
     elif Event in ("MS Nation" , "WS Nation" ):
         selected_date = st.date_input("Select an end date (6th September is 6 weeks before Worlds)", datetime.now().date())
-
+        nations = st.multiselect("Select nations to include - default is to include all:",sorted(df["Country"].unique()))
+        if len(nations)>0:
+            filtered_df = df[df['Country'].isin(nations)]
+        else:
+            filtered_df=df
+        filtered_df
         # Calculate the date one year before - There is the 18 month rule (3.3.003) but every nation is having a CC so those points will drop off anyway
         one_year_before = selected_date - timedelta(days=365)
 
         # Filter the DataFrame
-        filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
+        filtered_df = filtered_df[(filtered_df['Date'] >= one_year_before) & (filtered_df['Date'] <= selected_date)]
         
         filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_NCp).reset_index(drop=True)
         filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
@@ -824,12 +829,17 @@ if authentication_status:
         
     elif Event in ("M Mado Nation" , "W Mado Nation" ):
         selected_date = st.date_input("Select an end date (6th September is 6 weeks before Worlds)", datetime.now().date())
-
+        nations = st.multiselect("Select nations to include - default is to include all:",sorted(df["Country"].unique()))
+        if len(nations)>0:
+            filtered_df = df[df['Country'].isin(nations)]
+        else:
+            filtered_df=df
+        filtered_df
         # Calculate the date one year before - There is the 18 month rule (3.3.003) but every nation is having a CC so those points will drop off anyway
         one_year_before = selected_date - timedelta(days=365)
 
         # Filter the DataFrame
-        filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
+        filtered_df = filtered_df[(filtered_df['Date'] >= one_year_before) & (filtered_df['Date'] <= selected_date)]
         
         filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_NCp).reset_index(drop=True)
         filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_NCh).reset_index(drop=True)
@@ -947,12 +957,17 @@ if authentication_status:
     #######    
     elif Event in ("ME Nation" , "WE Nation" ):
         selected_date = st.date_input("Select an end date (6th September is 6 weeks before Worlds)", datetime.now().date())
-
+        nations = st.multiselect("Select nations to include - default is to include all:",sorted(df["Country"].unique()))
+        if len(nations)>0:
+            filtered_df = df[df['Country'].isin(nations)]
+        else:
+            filtered_df=df
+        filtered_df
         # Calculate the date one year before - There is the 18 month rule (3.3.003) but every nation is having a CC so those points will drop off anyway
         one_year_before = selected_date - timedelta(days=365)
 
         # Filter the DataFrame
-        filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
+        filtered_df = filtered_df[(filtered_df['Date'] >= one_year_before) & (filtered_df['Date'] <= selected_date)]
         
         filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
         filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
