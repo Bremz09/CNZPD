@@ -156,7 +156,7 @@ if authentication_status:
         df=get_data("Endurance_Points_Ind_Men")
     elif Event == "ME Nation":
         df=get_data("Endurance_Points_Nat_Men")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "ME Worlds Picture":
         df_ind=get_data("Endurance_Points_Ind_Men")
         df_nat=get_data("Endurance_Points_Nat_Men")
@@ -183,19 +183,19 @@ if authentication_status:
         worlds_pic=1
     elif Event == "ME Nation":
         df=get_data("Endurance_Points_Nat_Men")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "MS Individual":
         df=get_data("Sprint_Points_Ind_Men")
     elif Event == "MS Nation":
         df=get_data("Sprint_Points_Nat_Men")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "MTS":
         df=get_data("MTS_Points")
         df["Unique"] = df["Name"] + df["Date"].astype(str) + df["Event"] + df["Rank"].astype(str)
         df = df.drop_duplicates(subset=['Unique'])
         df["Points"]=df["Points"].astype(int)*3
         df=df.drop(['Unique'], axis=1)
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "MTP":
         df=get_data("MTP_Points")
        
@@ -208,13 +208,13 @@ if authentication_status:
         df=get_data("Mado_Points_Ind_Men")
     elif Event == "M Mado Nation":
         df=get_data("Mado_Points_Nat_Men")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
         
     elif Event == "WE Individual":
         df=get_data("Endurance_Points_Ind_Women")
     elif Event == "WE Nation":
         df=get_data("Endurance_Points_Nat_Women")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "WS Individual":
         df=get_data("Sprint_Points_Ind_Women")
     elif Event == "WS Nation":
@@ -222,7 +222,7 @@ if authentication_status:
         df=df.drop(['UCI_ID', 'Country'], axis=1)
     elif Event == "WTS":
         df=get_data("WTS_Points")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
         df["Unique"] = df["Name"] + df["Date"].astype(str) + df["Event"] + df["Rank"].astype(str)
         df = df.drop_duplicates(subset=['Unique'])
         df["Points"]=df["Points"].astype(int)*3
@@ -235,13 +235,13 @@ if authentication_status:
         df = df.drop_duplicates(subset=['Unique'])
         df["Points"]=df["Points"].astype(int)*4
         df=df.drop(['Unique'], axis=1)
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "W Mado Individual":
         df=get_data("Mado_Points_Ind_Women")
         df["Points"]=df["Points"].astype(int)*2
     elif Event == "W Mado Nation":
         df=get_data("Mado_Points_Nat_Women")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     if worlds_pic == 0:
          
         df["Points"]=df['Points'].astype(str).astype(int)
@@ -249,7 +249,7 @@ if authentication_status:
         df.insert(5,"Race",Race)
         df["Event"] = df["Event"].str.split(" - ").str[0]
         st.header("Original data")
-        df
+        
     
     
     
@@ -316,14 +316,95 @@ if authentication_status:
 
         # Filter df2 to exclude rows with names in top16_names
         df_ind_16_removed = df_ind[~df_ind['Country'].isin(top16_names)]
-        df_ind_16_removed = df_ind_16_removed.drop_duplicates(subset='Name').head(8)
-        df_ind_16_removed =df_ind_16_removed.drop(["Date","Class","Race","Event","Rank","Points","UCI_ID"], axis=1).reset_index(drop=True)
-        columns = list(df_ind_16_removed.columns)
-        columns.insert(1, columns.pop(3))  # Remove "Country" from 4th spot and insert it at the 2nd spot
-        df_ind_16_removed = df_ind_16_removed[columns]
-        df_ind_16_removed
+
+        athletes = df_ind_16_removed['Name'].drop_duplicates()
+        Proj_Points = []
+        Proj_Rank = []
+        UCI_ID = []
+        Country = []
+        Current_Points = []
+        Current_Rank = []
+        OLY_totals = []
+        WCh_totals = []
+        NCp_totals = []
+        CCh_totals = []
+        NCh_totals = []
+        ChL_totals = []
+        ChR_totals = []
+        CL1_totals = []
+        CL2_totals = []
+        totals=[]
+        allowed_athletes = []
+        classes = ['OLY','WCh','NCp','CCh','NCh','ChL','ChR','CL1','CL2']
+        for idx, athlete in enumerate(athletes):
+
+            athlete_results = df_ind_16_removed.loc[(df_ind_16_removed.Name == athlete)]
+            Proj_Points.append(df_ind_16_removed.loc[(df_ind_16_removed.Name == athlete)]["Proj_Points"].iloc[0])
+            Proj_Rank.append(df_ind_16_removed.loc[(df_ind_16_removed.Name == athlete)]["Proj_Rank"].iloc[0])
+    #         UCI_ID.append(filtered_df.loc[(filtered_df.Name == athlete)]["UCI_ID"].iloc[0])
+            Country.append(df_ind_16_removed.loc[(df_ind_16_removed.Name == athlete)]["Country"].iloc[0])
+            Current_Points.append(df_ind_16_removed.loc[(df_ind_16_removed.Name == athlete)]["Current_Points"].iloc[0])
+            Current_Rank.append(df_ind_16_removed.loc[(df_ind_16_removed.Name == athlete)]["Current_Rank"].iloc[0])
+            y=athlete_results.groupby('Class')['Points'].sum().reset_index()
+            points_by_class = pd.DataFrame(y)
+
+            x = points_by_class.loc[(points_by_class.Class == 'OLY')]["Points"]
+            if len(x)>0:
+                OLY_totals.append(x.iloc[0])
+            else:
+                OLY_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'WCh')]["Points"]
+            if len(x)>0:
+                WCh_totals.append(x.iloc[0])
+            else:
+                WCh_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'NCp')]["Points"]
+            if len(x)>0:
+                NCp_totals.append(x.iloc[0])
+            else:
+                NCp_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'CCh')]["Points"]
+
+            if len(x)>0:
+                CCh_totals.append(x.iloc[0])
+            else:
+                CCh_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'NCh')]["Points"]
+            if len(x)>0:    
+                NCh_totals.append(x.iloc[0])
+            else:
+                NCh_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'ChL')]["Points"]
+            if len(x)>0:
+                ChL_totals.append(x.iloc[0])
+            else:
+                ChL_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'ChR')]["Points"]
+            if len(x)>0:
+                ChR_totals.append(x.iloc[0])
+            else:
+                ChR_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'CL1')]["Points"]
+            if len(x)>0:
+                CL1_totals.append(x.iloc[0])
+            else:
+                CL1_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'CL2')]["Points"]
+            if len(x)>0:
+                CL2_totals.append(x.iloc[0])
+            else:
+                CL2_totals.append(0)
+        d = {'Name': athletes, 'Country': Country, 'Current_Rank': Current_Rank, 'Current_Points': Current_Points, 'Proj_Rank': Proj_Rank, 'Proj_Points': Proj_Points, 'OLY': OLY_totals, 'WCh': WCh_totals, 'NCp': NCp_totals, 'CCh': CCh_totals, 'NCh': NCh_totals, 'ChL': ChL_totals, 'ChR': ChR_totals, 'CL1': CL1_totals, 'CL2': CL2_totals}
+        nice_df = pd.DataFrame(d).reset_index(drop=True)
+         
         
-    
+        nice_df = nice_df.drop_duplicates(subset='Name').head(8)
+        nice_df
+#         df_ind_16_removed =df_ind_16_removed.drop(["Date","Class","Race","Event","Rank","Points","UCI_ID"], axis=1).reset_index(drop=True)
+#         columns = list(df_ind_16_removed.columns)
+#         columns.insert(1, columns.pop(3))  # Remove "Country" from 4th spot and insert it at the 2nd spot
+#         df_ind_16_removed = df_ind_16_removed[columns]
+#         df_ind_16_removed
     
     
     
@@ -347,34 +428,46 @@ if authentication_status:
     
     
     elif Event in ("ME Individual" , "MS Individual" , "M Mado Individual" , "WE Individual" , "WS Individual" , "W Mado Individual"):
+        nations = st.multiselect("Select nations to include - default is to include all:",sorted(df["Country"].unique()))
+        if len(nations)>0:
+            filtered_df = df[df['Country'].isin(nations)]
+        else:
+            filtered_df=df
+        filtered_df
+        
         selected_date = st.date_input("Select an end date (6th September is 6 weeks before Worlds)", datetime.now().date())
+        
+            
+
+
 
         # Calculate the date one year before - There is the 18 month rule (3.3.003) but every nation is having a CC so those points will drop off anyway
         one_year_before = selected_date - timedelta(days=365)
 
         # Filter the DataFrame
-        filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
-
+        filtered_df = filtered_df[(filtered_df['Date'] >= one_year_before) & (filtered_df['Date'] <= selected_date)]
+        
         # Apply the filtering logic per UCI_ID group
         filtered_df = filtered_df.groupby('UCI_ID', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
         filtered_df = filtered_df.groupby('UCI_ID', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
         filtered_df = filtered_df.groupby('UCI_ID', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
-
-        proj_points = filtered_df.groupby('UCI_ID')['Points'].sum().reset_index(name='Proj Points')
-
-        # Rank the Proj Points (higher points get a better rank, i.e., 1 is the best rank)
-        proj_points['Proj Rank'] = proj_points['Proj Points'].rank(ascending=False, method='dense').astype(int)
-
-        # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
-        filtered_df = filtered_df.merge(proj_points, on='UCI_ID').sort_values(by=['Proj Points'],ascending=False)
-        move = filtered_df.pop("Proj Points")
+        
+        proj_points = filtered_df.groupby('UCI_ID')['Points'].sum().reset_index(name='Proj_Points')
+        filtered_df = filtered_df.merge(proj_points, on='UCI_ID').sort_values(by=['Proj_Points'],ascending=False)
+        move = filtered_df.pop("Proj_Points")
         filtered_df.insert(1,"Proj_Points", move)
-        move = filtered_df.pop("Proj Rank")
+
+        
+        filtered_df['Proj_Rank'] = filtered_df['Proj_Points'].rank(ascending=False, method='dense').astype(int)
+        
+        # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
+
+        move = filtered_df.pop("Proj_Rank")
         filtered_df.insert(2,"Proj_Rank", move)
 
         st.subheader("Filtered DataFrame")
         st.write("Filters one year before the chosen date. Takes top three CL1, CL2, and top NCp result only - I don't think any further filtering is required.")
-        st.write(filtered_df)
+        filtered_df
         st.header("Breakdown")
 
         athletes = filtered_df['Name'].drop_duplicates()
@@ -456,8 +549,14 @@ if authentication_status:
                 CL2_totals.append(0)
         d = {'Name': athletes, 'Country': Country, 'Current_Rank': Current_Rank, 'Current_Points': Current_Points, 'Proj_Rank': Proj_Rank, 'Proj_Points': Proj_Points, 'OLY': OLY_totals, 'WCh': WCh_totals, 'NCp': NCp_totals, 'CCh': CCh_totals, 'NCh': NCh_totals, 'ChL': ChL_totals, 'ChR': ChR_totals, 'CL1': CL1_totals, 'CL2': CL2_totals}
         nice_df = pd.DataFrame(d).reset_index(drop=True)
-        nice_df    
-
+        ath_per_nat = st.selectbox("Athletes per Nation (typically 2 for Sprint and Keirin):",("All","1","2"))
+        if ath_per_nat == "1":
+            nice_df = nice_df.loc[nice_df.groupby('Country')['Proj_Points'].idxmax()]
+        elif ath_per_nat == "2":
+            nice_df = nice_df.groupby('Country', group_keys=False).apply(lambda x: x.nlargest(2, 'Proj_Points'))
+        nice_df['Proj_Rank'] = nice_df['Proj_Points'].rank(ascending=False, method='dense').astype(int)    
+        nice_df=nice_df.sort_values(by=['Proj_Rank']).reset_index(drop=True)
+        nice_df
         
         
 
@@ -469,24 +568,30 @@ if authentication_status:
         
 
     elif Event in ("MTS" , "MTP" , "WTS" , "WTP"):
+        nations = st.multiselect("Select nations to include - default is to include all:",sorted(df["Country"].unique()))
+        if len(nations)>0:
+            filtered_df = df[df['Country'].isin(nations)]
+        else:
+            filtered_df=df
+        filtered_df
         selected_date = st.date_input("Select a date", datetime.now().date())
 
         # Calculate the date one year before - There is the 18 month rule (3.3.003) but every nation is having a CC so those points will drop off anyway
         one_year_before = selected_date - timedelta(days=365)
 
         # Filter the DataFrame
-        filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
+        filtered_df = filtered_df[(filtered_df['Date'] >= one_year_before) & (filtered_df['Date'] <= selected_date)]
         
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
         
-        proj_points = filtered_df.groupby('Name')['Points'].sum().reset_index(name='Proj Points')
+        proj_points = filtered_df.groupby('Country')['Points'].sum().reset_index(name='Proj Points')
 
         # Rank the Proj Points (higher points get a better rank, i.e., 1 is the best rank)
         proj_points['Proj Rank'] = proj_points['Proj Points'].rank(ascending=False, method='dense').astype(int)
 
         # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
-        filtered_df = filtered_df.merge(proj_points, on='Name').sort_values(by=['Proj Points'],ascending=False)
+        filtered_df = filtered_df.merge(proj_points, on='Country').sort_values(by=['Proj Points'],ascending=False)
         move = filtered_df.pop("Proj Points")
         filtered_df.insert(1,"Proj_Points", move)
         move = filtered_df.pop("Proj Rank")
@@ -497,7 +602,7 @@ if authentication_status:
         st.write(filtered_df)
         st.header("Breakdown")
 
-        athletes = filtered_df['Name'].drop_duplicates()
+        athletes = filtered_df['Country'].drop_duplicates()
         Proj_Points = []
         Proj_Rank = []
         UCI_ID = []
@@ -518,11 +623,11 @@ if authentication_status:
         classes = ['OLY','WCh','NCp','CCh','NCh','ChL','ChR','CL1','CL2']
         for idx, athlete in enumerate(athletes):
 
-            athlete_results = filtered_df.loc[(filtered_df.Name == athlete)]
-            Proj_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Points"].iloc[0])
-            Proj_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Rank"].iloc[0])
-            Current_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Points"].iloc[0])
-            Current_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Rank"].iloc[0])
+            athlete_results = filtered_df.loc[(filtered_df.Country == athlete)]
+            Proj_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Points"].iloc[0])
+            Proj_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Rank"].iloc[0])
+            Current_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Points"].iloc[0])
+            Current_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Rank"].iloc[0])
             y=athlete_results.groupby('Class')['Points'].sum().reset_index()
             points_by_class = pd.DataFrame(y)
 
@@ -595,20 +700,20 @@ if authentication_status:
         # Filter the DataFrame
         filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
         
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_2_NCp).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_2_CCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_2_WCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_NCp).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_CCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_WCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
         
-        proj_points = filtered_df.groupby('Name')['Points'].sum().reset_index(name='Proj Points')
+        proj_points = filtered_df.groupby('Country')['Points'].sum().reset_index(name='Proj Points')
 
         # Rank the Proj Points (higher points get a better rank, i.e., 1 is the best rank)
         proj_points['Proj Rank'] = proj_points['Proj Points'].rank(ascending=False, method='dense').astype(int)
 
         # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
-        filtered_df = filtered_df.merge(proj_points, on='Name').sort_values(by=['Proj Points'],ascending=False)
+        filtered_df = filtered_df.merge(proj_points, on='Country').sort_values(by=['Proj Points'],ascending=False)
         move = filtered_df.pop("Proj Points")
         filtered_df.insert(1,"Proj_Points", move)
         move = filtered_df.pop("Proj Rank")
@@ -619,7 +724,7 @@ if authentication_status:
         st.write(filtered_df)
         st.header("Breakdown")
 
-        athletes = filtered_df['Name'].drop_duplicates()
+        athletes = filtered_df['Country'].drop_duplicates()
         Proj_Points = []
         Proj_Rank = []
         UCI_ID = []
@@ -640,13 +745,13 @@ if authentication_status:
         classes = ['OLY','WCh','NCp','CCh','NCh','ChL','ChR','CL1','CL2']
         for idx, athlete in enumerate(athletes):
 
-            athlete_results = filtered_df.loc[(filtered_df.Name == athlete)]
-            Proj_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Points"].iloc[0])
-            Proj_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Rank"].iloc[0])
+            athlete_results = filtered_df.loc[(filtered_df.Country == athlete)]
+            Proj_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Points"].iloc[0])
+            Proj_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Rank"].iloc[0])
     #         UCI_ID.append(filtered_df.loc[(filtered_df.Name == athlete)]["UCI_ID"].iloc[0])
     #         Country.append(filtered_df.loc[(filtered_df.Name == athlete)]["Country"].iloc[0])
-            Current_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Points"].iloc[0])
-            Current_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Rank"].iloc[0])
+            Current_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Points"].iloc[0])
+            Current_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Rank"].iloc[0])
             y=athlete_results.groupby('Class')['Points'].sum().reset_index()
             points_by_class = pd.DataFrame(y)
 
@@ -726,20 +831,20 @@ if authentication_status:
         # Filter the DataFrame
         filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
         
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_2_NCp).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_2_NCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_2_CCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_2_WCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_6_cl2).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_6_cl1).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_NCp).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_NCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_CCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_2_WCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_6_cl2).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_6_cl1).reset_index(drop=True)
         
-        proj_points = filtered_df.groupby('Name')['Points'].sum().reset_index(name='Proj Points')
+        proj_points = filtered_df.groupby('Country')['Points'].sum().reset_index(name='Proj Points')
 
         # Rank the Proj Points (higher points get a better rank, i.e., 1 is the best rank)
         proj_points['Proj Rank'] = proj_points['Proj Points'].rank(ascending=False, method='dense').astype(int)
 
         # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
-        filtered_df = filtered_df.merge(proj_points, on='Name').sort_values(by=['Proj Points'],ascending=False)
+        filtered_df = filtered_df.merge(proj_points, on='Country').sort_values(by=['Proj Points'],ascending=False)
         move = filtered_df.pop("Proj Points")
         filtered_df.insert(1,"Proj_Points", move)
         move = filtered_df.pop("Proj Rank")
@@ -750,7 +855,7 @@ if authentication_status:
         st.write(filtered_df)
         st.header("Breakdown")
 
-        athletes = filtered_df['Name'].drop_duplicates()
+        athletes = filtered_df['Country'].drop_duplicates()
         Proj_Points = []
         Proj_Rank = []
         UCI_ID = []
@@ -771,13 +876,13 @@ if authentication_status:
         classes = ['OLY','WCh','NCp','CCh','NCh','ChL','ChR','CL1','CL2']
         for idx, athlete in enumerate(athletes):
 
-            athlete_results = filtered_df.loc[(filtered_df.Name == athlete)]
-            Proj_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Points"].iloc[0])
-            Proj_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Rank"].iloc[0])
+            athlete_results = filtered_df.loc[(filtered_df.Country == athlete)]
+            Proj_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Points"].iloc[0])
+            Proj_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Rank"].iloc[0])
     #         UCI_ID.append(filtered_df.loc[(filtered_df.Name == athlete)]["UCI_ID"].iloc[0])
     #         Country.append(filtered_df.loc[(filtered_df.Name == athlete)]["Country"].iloc[0])
-            Current_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Points"].iloc[0])
-            Current_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Rank"].iloc[0])
+            Current_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Points"].iloc[0])
+            Current_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Rank"].iloc[0])
             y=athlete_results.groupby('Class')['Points'].sum().reset_index()
             points_by_class = pd.DataFrame(y)
 
@@ -849,20 +954,20 @@ if authentication_status:
         # Filter the DataFrame
         filtered_df = df[(df['Date'] >= one_year_before) & (df['Date'] <= selected_date)]
         
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_CCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_WCh).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
-        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_CCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_1_WCh).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Country', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
         
-        proj_points = filtered_df.groupby('Name')['Points'].sum().reset_index(name='Proj Points')
+        proj_points = filtered_df.groupby('Country')['Points'].sum().reset_index(name='Proj Points')
 
         # Rank the Proj Points (higher points get a better rank, i.e., 1 is the best rank)
         proj_points['Proj Rank'] = proj_points['Proj Points'].rank(ascending=False, method='dense').astype(int)
 
         # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
-        filtered_df = filtered_df.merge(proj_points, on='Name').sort_values(by=['Proj Points'],ascending=False)
+        filtered_df = filtered_df.merge(proj_points, on='Country').sort_values(by=['Proj Points'],ascending=False)
         move = filtered_df.pop("Proj Points")
         filtered_df.insert(1,"Proj_Points", move)
         move = filtered_df.pop("Proj Rank")
@@ -875,7 +980,7 @@ if authentication_status:
 
 
 
-        athletes = filtered_df['Name'].drop_duplicates()
+        athletes = filtered_df['Country'].drop_duplicates()
         Proj_Points = []
         Proj_Rank = []
         UCI_ID = []
@@ -896,13 +1001,13 @@ if authentication_status:
         classes = ['OLY','WCh','NCp','CCh','NCh','ChL','ChR','CL1','CL2']
         for idx, athlete in enumerate(athletes):
 
-            athlete_results = filtered_df.loc[(filtered_df.Name == athlete)]
-            Proj_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Points"].iloc[0])
-            Proj_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Rank"].iloc[0])
+            athlete_results = filtered_df.loc[(filtered_df.Country == athlete)]
+            Proj_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Points"].iloc[0])
+            Proj_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Proj_Rank"].iloc[0])
     #         UCI_ID.append(filtered_df.loc[(filtered_df.Name == athlete)]["UCI_ID"].iloc[0])
     #         Country.append(filtered_df.loc[(filtered_df.Name == athlete)]["Country"].iloc[0])
-            Current_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Points"].iloc[0])
-            Current_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Rank"].iloc[0])
+            Current_Points.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Points"].iloc[0])
+            Current_Rank.append(filtered_df.loc[(filtered_df.Country == athlete)]["Current_Rank"].iloc[0])
             y=athlete_results.groupby('Class')['Points'].sum().reset_index()
             points_by_class = pd.DataFrame(y)
 
