@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from PIL import Image
 import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
@@ -147,13 +147,40 @@ if authentication_status:
         return df
  
 
-    Events = ["ME Individual","ME Nation", "MS Individual", "MS Nation","MTS","MTP","M Mado Individual","M Mado Nation",
+    Events = ["ME Worlds Picture", "WE Worlds Picture","ME Individual","ME Nation", "MS Individual", "MS Nation","MTS","MTP","M Mado Individual","M Mado Nation",
              "WE Individual","WE Nation", "WS Individual", "WS Nation","WTS","WTP","W Mado Individual","W Mado Nation"]
 
     Event = st.selectbox("Select Event:", Events, key="Event_selector")
-
+    worlds_pic = 0
     if Event == "ME Individual":
         df=get_data("Endurance_Points_Ind_Men")
+    elif Event == "ME Nation":
+        df=get_data("Endurance_Points_Nat_Men")
+        df=df.drop(['UCI_ID', 'Country'], axis=1)
+    elif Event == "ME Worlds Picture":
+        df_ind=get_data("Endurance_Points_Ind_Men")
+        df_nat=get_data("Endurance_Points_Nat_Men")
+        df_ind["Points"]=df_ind['Points'].astype(str).astype(int)
+        Race = df_ind["Event"].str.split(" - ").str[-2]
+        df_ind.insert(5,"Race",Race)
+        df_ind["Event"] = df_ind["Event"].str.split(" - ").str[0]
+        df_nat["Points"]=df_nat['Points'].astype(str).astype(int)
+        Race = df_nat["Event"].str.split(" - ").str[-2]
+        df_nat.insert(5,"Race",Race)
+        df_nat["Event"] = df_nat["Event"].str.split(" - ").str[0]
+        worlds_pic=1
+    elif Event == "WE Worlds Picture":
+        df_ind=get_data("Endurance_Points_Ind_Women")
+        df_nat=get_data("Endurance_Points_Nat_Women")
+        df_ind["Points"]=df_ind['Points'].astype(str).astype(int)
+        Race = df_ind["Event"].str.split(" - ").str[-2]
+        df_ind.insert(5,"Race",Race)
+        df_ind["Event"] = df_ind["Event"].str.split(" - ").str[0]
+        df_nat["Points"]=df_nat['Points'].astype(str).astype(int)
+        Race = df_nat["Event"].str.split(" - ").str[-2]
+        df_nat.insert(5,"Race",Race)
+        df_nat["Event"] = df_nat["Event"].str.split(" - ").str[0]
+        worlds_pic=1
     elif Event == "ME Nation":
         df=get_data("Endurance_Points_Nat_Men")
         df=df.drop(['UCI_ID', 'Country'], axis=1)
@@ -215,19 +242,111 @@ if authentication_status:
     elif Event == "W Mado Nation":
         df=get_data("Mado_Points_Nat_Women")
         df=df.drop(['UCI_ID', 'Country'], axis=1)
-    df_orig=df  
-    st.header("Original data")
-    df["Points"]=df['Points'].astype(str).astype(int)
-    Race = df["Event"].str.split(" - ").str[-2]
-    df.insert(5,"Race",Race)
-    df["Event"] = df["Event"].str.split(" - ").str[0]
-    df
+    if worlds_pic == 0:
+         
+        df["Points"]=df['Points'].astype(str).astype(int)
+        Race = df["Event"].str.split(" - ").str[-2]
+        df.insert(5,"Race",Race)
+        df["Event"] = df["Event"].str.split(" - ").str[0]
+        st.header("Original data")
+        df
     
     
     
     
     
-    if Event in ("ME Individual" , "MS Individual" , "M Mado Individual" , "WE Individual" , "WS Individual" , "W Mado Individual"):
+    
+    
+    if Event in ("ME Worlds Picture", "WE Worlds Picture"):
+        st.write("Filters one year before September 6th. Takes top 16 Nations from Nation Ranking, then adds the top eight nations from Individual ranking once these 16 nations have been removed from the individual ranking.")
+        selected_date = date(2025, 9, 6)
+        one_year_before = selected_date - timedelta(days=365)
+        df_nat=df_nat.drop(['UCI_ID', 'Country'], axis=1)
+        df_nat = df_nat[(df_nat['Date'] >= one_year_before) & (df_nat['Date'] <= selected_date)]
+        
+        df_nat = df_nat.groupby('Name', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
+        df_nat = df_nat.groupby('Name', group_keys=False).apply(filter_top_1_NCh).reset_index(drop=True)
+        df_nat = df_nat.groupby('Name', group_keys=False).apply(filter_top_1_CCh).reset_index(drop=True)
+        df_nat = df_nat.groupby('Name', group_keys=False).apply(filter_top_1_WCh).reset_index(drop=True)
+        df_nat = df_nat.groupby('Name', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
+        df_nat = df_nat.groupby('Name', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
+        
+        proj_points = df_nat.groupby('Name')['Points'].sum().reset_index(name='Proj Points')
+
+        # Rank the Proj Points (higher points get a better rank, i.e., 1 is the best rank)
+        proj_points['Proj Rank'] = proj_points['Proj Points'].rank(ascending=False, method='dense').astype(int)
+
+        # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
+        df_nat = df_nat.merge(proj_points, on='Name').sort_values(by=['Proj Points'],ascending=False)
+        move = df_nat.pop("Proj Points")
+        df_nat.insert(1,"Proj_Points", move)
+        move = df_nat.pop("Proj Rank")
+        df_nat.insert(2,"Proj_Rank", move)
+        st.header("Nations ranking")
+        df_nat = df_nat.reset_index(drop=True)
+        df_nat
+        st.header("Projected top 16 Nations:")
+        top16 = df_nat.drop_duplicates(subset='Name').head(16)
+        top16 =top16.drop(["Date","Class","Race","Event","Rank","Points"], axis=1).reset_index(drop=True)
+        top16
+
+        
+
+        st.subheader("Individual ranking top eight with these top 16 nations removed:")
+        # Filter the DataFrame
+        df_ind = df_ind[(df_ind['Date'] >= one_year_before) & (df_ind['Date'] <= selected_date)]
+
+        # Apply the filtering logic per UCI_ID group
+        df_ind = df_ind.groupby('UCI_ID', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
+        df_ind = df_ind.groupby('UCI_ID', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
+        df_ind = df_ind.groupby('UCI_ID', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
+
+        proj_points = df_ind.groupby('UCI_ID')['Points'].sum().reset_index(name='Proj Points')
+
+        # Rank the Proj Points (higher points get a better rank, i.e., 1 is the best rank)
+        proj_points['Proj Rank'] = proj_points['Proj Points'].rank(ascending=False, method='dense').astype(int)
+
+        # Merge the calculated Proj Points and Proj Rank back into the original DataFrame
+        df_ind = df_ind.merge(proj_points, on='UCI_ID').sort_values(by=['Proj Points'],ascending=False)
+        move = df_ind.pop("Proj Points")
+        df_ind.insert(1,"Proj_Points", move)
+        move = df_ind.pop("Proj Rank")
+        df_ind.insert(2,"Proj_Rank", move)
+        top16_names = top16.drop_duplicates(subset='Name').head(16)['Name']
+
+        # Filter df2 to exclude rows with names in top16_names
+        df_ind_16_removed = df_ind[~df_ind['Country'].isin(top16_names)]
+        df_ind_16_removed = df_ind_16_removed.drop_duplicates(subset='Name').head(8)
+        df_ind_16_removed =df_ind_16_removed.drop(["Date","Class","Race","Event","Rank","Points","UCI_ID"], axis=1).reset_index(drop=True)
+        columns = list(df_ind_16_removed.columns)
+        columns.insert(1, columns.pop(3))  # Remove "Country" from 4th spot and insert it at the 2nd spot
+        df_ind_16_removed = df_ind_16_removed[columns]
+        df_ind_16_removed
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    elif Event in ("ME Individual" , "MS Individual" , "M Mado Individual" , "WE Individual" , "WS Individual" , "W Mado Individual"):
         selected_date = st.date_input("Select an end date (6th September is 6 weeks before Worlds)", datetime.now().date())
 
         # Calculate the date one year before - There is the 18 month rule (3.3.003) but every nation is having a CC so those points will drop off anyway
@@ -721,7 +840,7 @@ if authentication_status:
         
         
     #######    
-    else:
+    elif Event in ("ME Nation" , "WE Nation" ):
         selected_date = st.date_input("Select an end date (6th September is 6 weeks before Worlds)", datetime.now().date())
 
         # Calculate the date one year before - There is the 18 month rule (3.3.003) but every nation is having a CC so those points will drop off anyway
