@@ -219,7 +219,7 @@ if authentication_status:
         df=get_data("Sprint_Points_Ind_Women")
     elif Event == "WS Nation":
         df=get_data("Sprint_Points_Nat_Women")
-        df=df.drop(['UCI_ID', 'Country'], axis=1)
+        df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "WTS":
         df=get_data("WTS_Points")
         df=df.drop(['UCI_ID', 'Name'], axis=1)
@@ -293,6 +293,7 @@ if authentication_status:
         
 
         st.subheader("Individual ranking top eight with these top 16 nations removed:")
+        st.write("Maximum 1950 points available for C1, 975 for C2")
         # Filter the DataFrame
         df_ind = df_ind[(df_ind['Date'] >= one_year_before) & (df_ind['Date'] <= selected_date)]
 
@@ -556,6 +557,12 @@ if authentication_status:
             nice_df = nice_df.groupby('Country', group_keys=False).apply(lambda x: x.nlargest(2, 'Proj_Points'))
         nice_df['Proj_Rank'] = nice_df['Proj_Points'].rank(ascending=False, method='dense').astype(int)    
         nice_df=nice_df.sort_values(by=['Proj_Rank']).reset_index(drop=True)
+        if Event in ("ME Individual" , "WE Individual"):
+            st.write("Maximum 1950 points available for C1, 975 for C2")
+        elif Event in ("MS Individual" , "WS Individual"):
+            st.write("Maximum 1200 points available for C1, 600 for C2")
+        elif Event in ("M Mado Individual" , "W Mado Individual"):
+            st.write("Maximum 600 points available for C1, 300 for C2")
         nice_df
         
         
@@ -680,6 +687,10 @@ if authentication_status:
                
         d = {'Country': athletes,  'Current_Rank': Current_Rank, 'Current_Points': Current_Points, 'Proj_Rank': Proj_Rank, 'Proj_Points': Proj_Points, 'OLY': OLY_totals, 'WCh': WCh_totals, 'NCp': NCp_totals, 'CCh': CCh_totals, 'NCh': NCh_totals, 'ChL': ChL_totals, 'ChR': ChR_totals, 'CL1': CL1_totals, 'CL2': CL2_totals}
         nice_df = pd.DataFrame(d).reset_index(drop=True)
+        if Event in ( "MTP"  , "WTP"):
+            st.write("Maximum 400 points available for C1, 200 for C2")
+        elif Event in ( "MTS"  , "WTS"):
+            st.write("Maximum 300 points available for C1, 150 for C2")
         nice_df    
 
         
@@ -809,6 +820,8 @@ if authentication_status:
 
         d = {'Country': athletes,  'Current_Rank': Current_Rank, 'Current_Points': Current_Points, 'Proj_Rank': Proj_Rank, 'Proj_Points': Proj_Points, 'OLY': OLY_totals, 'WCh': WCh_totals, 'NCp': NCp_totals, 'CCh': CCh_totals, 'NCh': NCh_totals, 'ChL': ChL_totals, 'ChR': ChR_totals, 'CL1': CL1_totals, 'CL2': CL2_totals}
         nice_df = pd.DataFrame(d).reset_index(drop=True)
+        
+        st.write("Maximum 1200 points available for C1, 600 for C2")
         nice_df    
 
 
@@ -945,6 +958,7 @@ if authentication_status:
 
         d = {'Country': athletes,  'Current_Rank': Current_Rank, 'Current_Points': Current_Points, 'Proj_Rank': Proj_Rank, 'Proj_Points': Proj_Points, 'OLY': OLY_totals, 'WCh': WCh_totals, 'NCp': NCp_totals, 'CCh': CCh_totals, 'NCh': NCh_totals, 'ChL': ChL_totals, 'ChR': ChR_totals, 'CL1': CL1_totals, 'CL2': CL2_totals}
         nice_df = pd.DataFrame(d).reset_index(drop=True)
+        st.write("Maximum 1200 points available for C1, 600 for C2")
         nice_df    
 
         
@@ -992,6 +1006,7 @@ if authentication_status:
         st.write("Filters one year before the chosen date. Takes top results from WCh, NCh and CC, and top 3 results from Cl1 and Cl2.")
         filtered_df
         st.header("Breakdown")
+        
 
 
 
@@ -1077,6 +1092,7 @@ if authentication_status:
 
         d = {'Country': athletes,  'Current_Rank': Current_Rank, 'Current_Points': Current_Points, 'Proj_Rank': Proj_Rank, 'Proj_Points': Proj_Points, 'OLY': OLY_totals, 'WCh': WCh_totals, 'NCp': NCp_totals, 'CCh': CCh_totals, 'NCh': NCh_totals, 'ChL': ChL_totals, 'ChR': ChR_totals, 'CL1': CL1_totals, 'CL2': CL2_totals}
         nice_df = pd.DataFrame(d).reset_index(drop=True)
+        st.write("Maximum 1950 points available for C1, 975 for C2 (seems to be mistakes in the points system here)")
         nice_df    
 
     
