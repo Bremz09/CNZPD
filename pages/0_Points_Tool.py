@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, date
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-import os
+import os, time
 import pytz
 import streamlit_authenticator as stauth
 
@@ -146,7 +146,8 @@ if authentication_status:
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         return df
  
-
+    date_made = time.ctime(os.path.getmtime('pages/Rankings/Mado_Points_Nat_Women.xlsx'))
+    st.write(f"Last updated on {date_made}")
     Events = ["ME Worlds Picture", "WE Worlds Picture","ME Individual","ME Nation", "MS Individual", "MS Nation","MTS","MTP","M Mado Individual","M Mado Nation",
              "WE Individual","WE Nation", "WS Individual", "WS Nation","WTS","WTP","W Mado Individual","W Mado Nation"]
 
