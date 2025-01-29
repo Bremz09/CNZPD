@@ -206,13 +206,15 @@ if authentication_status:
         st.plotly_chart(fig, use_container_width=True)
     
     
-    ################################################ Women's Team Pursuit ##########################################################
+    ################################################ Women's Team Pursuit ###################################
     
     if racetype == "Women's TP":
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Women.xlsx')
-        df_master = df_master.sort_values(by=["Sort_name","Distance"], ascending=[False,True])
+        df_master['Sort'] = df_master['Title'].str.replace('Q', 'Z', regex=False)
+
+        df_master = df_master.sort_values(by=["Sort","Distance"], ascending=[False,True])
         
-        df_small = df_master.drop(columns=["Save_Date","Action","Video","Sort_date","Sort_letter"])
+        df_small = df_master.drop(columns=["Save_Date","Action","Video", "Sort"])
         
         c1,c2,c3=st.columns(3)
         with c1:
@@ -258,7 +260,7 @@ if authentication_status:
                 with col_1:
                     df_temp = df_master.loc[df_master['Title'] == selections[count]]
                     df_combine = pd.concat([df_combine, df_temp], axis=0)
-                    df_small = df_temp.drop(columns=["Save_Date","Video","Sort_name","Sort_date","Sort_letter"])
+                    df_small = df_temp.drop(columns=["Save_Date","Video","Sort"])
                     df_small=df_small.reset_index(drop="True")
                     r1 = [1]
                     r2 = [2]
@@ -478,26 +480,7 @@ if authentication_status:
                     fig_gm.update_traces(textfont_size=24, cliponaxis=False)
                     st.plotly_chart(fig_gm, use_container_width=True)
                     
-                    
-#                     average = df_small.Split.iloc[4:len(df_small)-1].mean()
-#                     fig = px.bar(df_temp, x='Distance', y='Avg_Speed',color=df_temp.Front,hover_data=[df_temp.Split, df_temp.Avg_Speed,df_temp.Del_Speed])
-#                     fig.add_trace(go.Scatter(x=df_temp['Distance'][1:], y=df_temp['Del_Speed'][1:],mode='markers',name="Delivery Speed"))
-#                     fig.update_layout(
-#                     title={
-#                         'text': df_temp.Title.iloc[0],
-#                         'y':0.9,
-#                         'x':0.5,
-#                         'xanchor': 'center',
-#                         'yanchor': 'top',
-#                         'font':dict(size=25)})
-#                     fig.add_hline(y=62.5*3.6/average, line_dash="dash",line_color="yellow",annotation_text="Avg after first lap = " +str(round(average*4,2)))
-                    
-#                     yaxis_min = min(df_temp["Avg_Speed"][1:])-1
-#                     yaxis_max = max(df_temp["Avg_Speed"])+1
-#                     fig.update_layout(yaxis_range=[yaxis_min,yaxis_max])
-#                     st.plotly_chart(fig, use_container_width=True)
-                    
-#                 c1,c2=st.columns(2)
+
                 with col_1:
 
                     st.header(df_temp["Title"].iloc[0])
@@ -532,10 +515,10 @@ if authentication_status:
                     
                     speed_var=[df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].min()]
                     df_summ["Speed_Var"]=speed_var
-                    st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
-                    st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
-                    st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
-                    st.write("We then sum all values to get the Wind_Score shown below:")
+#                     st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
+#                     st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
+#                     st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
+#                     st.write("We then sum all values to get the Wind_Score shown below:")
 
                     
                     df_summ.insert(5, "1&2", [(r1.count(1)+r1.count(2))/4,(r2.count(1)+r2.count(2))/4,(r3.count(1)+r3.count(2))/4,(r4.count(1)+r4.count(2))/4], True)
@@ -707,68 +690,13 @@ if authentication_status:
 
             st.plotly_chart(fig_tt, use_container_width=True)
 
-#             if len(selections) ==2:
-
-#                 df_zero = df_combine
-#                 df_zero = df_zero.reset_index(drop=True)
-#                 length = df_zero.Title.value_counts()[selections[0]]
-#                 for j in range(length,len(selections)*length):
-#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-#                     df_zero.Split[j-length]=0
-
-
-
-#                 if Names == "Yes":
-#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",text="Initial",markers="Front")
-#                     fig_zero.update_traces(textposition='top center')
-#                 else:
-#                     fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
-#                 st.plotly_chart(fig_zero, use_container_width=True)
-#                 if Names=="Yes":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Initial",markers="Front")
-#                     fig_worm.update_traces(textposition='top center')
-#                 if Names=="No":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-#                 st.plotly_chart(fig_worm, use_container_width=True)
-
-#             elif len(selections) >2:
-
-#                 df_zero = df_combine
-#                 df_zero = df_zero.reset_index(drop=True)
-#                 length = df_zero.Title.value_counts()[selections[0]]
-#                 for j in range(length,len(selections)*length):
-#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-#                     df_zero.Split[j-length]=0
-
-
-
-
-#                 if Names=="Yes":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
-#                     fig_worm.update_traces(textposition='top center')
-#                 if Names=="No":
-#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-#                 st.plotly_chart(fig_worm, use_container_width=True)
-
-
-
 
 
 
         st.markdown("---")            
         st.header('View, edit and upload a new effort')
 
-        with open('pages/TP_demo.xlsx', "rb") as template_file:
-                template_byte = template_file.read()
 
-
-
-        st.download_button(label="Click to Download Template File",
-                            data=template_byte,
-                            file_name="template.xlsx"
-                          )
 
         uploaded_file = st.file_uploader("Choose a file",key="uploader")
 
@@ -776,20 +704,22 @@ if authentication_status:
             st.markdown("---")
 
             st.header("Editor")
-            df_full = pd.read_csv(uploaded_file)
-            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
-            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
-          axis='columns', inplace=True)
+            df_full = pd.read_excel(uploaded_file)
+            df_full['Position'] = df_full['Position'].apply(lambda t: t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1_000_000)
+#             df_full=df_full.sort_values(by=["Position"]).reset_index(drop=True)
+            df_full.drop(['Duration'],
+           axis='columns', inplace=True)
             df_full
             c1,c2,c3=st.columns(3)
             with c1:
                 start=st.number_input("Start Row (inclusive)", value=0)
             with c2:
-                end=st.number_input("End Row (inclusive)", value=start+64)+1
+                end=st.number_input("End Row (inclusive)", value=start+65)+1
             
             
             df=df_full[start:end]
-            df=df.sort_values("Start time", ascending=True)
+            
+            df
             col_one, col_two, col_three = st.columns(3)
             with col_one:
                 rider1 = st.text_input("Select Rider 1:")
@@ -807,7 +737,7 @@ if authentication_status:
             del_speeds=[0]
             speeds=[0]
             r=0
-            df["Time"] = df["Start time"] - df["Start time"].iloc[0]
+            df["Time"] = df["Position"] - df["Position"].iloc[0]
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
             
@@ -831,29 +761,33 @@ if authentication_status:
                 for i in range(1,len(df)):
                     df["Split"][i]=df["Time"][i]-df["Time"][i-1]
                     df["Avg_Speed"][i] = 62.5*3.6/(df["Split"][i])
-                    if df["Row"][i] == "Change" or df["Row"][i] == "Drop":
+                    if df["Name"][i] == "Change" or df["Name"][i] == "Drop":
                         df["Del_Speed"][i]=round(df["Avg_Speed"][i]*df["Split"][i]/(df["Split"][i]-offset),2)
                     else:
                         df["Del_Speed"][i]=df["Avg_Speed"][i]
-                    if df["Row"][i]=="Drop":
+                    if df["Name"][i]=="Drop":
                         df["Front"][i]=riders[rider_ind]
                         dropped=df["Front"][i]
                         rider_ind+=1
-                    elif df["Row"][i]=="Change":
+                    elif df["Name"][i]=="Change":
                         df["Front"][i]=riders[rider_ind]
                         rider_ind+=1
                         if riders[rider_ind] == dropped:
                             rider_ind+=1
                     else:
                         df["Front"][i]=riders[rider_ind]
+                    if i == 65:
+                        df["Avg_Speed"][i-1] = 62.5*3.6/(df["Time"][i]-df["Time"][i-2])
+                
                         
-                  
-                df.drop('Start time',
+                df = df.iloc[:-1]
+                df.drop('Position',
           axis='columns', inplace=True)
-                df.rename(columns = {'Row':'Action'}, inplace = True)
+                df.rename(columns = {'Name':'Action'}, inplace = True)
                 df.drop(index=df.index[0], axis=0, inplace=True)
                 #df = df.dropna(axis=0, subset=['Time'])
                 st.write("final df")
+                df = df.loc[:, ~df.columns.str.match(r'^Unnamed') & df.notna().any()]
                 df
 
 
@@ -929,12 +863,14 @@ if authentication_status:
                     )  
                     
                     
-   ###################################################### Men's Team Pursuit #############################################                 
+   ###################################################### Men's Team Pursuit ####################################                 
                     
     if racetype == "Men's TP":
         df_master = pd.read_excel(f'pages/video_analysis/TP_Master_Men.xlsx')
-        df_master = df_master.sort_values(by=["Sort_name","Distance"], ascending=[False,True])
-        df_small = df_master.drop(columns=["Save_Date","Action","Video","Sort_date","Sort_letter"])
+        df_master['Sort'] = df_master['Title'].str.replace('Q', 'Z', regex=False)
+        df_master = df_master.sort_values(by=["Sort","Distance"], ascending=[False,True])
+
+        df_small = df_master.drop(columns=["Save_Date","Action","Video","Sort"])
 #         df_small
         c1,c2,c3=st.columns(3)
         with c1:
@@ -976,7 +912,7 @@ if authentication_status:
                     df_temp = df_master.loc[df_master['Title'] == selections[event_count]]
                     st.header(df_temp["Title"].iloc[0])
                     df_combine = pd.concat([df_combine, df_temp], axis=0)
-                    df_small = df_temp.drop(columns=["Save_Date","Video","Sort_name","Sort_date","Sort_letter"])
+                    df_small = df_temp.drop(columns=["Save_Date","Video","Sort"])
                     df_small=df_small.reset_index(drop="True")
                     r1 = [1]
                     r2 = [2]
@@ -1468,15 +1404,7 @@ if authentication_status:
         st.markdown("---")            
         st.header('View, edit and upload a new effort')
 
-        with open('pages/TP_demo.xlsx', "rb") as template_file:
-                template_byte = template_file.read()
 
-
-
-        st.download_button(label="Click to Download Template File",
-                            data=template_byte,
-                            file_name="template.xlsx"
-                          )
 
         uploaded_file = st.file_uploader("Choose a file",key="uploader")
 
@@ -1484,22 +1412,22 @@ if authentication_status:
             st.markdown("---")
 
             st.header("Editor")
-            
-            df_full = pd.read_csv(uploaded_file)
-            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
-            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
-          axis='columns', inplace=True)
+            df_full = pd.read_excel(uploaded_file)
+            df_full['Position'] = df_full['Position'].apply(lambda t: t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1_000_000)
+#             df_full=df_full.sort_values(by=["Position"]).reset_index(drop=True)
+            df_full.drop(['Duration'],
+           axis='columns', inplace=True)
             df_full
             c1,c2,c3=st.columns(3)
             with c1:
                 start=st.number_input("Start Row (inclusive)", value=0)
             with c2:
-                end=st.number_input("End Row (inclusive)", value=start+64)+1
+                end=st.number_input("End Row (inclusive)", value=start+65)+1
             
             
             df=df_full[start:end]
-            df=df.sort_values("Start time", ascending=True)
             
+            df
             col_one, col_two, col_three = st.columns(3)
             with col_one:
                 rider1 = st.text_input("Select Rider 1:")
@@ -1517,13 +1445,13 @@ if authentication_status:
             del_speeds=[0]
             speeds=[0]
             r=0
-            df["Time"] = df["Start time"] - df["Start time"].iloc[0]
+            df["Time"] = df["Position"] - df["Position"].iloc[0]
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
+            
             df=df.reset_index(drop=True)
-
-            st.write("original df")
-            df
+            
+            
 
             #df = df.dropna(axis=0, subset=['Time'])
 
@@ -1541,29 +1469,33 @@ if authentication_status:
                 for i in range(1,len(df)):
                     df["Split"][i]=df["Time"][i]-df["Time"][i-1]
                     df["Avg_Speed"][i] = 62.5*3.6/(df["Split"][i])
-                    if df["Row"][i] == "Change" or df["Row"][i] == "Drop":
+                    if df["Name"][i] == "Change" or df["Name"][i] == "Drop":
                         df["Del_Speed"][i]=round(df["Avg_Speed"][i]*df["Split"][i]/(df["Split"][i]-offset),2)
                     else:
                         df["Del_Speed"][i]=df["Avg_Speed"][i]
-                    if df["Row"][i]=="Drop":
+                    if df["Name"][i]=="Drop":
                         df["Front"][i]=riders[rider_ind]
                         dropped=df["Front"][i]
                         rider_ind+=1
-                    elif df["Row"][i]=="Change":
+                    elif df["Name"][i]=="Change":
                         df["Front"][i]=riders[rider_ind]
                         rider_ind+=1
                         if riders[rider_ind] == dropped:
                             rider_ind+=1
                     else:
                         df["Front"][i]=riders[rider_ind]
+                    if i == 65:
+                        df["Avg_Speed"][i-1] = 62.5*3.6/(df["Time"][i]-df["Time"][i-2])
+                
                         
-                  
-                df.drop('Start time',
+                df = df.iloc[:-1]
+                df.drop('Position',
           axis='columns', inplace=True)
-                df.rename(columns = {'Row':'Action'}, inplace = True)
+                df.rename(columns = {'Name':'Action'}, inplace = True)
                 df.drop(index=df.index[0], axis=0, inplace=True)
                 #df = df.dropna(axis=0, subset=['Time'])
-                
+                st.write("final df")
+                df = df.loc[:, ~df.columns.str.match(r'^Unnamed') & df.notna().any()]
                 df
 
 
@@ -2001,7 +1933,7 @@ if authentication_status:
         df_master = pd.read_excel(f'pages/video_analysis/IP_Master_Men.xlsx')
         df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
-        df_small
+        
         c1,c2=st.columns(2)
         with c1:
             selections = st.multiselect(
@@ -2095,72 +2027,40 @@ if authentication_status:
                 
             st.plotly_chart(fig_tt, use_container_width=True)
 
-            if len(selections) ==2:
-
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
-
-
-
-                fig_zero = px.line(df_zero, x="Distance", y = "Avg_Speed", title="Zero",color="Title",markers="Front")
-                st.plotly_chart(fig_zero, use_container_width=True)
-               
-                fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-                st.plotly_chart(fig_worm, use_container_width=True)
-
-            elif len(selections) >2:
-
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
-
-
-
-
-                if Names=="Yes":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
-                    fig_worm.update_traces(textposition='top center')
-                if Names=="No":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
-
-                st.plotly_chart(fig_worm, use_container_width=True)
-
-
-
-
-
 
         st.markdown("---")            
         st.header('View, edit and upload a new effort')
 
-        with open('pages/TP_demo.xlsx', "rb") as template_file:
-                template_byte = template_file.read()
+#         with open('pages/TP_demo.xlsx', "rb") as template_file:
+#                 template_byte = template_file.read()
 
 
 
-        st.download_button(label="Click to Download Template File",
-                            data=template_byte,
-                            file_name="template.xlsx"
-                          )
+#         st.download_button(label="Click to Download Template File",
+#                             data=template_byte,
+#                             file_name="template.xlsx"
+#                           )
 
-        uploaded_file = st.file_uploader("Choose a file",key="uploader")
+        uploaded_file = st.file_uploader("Choose a file",key="uploader_MIP")
+
+#         if uploaded_file is not None:
+#             st.markdown("---")
+
+#             st.header('View, edit and upload a new effort')
+
+
+#         uploaded_file = st.file_uploader("Choose a file",key="uploader")
 
         if uploaded_file is not None:
             st.markdown("---")
 
             st.header("Editor")
-            df_full = pd.read_csv(uploaded_file)
-            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
-            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags','Distance','Effort Type'],
-          axis='columns', inplace=True)
+            df_full = pd.read_excel(uploaded_file)
+            df_full['Position'] = df_full['Position'].apply(
+    lambda t: t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1_000_000
+)
+            df_full.drop(['Duration'],
+           axis='columns', inplace=True)
             df_full
             c1,c2,c3=st.columns(3)
             with c1:
@@ -2170,7 +2070,8 @@ if authentication_status:
             
             
             df=df_full[start:end]
-            df=df.sort_values("Start time", ascending=True)
+#             df=df.sort_values("Start time", ascending=True)
+            
             col_one, col_two, col_three = st.columns(3)
             with col_one:
                 rider = st.text_input("Select Rider:")
@@ -2180,16 +2081,16 @@ if authentication_status:
             
             speeds=[0]
             r=0
-            df["Time"] = df["Start time"] - df["Start time"].iloc[0]
+            df["Time"] = df["Position"] - df["Position"].iloc[0]
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
             df=df.reset_index(drop=True)
-      
+         
 
             #df = df.dropna(axis=0, subset=['Time'])
 
             with col_two:
-                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.12)
+                
                 schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
                 Title = st.text_input("Plot Title:")
 
@@ -2203,11 +2104,10 @@ if authentication_status:
 
                 df["Avg_Speed"]=speeds
                 df["Split"]=splits
-                df.drop('Start time',
-          axis='columns', inplace=True)
-                df.rename(columns = {'Row':'Action'}, inplace = True)
+      
+                df.rename(columns = {'Name':'Action'}, inplace = True)
                 df.drop(index=df.index[0], axis=0, inplace=True)
-                #df = df.dropna(axis=0, subset=['Time'])
+                df = df.loc[:, ~df.columns.str.match(r'^Unnamed') & df.notna().any()]
                 st.write(df)
 
 
@@ -2236,6 +2136,8 @@ if authentication_status:
 
 
                 df_save=df
+                df_save.drop(['Position'],
+           axis='columns', inplace=True)
                 df_save.insert(0, 'Save_Date', datetime.date.today())
                 df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
                 df_save.insert(0, 'Title', Title)
@@ -2289,7 +2191,7 @@ if authentication_status:
         df_master = pd.read_excel(f'pages/video_analysis/IP_Master_Women.xlsx')
         df_master = df_master.sort_values(["Save_Date","Title"], ascending=False)
         df_small = df_master.drop(columns=["Save_Date","Action","Video"])
-        df_small
+        
         c1,c2=st.columns(2)
         with c1:
             selections = st.multiselect(
@@ -2355,10 +2257,13 @@ if authentication_status:
                     df_laps
                     
                     st.subheader("Kilo Splits")
-                    df_kilos=pd.DataFrame(["1k","2k","3k"])
+                    df_kilos=pd.DataFrame(["1k","2k","3k","4k"])
                     df_kilos.columns=["Distance"]
-                    kilo_split = [sum(df_small["Split"][0:16]),sum(df_small["Split"][16:32]),sum(df_small["Split"][32:48])]
+                    
+                    kilo_split = [sum(df_small["Split"][0:16]),sum(df_small["Split"][16:32]),sum(df_small["Split"][32:48]),sum(df_small["Split"][48:64])]
+                    
                     df_kilos["Split"]=kilo_split
+                    
                     df_kilos["Total"]=df_kilos["Split"].cumsum()
                     df_kilos['Total'] = pd.to_datetime(df_kilos['Total'], unit='s').dt.strftime('%M:%S.%f')
                     df_kilos
@@ -2382,43 +2287,43 @@ if authentication_status:
 
             st.plotly_chart(fig_tt, use_container_width=True)
 
-            if len(selections) ==2:
+#             if len(selections) ==2:
 
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
+#                 df_zero = df_combine
+#                 df_zero = df_zero.reset_index(drop=True)
+#                 length = df_zero.Title.value_counts()[selections[0]]
+#                 for j in range(length,len(selections)*length):
+#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+#                     df_zero.Split[j-length]=0
 
 
 
-                fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
-                st.plotly_chart(fig_zero, use_container_width=True)
+#                 fig_zero = px.line(df_zero, x="Distance", y = "Split", title="Zero",color="Title",markers="Front")
+#                 st.plotly_chart(fig_zero, use_container_width=True)
                
-                fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+#                 fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
 
-                st.plotly_chart(fig_worm, use_container_width=True)
+#                 st.plotly_chart(fig_worm, use_container_width=True)
 
-            elif len(selections) >2:
+#             elif len(selections) >2:
 
-                df_zero = df_combine
-                df_zero = df_zero.reset_index(drop=True)
-                length = df_zero.Title.value_counts()[selections[0]]
-                for j in range(length,len(selections)*length):
-                    df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
-                    df_zero.Split[j-length]=0
-
-
+#                 df_zero = df_combine
+#                 df_zero = df_zero.reset_index(drop=True)
+#                 length = df_zero.Title.value_counts()[selections[0]]
+#                 for j in range(length,len(selections)*length):
+#                     df_zero.Split[j]=df_zero.Split[j]-df_zero.Split[j-length]
+#                     df_zero.Split[j-length]=0
 
 
-                if Names=="Yes":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
-                    fig_worm.update_traces(textposition='top center')
-                if Names=="No":
-                    fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
 
-                st.plotly_chart(fig_worm, use_container_width=True)
+
+#                 if Names=="Yes":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",text="Front",markers="Front")
+#                     fig_worm.update_traces(textposition='top center')
+#                 if Names=="No":
+#                     fig_worm = px.line(df_zero, x="Distance", y = "Time", title="Worm",color="Title",markers="Front")
+
+#                 st.plotly_chart(fig_worm, use_container_width=True)
 
 
 
@@ -2428,15 +2333,6 @@ if authentication_status:
         st.markdown("---")            
         st.header('View, edit and upload a new effort')
 
-        with open('pages/TP_demo.xlsx', "rb") as template_file:
-                template_byte = template_file.read()
-
-
-
-        st.download_button(label="Click to Download Template File",
-                            data=template_byte,
-                            file_name="template.xlsx"
-                          )
 
         uploaded_file = st.file_uploader("Choose a file",key="uploader")
 
@@ -2444,10 +2340,12 @@ if authentication_status:
             st.markdown("---")
 
             st.header("Editor")
-            df_full = pd.read_csv(uploaded_file)
-            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
-            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags','Distance','Effort Type'],
-          axis='columns', inplace=True)
+            df_full = pd.read_excel(uploaded_file)
+            df_full['Position'] = df_full['Position'].apply(
+    lambda t: t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1_000_000
+)
+            df_full.drop(['Duration'],
+           axis='columns', inplace=True)
             df_full
             c1,c2,c3=st.columns(3)
             with c1:
@@ -2457,7 +2355,7 @@ if authentication_status:
             
             
             df=df_full[start:end]
-            df=df.sort_values("Start time", ascending=True)
+#             df=df.sort_values("Start time", ascending=True)
             
             col_one, col_two, col_three = st.columns(3)
             with col_one:
@@ -2468,7 +2366,7 @@ if authentication_status:
             
             speeds=[0]
             r=0
-            df["Time"] = df["Start time"] - df["Start time"].iloc[0]
+            df["Time"] = df["Position"] - df["Position"].iloc[0]
             markers = len(df)
             df["Distance"] = np.linspace(0, 62.5*(markers-1), num=markers)
             df=df.reset_index(drop=True)
@@ -2477,7 +2375,7 @@ if authentication_status:
             #df = df.dropna(axis=0, subset=['Time'])
 
             with col_two:
-                offset = st.number_input("Offset:", min_value=0.00, max_value=None,value=0.12)
+                
                 schedule = round(st.number_input("Schedule:", min_value=0.00, max_value=None,value=14.3),2)
                 Title = st.text_input("Plot Title:")
 
@@ -2491,11 +2389,10 @@ if authentication_status:
 
                 df["Avg_Speed"]=speeds
                 df["Split"]=splits
-                df.drop('Start time',
-          axis='columns', inplace=True)
-                df.rename(columns = {'Row':'Action'}, inplace = True)
+      
+                df.rename(columns = {'Name':'Action'}, inplace = True)
                 df.drop(index=df.index[0], axis=0, inplace=True)
-                #df = df.dropna(axis=0, subset=['Time'])
+                df = df.loc[:, ~df.columns.str.match(r'^Unnamed') & df.notna().any()]
                 st.write(df)
 
 
@@ -2524,6 +2421,8 @@ if authentication_status:
 
 
                 df_save=df
+                df_save.drop(['Position'],
+           axis='columns', inplace=True)
                 df_save.insert(0, 'Save_Date', datetime.date.today())
                 df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
                 df_save.insert(0, 'Title', Title)
@@ -2570,7 +2469,7 @@ if authentication_status:
                         mime='application/vnd.ms-excel'
                     )                
                     
-    ################################################ Women's Team Sprint ##########################################################
+    ################################################ Women's Team Sprint ########################################
     
     if racetype == "Women's Team Sprint":
         
@@ -2757,15 +2656,7 @@ if authentication_status:
             st.plotly_chart(fig_comp_split, use_container_width=True)
         st.markdown('---')
         st.header("Editor")
-        with open('pages/TP_demo.xlsx', "rb") as template_file:
-                template_byte = template_file.read()
 
-
-
-        st.download_button(label="Click to Download Template File",
-                            data=template_byte,
-                            file_name="template.xlsx"
-                          )
 
         uploaded_file = st.file_uploader("Choose a file",key="uploader")
 
@@ -2774,9 +2665,12 @@ if authentication_status:
 
             st.header("Editor")
             st.write("Initial df")
-            df_full = pd.read_csv(uploaded_file)
-            df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
-            df_full.drop(['Timeline','Duration','Instance number','Ungrouped','Notes','Flags'],
+            df_full = pd.read_excel(uploaded_file)
+            df_full['Position'] = df_full['Position'].apply(
+    lambda t: t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1_000_000
+)
+#             df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+            df_full.drop(['Duration'],
           axis='columns', inplace=True)
             
             
@@ -2785,15 +2679,16 @@ if authentication_status:
                 df_full
                 start=st.number_input("Start Row (inclusive)", value=0)
             with c2:
-                df_check = pd.DataFrame(df_full.iloc[::29, :])
-                df_check.drop(["Start time"],axis='columns', inplace=True)
+                df_check = pd.DataFrame(df_full.iloc[::28, :])
+#                 df_check.drop(["Start time"],axis='columns', inplace=True)
                 st.write("Checking we've got everything")
+                df_check = df_check.loc[:, ~df_check.columns.str.match(r'^Unnamed') & df_check.notna().any()]
                 df_check
-                end=st.number_input("End Row (inclusive)", value=start+28)+1
+                end=st.number_input("End Row (inclusive)", value=start+27)+1
             
             
-            df=df_full[start+1:end]
-            df=df.sort_values("Start time", ascending=True)
+            df=df_full[start:end]
+#             df=df.sort_values("Start time", ascending=True)
             
             
             with c1:
@@ -2838,17 +2733,17 @@ if authentication_status:
             
    
            
-            
+            df = df.loc[:, ~df.columns.str.match(r'^Unnamed') & df.notna().any()]
             df=df.reset_index(drop=True)
             with c3:
                 df
-                ind1=df.index[df['Row'] == "Rider 1 Forward"].tolist()[0]
-                ind2=df.index[df['Row'] == "Rider 2 Forward"].tolist()[0]
-                ind3=df.index[df['Row'] == "Rider 3 Forward"].tolist()[0]
-                indstart=df.index[df['Row'] == "Start"].tolist()[0]
-                react1 = round(df["Start time"][ind1]-df["Start time"][indstart],2)
-                react2 = round(df["Start time"][ind2]-df["Start time"][indstart],2)
-                react3 = round(df["Start time"][ind3]-df["Start time"][indstart],2)
+                ind1=df.index[df['Name'] == "Rider 1 Forward"].tolist()[0]
+                ind2=df.index[df['Name'] == "Rider 2 Forward"].tolist()[0]
+                ind3=df.index[df['Name'] == "Rider 3 Forward"].tolist()[0]
+                indstart=df.index[df['Name'] == "Start"].tolist()[0]
+                react1 = round(df["Position"][ind1]-df["Position"][indstart],2)
+                react2 = round(df["Position"][ind2]-df["Position"][indstart],2)
+                react3 = round(df["Position"][ind3]-df["Position"][indstart],2)
                 st.write(f'Reaction time for rider 1 is {react1} seconds')
                 st.write(f'Reaction time for rider 2 is {react2} seconds')
                 st.write(f'Reaction time for rider 3 is {react3} seconds')
@@ -2861,9 +2756,11 @@ if authentication_status:
 
 
                 df_save=df
+                df_save = df_save.rename(columns={'Name': 'Row','Position':'Start time'})
                 df_save.insert(0, 'Save_Date', datetime.date.today())
                 df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
                 df = pd.concat([df_master, df_save], axis=0)
+                
                 df
 
                 ##Testing downloader
