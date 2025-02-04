@@ -410,8 +410,8 @@ if authentication_status:
             r_wh = rad_of_curve
             if (segment < pl_to_trans) or (segment>125-pl_to_trans):
                 bank = straight_bank_angle
-                r_wh = 2*rad_of_curve
-                r_cm = 2*rad_of_curve
+                r_wh = 100000
+                r_cm = 100000
             elif segment <= pl_to_trans + transition_length:
                 pct_through_trans = (segment-pl_to_trans)/transition_length
                 bank = straight_bank_angle + pct_through_trans*(bend_bank_angle-straight_bank_angle)
@@ -1274,7 +1274,7 @@ if authentication_status:
         fig.add_trace(go.Line(x=df_p1["Time"], y=df_p1["power_usable"], 
                              name="p1 Power", yaxis='y'))
          
-        fig.add_trace(go.Line(x=df_p1["Time"], y=df_p3["wheel_speed"], 
+        fig.add_trace(go.Line(x=df_p1["Time"], y=df_p1["wheel_speed"], 
                               name="p1 Wheel speed", yaxis="y2"))
 
         fig.add_trace(go.Line(x=df_p2["Time"], y=df_p2["power_usable"], 
