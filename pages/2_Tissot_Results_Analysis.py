@@ -52,7 +52,7 @@ if authentication_status == None:
     st.warning("Please enter your username and password")
 
 if authentication_status:
-    race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Sprint","Women's Sprint","Men's Keirin","Women's Keirin","Men's Team Sprint","Women's Team Sprint","Men's Omnium","Women's Omnium","Men's Madison","Women's Madison","Men's 1k Time Trial","Women's 500m Time Trial","Men's Team Pursuit","Women's Team Pursuit","Men's Individual Pursuit","Women's Individual Pursuit"]
+    race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Sprint","Women's Sprint","Men's Keirin","Women's Keirin","Men's Team Sprint","Women's Team Sprint","Men's Omnium","Women's Omnium","Men's Madison","Women's Madison","Men's 1k Time Trial","Women's 1k Time Trial","Men's Team Pursuit","Women's Team Pursuit","Men's Individual Pursuit","Women's Individual Pursuit","Women's 500m Time Trial"]
     race_type = st.selectbox("Select Event:", race_types, key="Event Selector")
     if race_type=="Men's Sprint Qualifying":
         st.header('Men\'s Sprint Qualifying')
@@ -2928,7 +2928,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='OM-Tempo',
                 skiprows=0,
-                usecols='A:AM',
+                usecols='A:AW',
                 nrows=3000
                 )
             df_tempo = df_tempo.replace(',','')
@@ -2957,7 +2957,7 @@ if authentication_status:
         df_points_orig = df_points
 
         c1,c2,c3=st.columns(3)
-        df_points
+#         df_points
         with c1:
             year = st.multiselect(
                 "Select Year:",
@@ -3037,7 +3037,15 @@ if authentication_status:
         st.subheader('Summary & Points Race')
 
         ##Defining colouring functions for dataframes
-        format_dict = {'Scratch':'{0:,.0f}', 'Date': '{:%d-%m-%y}', 'Age': '{0:,.2f}', 'Sub Total': '{0:,.0f}', 'Avg Speed': '{0:,.3f}'}
+        format_dict = {'Scratch':'{0:,.0f}','Tempo':'{0:,.0f}','Elimination':'{0:,.0f}','Rank':'{0:,.0f}','Sprint 1':'{0:,.0f}', 
+                       'Sprint 2':'{0:,.0f}','Sprint 3':'{0:,.0f}','Sprint 4':'{0:,.0f}','Sprint 5':'{0:,.0f}','Sprint 6':'{0:,.0f}',
+                       'Sprint 7':'{0:,.0f}','Sprint 8':'{0:,.0f}','Lap +':'{0:,.0f}','Lap -':'{0:,.0f}','Final':'{0:,.0f}',
+                       1:'{0:,.0f}',5:'{0:,.0f}',9:'{0:,.0f}',12:'{0:,.0f}',15:'{0:,.0f}',18:'{0:,.0f}',21:'{0:,.0f}',24:'{0:,.0f}',
+                       2:'{0:,.0f}',6:'{0:,.0f}',10:'{0:,.0f}',13:'{0:,.0f}',16:'{0:,.0f}',19:'{0:,.0f}',22:'{0:,.0f}',25:'{0:,.0f}',
+                       3:'{0:,.0f}',7:'{0:,.0f}',11:'{0:,.0f}',14:'{0:,.0f}',17:'{0:,.0f}',20:'{0:,.0f}',23:'{0:,.0f}',26:'{0:,.0f}',
+                       4:'{0:,.0f}',8:'{0:,.0f}',27:'{0:,.0f}',28:'{0:,.0f}',29:'{0:,.0f}',30:'{0:,.0f}',31:'{0:,.0f}',32:'{0:,.0f}',
+                       36:'{0:,.0f}',35:'{0:,.0f}',34:'{0:,.0f}',33:'{0:,.0f}',
+                       'Date': '{:%d-%m-%y}', 'Age': '{0:,.2f}', 'Sub Total': '{0:,.0f}', 'Avg Speed': '{0:,.3f}'}
         def color_points(val):
             if val == 5:
                 background_color = 'darkgoldenrod'    
@@ -3088,6 +3096,8 @@ if authentication_status:
             background_color = 'yellow' if val == 1 else ""
             return 'background-color: %s' % background_color
         ##Displaying all dataframes, some styled
+        df_points['Time'] = pd.to_datetime(df_points['Time'], format='%H:%M:%S', errors='coerce', utc = True).dt.time
+#         df_points.dtypes
         df_points_styled = (df_points
                             .style
                             .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
@@ -3096,6 +3106,7 @@ if authentication_status:
                             .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_points_styled,use_container_width=True)
+#         df_points_styled.dtpyes()
         ##Download buttons
         csv_points = convert_to_csv(df_points)
         download1 = st.download_button(
@@ -3145,11 +3156,11 @@ if authentication_status:
         df_tempo_styled = (df_tempo
                            .style
                            .format(format_dict)
-                           .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]]
+                           .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
                           )
-                           .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+                           .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]]
                           )
-                           .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
+                           .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]]
                           )
                           )
         st.dataframe(df_tempo_styled,use_container_width=True)
@@ -3288,16 +3299,16 @@ if authentication_status:
             ##Tempo distribution by date
             df_tempo_hist = df_tempo_hist[(df_tempo_hist.Rank != "DSQ") & (df_points_orig.Rank != "DNF")]
             df_tempo_hist = df_tempo_hist.sort_values("Date",ascending=False)
-            df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+            df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,38,29,30,31,32,33,34,35,36]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
                           ).applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
             
 
             df_tempo_trans = pd.DataFrame()
-            df_tempo_trans["Sprint"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]
+            df_tempo_trans["Sprint"] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]
             for i in range(len(df_tempo_hist)):
                 var =str(df_tempo_hist["Name"].iloc[i])+" "+str(df_tempo_hist["Location"].iloc[i])+" "+str(df_tempo_hist["Event"].iloc[i])+" "+str(df_tempo_hist["Year"].iloc[i])
-                df_tempo_trans[f"{var}"]=df_tempo_hist.iloc[i][8:34].values
+                df_tempo_trans[f"{var}"]=df_tempo_hist.iloc[i][8:44].values
 
             fig_event = px.line(df_tempo_trans, x="Sprint", y = df_tempo_trans.columns, title="Tempo Distribution by Date", markers=True)
             st.plotly_chart(fig_event,use_container_width=True)
@@ -4807,6 +4818,291 @@ if authentication_status:
         fig_event = px.line(df_an, y=["125m","250m","375m","500m"], x = "Athlete", title="The Ranges", markers=True)
 
         st.plotly_chart(fig_event,use_container_width=True)
+        
+        
+        
+    if race_type=="Women's 1k Time Trial":
+        st.header('Women\'s 1k Time Trial')
+        st.subheader('All results')
+        marker=["125m","250m","375m","500m","625m","750m","875m","1000m"]
+        @st.cache_data
+        def get_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WomensRaceResults.xlsm',
+                engine ='openpyxl',
+                sheet_name='1k TT',
+                skiprows=0,
+                usecols='A:S',
+                nrows=2000
+                )
+            df = df.replace(',','')
+            return df
+        df= get_data_from_excel()
+        @st.cache_data
+        def convert_to_csv(df):
+            return df.to_csv(index=False,sep = ",").encode('utf-32')
+        c1,c2,c3=st.columns(3)
+        df_orig = df
+        with c1:
+            year = st.multiselect(
+                "Select Year:",
+                options=df["Year"].unique(),
+                default=df["Year"].unique()[0]
+            )    
+        if year:
+            df = df.query(
+                "Year == @year"
+                )
+        else:
+            df=df_orig
+
+
+        with c2:
+            location = st.multiselect(
+                "Select Location:",
+                options=df["Location"].unique(),
+                default=df["Location"].unique()[0]
+            )
+
+        if location:
+            df = df.query(
+                "Location == @location"
+                )
+        else:
+            df=df_orig
+        with c3:
+            event = st.multiselect(
+                "Select Event Type:",
+                options=df["Event"].unique(),
+                default=df["Event"].unique()[0]
+            )
+
+        if event:
+            df = df.query(
+                "Event == @event"
+                )
+        else:
+            df=df_orig
+
+
+        st.dataframe(df,use_container_width=True)
+        ##Download buttons
+        csv = convert_to_csv(df)
+        download1 = st.download_button(
+            label="Download Time Trial Data as CSV",
+            data=csv,
+            file_name='TT_Data.csv',
+            mime='text/csv',
+            key="tt1"
+        )
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Sheet1', index=False)
+            writer.close()
+            download2 = st.download_button(
+                label="Download Time Trial Data as Excel",
+                data=buffer,
+                file_name='TT_Data.xlsx',
+                mime='application/vnd.ms-excel',
+            key="tt2"
+            )
+        ##Download buttons complete
+        st.markdown("---")
+
+        st.title(":bar_chart: Top Ten Performances")
+
+        df_topten = df_orig.sort_values('Time').head(10)
+
+        st.dataframe(df_topten,use_container_width=True)
+
+        ##Download buttons
+        csvtt = convert_to_csv(df_topten)
+        download1 = st.download_button(
+            label="Download Top Ten Data as CSV",
+            data=csvtt,
+            file_name='TT_Data.csv',
+            mime='text/csv',
+            key="tttt1"
+        )
+        buffertt = io.BytesIO()
+        with pd.ExcelWriter(buffertt, engine='xlsxwriter') as writer:
+            df_topten.to_excel(writer, sheet_name='Sheet1', index=False)
+            writer.close()
+            download2 = st.download_button(
+                label="Download Top Ten Data as Excel",
+                data=buffertt,
+                file_name='TT_Data.xlsx',
+                mime='application/vnd.ms-excel',
+            key="tttt2"
+            )
+        ##Download buttons complete
+
+        df_splits_tt = pd.DataFrame()
+        df_splits_tt["Marker"] = marker
+        for i in range(len(df_topten)):
+            var = str(i+1)+" "+str(df_topten["Athlete"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+            df_splits_tt[f"{var}"]=df_topten.iloc[i][9:17].values
+
+
+        fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten", markers=True)
+
+        st.plotly_chart(fig_tt, use_container_width=True)
+
+        st.markdown("---")
+
+        st.title(":bicyclist: Athlete History")
+
+        athletes = df_orig['Athlete'].drop_duplicates().sort_values()
+        athlete = st.multiselect("Select Athlete(s):", athletes)
+        if len(athlete)>0:
+            df_athleteHistory = df_orig.query(
+                "Athlete == @athlete"
+            )
+
+            st.dataframe(df_athleteHistory,use_container_width=True)
+            ##Download buttons
+            csvah = convert_to_csv(df_athleteHistory)
+            download1 = st.download_button(
+                label="Download Athlete History as CSV",
+                data=csvah,
+                file_name='Athlete_History_Data.csv',
+                mime='text/csv',
+                key="ttah1"
+            )
+            bufferah = io.BytesIO()
+            with pd.ExcelWriter(bufferah, engine='xlsxwriter') as writer:
+                df_athleteHistory.to_excel(writer, sheet_name='Sheet1', index=False)
+                writer.close()
+                download2 = st.download_button(
+                    label="Download Athlete History as Excel",
+                    data=bufferah,
+                    file_name='Athlete_History_Data.xlsx',
+                    mime='application/vnd.ms-excel',
+                key="ttah2"
+                )
+            ##Download buttons complete
+
+            df_athleteHistory_sh = df_athleteHistory[(df_athleteHistory.Rank != "DSQ") & (df_athleteHistory.Rank != "DNF")]
+            ##First Figure -- All Races
+            df_ah_Trans,df_ch_worm = pd.DataFrame(),pd.DataFrame()
+            df_ah_Trans["Distance"],df_ch_worm["Distance"] = marker,marker
+            for i in range(len(df_athleteHistory_sh)):
+                var =str(i+1)+" "+str(df_athleteHistory_sh["Athlete"].iloc[i])+" "+str(df_athleteHistory_sh["Location"].iloc[i])+" "+str(df_athleteHistory_sh["Event"].iloc[i])+" "+str(df_athleteHistory_sh["Stage"].iloc[i])+" "+str(df_athleteHistory_sh["Year"].iloc[i])
+                df_ah_Trans[f"{var}"]=df_athleteHistory_sh.iloc[i][9:17].values
+                df_ch_worm[f"{var}"]=df_athleteHistory_sh.iloc[i][9:17].values.cumsum()
+
+            fig_event = px.line(df_ah_Trans, x="Distance", y = df_ah_Trans.columns, title="All races", markers=True)
+            st.plotly_chart(fig_event,use_container_width=True)
+            ##Second Figure -- The Worm
+
+            fig_event_CH = px.line(df_ch_worm, x="Distance", y = df_ch_worm.columns, title="The Worm", markers=True)
+            st.plotly_chart(fig_event_CH, use_container_width=True)
+
+            #Third Figure -- Ranges
+            fig_ranges_CH = px.line(df_athleteHistory, x=df_ch_worm.columns[1:], y = marker, title="The Ranges",markers=True)
+            st.plotly_chart(fig_ranges_CH, use_container_width=True)
+
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Time", title = "Times by Date", markers = "True", text = "Location", color="Athlete")
+            fig_athlete_history.update_traces(textposition="top right")
+
+            st.plotly_chart(fig_athlete_history,use_container_width=True)
+
+            fig_athlete_history = px.line(df_athleteHistory, x="Date", y = "Rank", title = "Rank by Date", markers = "True", color="Athlete")
+            fig_athlete_history.update_traces(textposition="top right")
+
+            st.plotly_chart(fig_athlete_history,use_container_width=True)
+
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Time", title = "Times by Age", markers = "True", color="Athlete")
+            fig_athlete_history.update_traces(textposition="top right")
+
+            st.plotly_chart(fig_athlete_history,use_container_width=True)
+
+            df_athleteHistory["Half"] = df_athleteHistory["125m"]+df_athleteHistory["250m"]
+
+            fig_athlete_history = px.line(df_athleteHistory, x="Age", y = "Half", title = "250m Times by Age", markers = "True", color="Athlete")
+
+
+            st.plotly_chart(fig_athlete_history,use_container_width=True)
+
+
+
+
+        st.markdown("---")
+
+        st.title(":mag_right: Race Analysis Tool")
+        uniqueYear = df_orig['Year'].drop_duplicates().sort_values(ascending=False)
+
+
+        left_column, middle_column, right_column,c4 = st.columns(4)
+        with left_column:
+            an_year = st.selectbox("Select Year:", uniqueYear)
+
+        df_an_year = df_orig.query(
+            "Year == @an_year"
+        )
+        uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
+
+        with middle_column:
+            an_location = st.selectbox("Select Location:", uniqueLocation)
+
+        df_an_year_location = df_an_year.query(
+            "Year == @an_year & Location == @an_location"
+        )
+
+        uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
+        with right_column:
+            an_event = st.selectbox("Select Event:", uniqueEvent)
+
+        df_an_year_location_event = df_an_year_location.query(
+            "Year == @an_year & Location == @an_location & Event == @an_event"
+        )
+
+        uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
+
+
+        with c4:
+            an_stage = st.selectbox("Select Stage:", uniqueStage)
+
+        df_an = df_an_year_location_event.query(
+            "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
+        )
+
+        st.dataframe(df_an,use_container_width=True)
+        df_splits = pd.DataFrame()
+        df_splits["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m"]
+        for i in range(len(df_an)):
+            var = str(df_an["Athlete"].iloc[i])
+            df_splits[f"{var}"]=df_an.iloc[i][9:17].values
+
+        fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits", markers=True)
+
+        st.plotly_chart(fig_event, use_container_width=True)    
+
+        ### Worm dataframe and plot
+        # st.write("Running Time")
+        df_worm = pd.DataFrame()
+        df_worm["Marker"] = ["125m","250m","375m","500m","625m","750m","875m","1000m"]
+
+        for i in range(len(df_an)):
+            var = str(df_an["Athlete"].iloc[i])
+            df_worm[f"{var}"]=df_an.iloc[i][9:17].values.cumsum()
+
+
+
+        fig_event = px.line(df_worm, x="Marker", y = df_worm.columns, title="The Worm", markers=True)
+
+        st.plotly_chart(fig_event,use_container_width=True)
+
+
+
+
+        fig_event = px.line(df_an, y=["125m","250m","375m","500m","625m","750m","875m","1000m"], x = "Athlete", title="The Ranges", markers=True)
+
+        st.plotly_chart(fig_event,use_container_width=True)
+        
+        
+        
+        
 
         
         
@@ -5700,8 +5996,8 @@ if authentication_status:
     if race_type=="Women's Individual Pursuit":
         st.header('Women\'s Individual Pursuit')
         st.subheader('All results')
-        marker = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m"]
-        markerx = [125,250,375,500,625,750,875,1000,1125,1250,1375,1500,1625,1750,1875,2000,2125,2250,2375,2500,2625,2750,2875,3000]
+        marker = ["125m","250m","375m","500m","625m","750m","875m","1000m","1125m","1250m","1375m","1500m","1625m","1750m","1875m","2000m","2125m","2250m","2375m","2500m","2625m","2750m","2875m","3000m","3125m","3250m","3375m","3500m","3625m","3750m","3875m","4000m"]
+        markerx = [125,250,375,500,625,750,875,1000,1125,1250,1375,1500,1625,1750,1875,2000,2125,2250,2375,2500,2625,2750,2875,3000,3125,3250,3375,3500,3625,3750,3875,4000]
         @st.cache_data
         def get_data_from_excel():
             df = pd.read_excel(
@@ -5709,7 +6005,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Individual Pursuit',
                 skiprows=0,
-                usecols='A:AI',
+                usecols='A:AQ',
                 nrows=2500
                 )
             df = df.replace(',','', regex=True)
@@ -5824,8 +6120,8 @@ if authentication_status:
         df_splits_tt = pd.DataFrame()
         df_splits_tt["Marker"] = marker
         for i in range(len(df_topten)):
-            var = str(i+1)+" "+str(df_topten["Country"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
-            df_splits_tt[f"{var}"]=df_topten.iloc[i][10:34].values
+            var = str(i+1)+" "+str(df_topten["Athlete"].iloc[i]) + " " + str(df_topten["Year"].iloc[i]) + " " +str(df_topten["Location"].iloc[i])+" " +str(df_topten["Event"].iloc[i]) + " " +str(df_topten["Stage"].iloc[i])
+            df_splits_tt[f"{var}"]=df_topten.iloc[i][9:41].values
 
 
         fig_tt = px.line(df_splits_tt, x="Marker", y = df_splits_tt.columns, title="Top Ten",markers=False)
@@ -5876,8 +6172,8 @@ if authentication_status:
             df_worm_CH["Marker"] = marker
             for i in range(len(df_athleteHistory)):
                 var = str(i+1)+" "+str(df_athleteHistory["Athlete"].iloc[i])+" "+str(df_athleteHistory["Location"].iloc[i]) + " " + str(df_athleteHistory["Year"].iloc[i]) + " " +str(df_athleteHistory["Event"].iloc[i]) + " " +str(df_athleteHistory["Stage"].iloc[i])
-                df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][10:34].values
-                df_worm_CH[f"{var}"]=df_athleteHistory.iloc[i][10:34].values.cumsum()
+                df_splits_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values
+                df_worm_CH[f"{var}"]=df_athleteHistory.iloc[i][9:41].values.cumsum()
 
 
             fig_CH = px.line(df_splits_CH, x="Marker", y = df_splits_CH.columns, title="Splits")
@@ -5960,8 +6256,8 @@ if authentication_status:
         df_splits["Marker"],df_worm["Marker"] = marker,marker
         for i in range(len(df_an)):
             var = str(int(df_an["Rank"].iloc[i]))+ " "+ str(df_an["Athlete"].iloc[i])
-            df_splits[f"{var}"]=df_an.iloc[i][10:34].values
-            df_worm[f"{var}"]=df_an.iloc[i][10:34].values.cumsum()
+            df_splits[f"{var}"]=df_an.iloc[i][9:41].values
+            df_worm[f"{var}"]=df_an.iloc[i][9:41].values.cumsum()
 
         fig_event = px.line(df_splits, x="Marker", y = df_splits.columns, title="Splits")
 
