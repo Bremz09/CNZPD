@@ -224,7 +224,7 @@ if authentication_status:
     elif Event == "WTS":
         df=get_data("WTS_Points")
         df=df.drop(['UCI_ID', 'Name'], axis=1)
-        df["Unique"] = df["Name"] + df["Date"].astype(str) + df["Event"] + df["Rank"].astype(str)
+        df["Unique"] = df["Country"] + df["Date"].astype(str) + df["Event"] + df["Rank"].astype(str)
         df = df.drop_duplicates(subset=['Unique'])
         df["Points"]=df["Points"].astype(int)*3
         df=df.drop(['Unique'], axis=1)
