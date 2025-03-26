@@ -485,7 +485,10 @@ if authentication_status:
 
                     st.header(df_temp["Title"].iloc[0])
                     df_small
-                    unq_riders = df_small["Front"].unique()
+                    unq_riders = df_small["Front"].unique().tolist()
+                    
+                    if len(unq_riders)<4:
+                        unq_riders.append("empty")  
                     df_summ=pd.DataFrame(unq_riders)
                     df_summ.columns=["Rider"]
                     df_summ=df_summ.dropna(axis=0)
