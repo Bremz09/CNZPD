@@ -91,7 +91,7 @@ if authentication_status:
 
         c1,c2=st.columns([1,3])
         with c1:
-            trend = st.selectbox("WR or hey Placings trend?:", ["World Record progression","Placing progression - raw times","Placing progression - % of win time"], key="MSP trend type Selector")
+            trend = st.selectbox("WR or Placings trend?:", ["World Record progression","Placing progression - raw times","Placing progression - % of win time"], key="MSP trend type Selector")
             
 
             if trend=="World Record progression":
