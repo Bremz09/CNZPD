@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from datetime import datetime
 import statsmodels.api as sm
+from sklearn.linear_model import LinearRegression
 
 
 
@@ -91,7 +92,7 @@ if authentication_status:
 
         c1,c2=st.columns([1,3])
         with c1:
-            trend = st.selectbox("WR or Placings trend?:", ["World Record progression","Placing progression - raw times","Placing progression - % of win time"], key="MSP trend type Selector")
+            trend = st.selectbox("WR or Placings trend?:", ["World Record progression","Placing progression - raw times","Placing progression - % of win time","LA prediction"], key="MSP trend type Selector")
             
 
             if trend=="World Record progression":
@@ -207,15 +208,15 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2024),
-                        min_value = 2000,
-                        max_value = 2021)
+                    value = (df_show['Year'].min(),df_show['Year'].max()),
+                        min_value = df_show['Year'].min(),
+                        max_value = df_show['Year'].max())
                     
                     time_range = st.slider(
             "Restrict time range?",
-                    value = (9.088,11.000),
-                        max_value = 11.000,
-                        min_value = 9.100)
+                    value = (df_show['1st'].min(),df_show['16th'].max()),
+                        max_value = df_show['16th'].max(),
+                        min_value = df_show['1st'].min())
                     
                     df_mask = df.mask(df["Year"] < date_range[0])
                     df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
@@ -495,6 +496,133 @@ if authentication_status:
                             sixteenth_s="0"+str(sixteenth_s)           
                         st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_s} in {predict_year}.")
 
+
+            elif trend=="LA prediction":
+                df = get_placing_data_from_excel()
+                df_master=df
+                df_show=df[["Year","Competition","1st"]]
+                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
+                if comp == "Just OLY":
+                        df_show=df_show.loc[df_show["Competition"]=="OLY"].reset_index(drop=True)
+                elif comp == "Just WCH":
+                        df_show=df_show.loc[df_show["Competition"]=="WCH"].reset_index(drop=True)
+                df=df_show
+                
+                # Initialize the LFF column with NaN values
+                df_show['LFF'] = np.nan
+                df_show['Int'] = np.nan
+                pred_int = 1-((1-st.number_input("Prediction interval", key="pre_int"))/2)
+                # Iterate over each row to calculate the linear regression forecast for the year 2028
+                for i in range(len(df_show)):
+                # Select data up to and including the current year
+                    df_subset = df_show.iloc[:i+1]
+                 
+                 # Prepare the data for linear regression
+                    X = df_subset['Year'].values.reshape(-1, 1)
+                    y = df_subset['1st'].values
+                
+                # Create and fit the linear regression model
+                    model = LinearRegression()
+                    model.fit(X, y)
+                
+                # Predict the value for the year 2028
+                    forecast_2028 = model.predict(np.array([[2028]]))[0]
+                
+                    from scipy.stats import t
+                # Calculate the prediction interval
+                    
+                    n = len(X)
+                    mean_x = np.mean(X)
+                    t_value = t.ppf(pred_int + (1 - pred_int) /2., n -2) # for a two-tailed test with alpha=0.20 (60% prediction interval)
+                    s_err = np.sqrt(np.sum((y - model.predict(X))**2) / (n -2))
+                    conf = t_value * s_err * np.sqrt(1 + (1/n) + ((2028 - mean_x)**2 / np.sum((X - mean_x)**2)))
+                    
+                    # Assign the forecast value to the LFF column
+                    df_show.at[i,'LFF'] = forecast_2028
+                    
+                    # Assign the prediction interval to the Int column
+                    df_show.at[i,'Int'] = conf
+
+                
+                # Add upper bound (UB) and lower bound (LB) columns
+                df_show['UB'] = df_show['LFF'] + df_show['Int']
+                df_show['LB'] = df_show['LFF'] - df_show['Int']
+
+                # Calculate minimum of upper bounds (MUB) and maximum of lower bounds (MLB)
+                
+
+                
+                
+
+                with c2:
+                    date_range = st.slider(
+            "Restrict date range?",
+                    value = (df_show['Year'].min(),df_show['Year'].max()),
+                        min_value = df_show['Year'].min(),
+                        max_value = df_show['Year'].max())
+                    
+
+                    
+                    df_mask = df.mask(df["Year"] < date_range[0])
+                    df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+                    
+
+                    df_mask['MUB'] = df_mask['UB'].min()
+                    df_mask['MLB'] = df_mask['LB'].max()
+
+                with c1:
+                    df_mask
+                    
+                with c2:
+                    fig = px.scatter(df_mask,
+                    x='Year',
+                    y='LFF',
+                    title='Year vs LFF with Prediction Intervals',
+                    labels={'LFF': 'Linear Forecast for Future (LFF)'},
+                    error_y='Int')
+
+                    
+                    # Add horizontal lines for MUB and MLB
+                    fig.add_hline(y=df_mask['MUB'].iloc[-1], line_dash="dash", line_color="green", annotation_text="MUB", annotation_position="bottom right")
+                    fig.add_hline(y=df_mask['MLB'].iloc[-1], line_dash="dash", line_color="red", annotation_text="MLB", annotation_position="top right")
+
+
+                    # Show the plot
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    
+
+                #     fig = px.scatter(df_mask, x="Year", y = ["1st"], title="Men's Sprint Olympic and World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
+                #     customdata = np.stack((round(df_mask['1st'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                #     hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Year: %{customdata[1]}<br>' + 'Competition: %{customdata[2]}<br>'
+                # '<extra></extra>')
+                #     fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                    
+                #     st.plotly_chart(fig, use_container_width=True)
+                #     col1,col2=st.columns(2)
+                #     with col1:
+                #         first_a=px.get_trendline_results(fig).px_fit_results.iloc[0].rsquared
+                #         first_const = px.get_trendline_results(fig).px_fit_results.iloc[0].params[0]
+                #         first_x1=px.get_trendline_results(fig).px_fit_results.iloc[0].params[1]
+                        
+                        
+                        
+                #         st.write(f"1st = {round(first_x1,6)}(Year) + {round(first_const,3)}")
+                #         st.write(f"R-squared = {round(first_a,3)}")
+                        
+                        
+
+                #     with col2:
+                #         first_m, first_s = divmod(first_x1*2028 +first_const, 60)
+                #         first_h, first_m = divmod(first_m, 60)
+                #         first_m = int(first_m)
+                #         first_s=round(first_s,3)
+                #         if first_s<10:
+                #             first_s="0"+str(first_s)           
+                #         st.write(f"This trend predicts a top qualifying time of {first_s} in 2028.")
+        
+
+ 
 
 
 
