@@ -788,7 +788,7 @@ if authentication_status:
             left_column, middle_column, right_column = st.columns(3)
             with left_column:
 
-                st.write(name1 + " has mu value " + str(mu1) + " and sigma value " + str(sig1))
+                st.write(name1 + " has mu value " + str(round(mu1,2)) + " and sigma value " + str(round(sig1,2)))
                 st.write("From " +str(trials) + " trials, " + name1 + " has a " + str(round(s1_win_prob,2))+ "% chance of beating " + name2)
 
             with middle_column:
@@ -798,7 +798,7 @@ if authentication_status:
 
             with right_column:
 
-                st.write(name2 + " has mu value " + str(mu2) + " and sigma value " + str(sig2))
+                st.write(name2 + " has mu value " + str(round(mu2,2)) + " and sigma value " + str(round(sig2,2)))
                 st.write("From " +str(trials) + " trials, " + name2 + " has a " + str(round(s2_win_prob,2))+ "% chance of beating " + name1)
 
 

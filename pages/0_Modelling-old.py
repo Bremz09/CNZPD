@@ -541,7 +541,7 @@ if authentication_status:
             else:
                 p1.acc_fatigue += increment*standing_fatigue_rate/100
                 p1.torque = p1.stand_max_torque*(1 - p1.acc_fatigue) + (p1.stand_TC_slope*p1.cadence)
-            p1.power_input = p1.cadence*p1.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity??
+            p1.power_input = p1.cadence*p1.torque*(math.pi/30) # Torque x cadence with a conversion term for cadence and angular velocity
             p1.power_usable = p1.power_input*efficiency
             p1.prop_force = 2*math.pi*efficiency*p1.torque/(2.096*(p1.gear/27)) #from Caddy2015
             #F_prop = torque/(GR*(D/2)) D=diameter, GR= gear ratio
