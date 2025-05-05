@@ -7,14 +7,10 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from PIL import Image
 import io
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import norm
 from datetime import datetime
-import statsmodels.api as sm
 from sklearn.linear_model import LinearRegression
 
 import scipy.stats as stats
@@ -523,7 +519,7 @@ if authentication_status:
                 # Initialize the LFF column with NaN values
                 df_show['LFF'] = np.nan
                 df_show['Int'] = np.nan
-                pred_int = (st.number_input("Prediction interval", value=0.95, key="pre_int"))
+                pred_int = (st.number_input("Prediction interval", value=0.90, key="pre_int"))
                 
                 # Iterate over each row to calculate the linear regression forecast for the year 2028
                 for i in range(len(df_show)):
@@ -1137,7 +1133,7 @@ if authentication_status:
                 # Initialize the LFF column with NaN values
                 df_show['LFF'] = np.nan
                 df_show['Int'] = np.nan
-                pred_int = (st.number_input("Prediction interval", value=0.95, key="pre_int"))
+                pred_int = (st.number_input("Prediction interval", value=0.90, key="pre_int"))
                 
                 # Iterate over each row to calculate the linear regression forecast for the year 2028
                 for i in range(len(df_show)):
@@ -1680,7 +1676,7 @@ if authentication_status:
                 # Initialize the LFF column with NaN values
                 df_show['LFF'] = np.nan
                 df_show['Int'] = np.nan
-                pred_int = (st.number_input("Prediction interval", value=0.95, key="pre_int"))
+                pred_int = (st.number_input("Prediction interval", value=0.90, key="pre_int"))
                 
                 # Iterate over each row to calculate the linear regression forecast for the year 2028
                 for i in range(len(df_show)):
@@ -2232,7 +2228,7 @@ if authentication_status:
                     # Initialize the LFF column with NaN values
                     df_show['LFF'] = np.nan
                     df_show['Int'] = np.nan
-                    pred_int = (st.number_input("Prediction interval", value=0.95, key="pred_int"))
+                    pred_int = (st.number_input("Prediction interval", value=0.90, key="pred_int"))
                     
                     # Iterate over each row to calculate the linear regression forecast for the year 2028
                     for i in range(len(df_show)):
@@ -2844,15 +2840,15 @@ if authentication_status:
 
                         time_range = st.slider(
                 "Restrict time range?",
-                        value = (222.00,337.01),
-                        max_value = 337.01,
-                        min_value = 222.00)
+                        value = (df["Fastest_seconds"].min(),df["Fastest_seconds"].max()),
+                        max_value = df["Fastest_seconds"].max(),
+                        min_value = df["Fastest_seconds"].min())
 
 
                         df_mask = df.mask(df["Year"] < date_range[0])
                         df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
-                        df_mask = df_mask.mask(df_mask["Fastest_seconds"] < time_range[0])
-                        df_mask = df_mask.mask(df_mask["Fastest_seconds"] > time_range[1])
+                        df_mask = df_mask.mask(df_mask["Fastest_seconds"] <= time_range[0])
+                        df_mask = df_mask.mask(df_mask["Fastest_seconds"] >= time_range[1])
 
                         fig = px.scatter(df_mask, x="Year", y = ["Fastest_seconds"], title="Men's Team Pursuit Competition Fastest Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=["gold"])
                         customdata = np.stack((round(df_mask['Fastest_seconds'],3),df_mask['Year']), axis=-1)
@@ -2932,7 +2928,6 @@ if authentication_status:
                     elif time_type == "Fastest time":
                         df_show=df[["Year","DateSerial","Event","Fastest_seconds"]]
                         df_show = df_show.rename(columns={'Fastest_seconds': 'Time'})
-                    
 
                     comp = st.selectbox("Which competitions?", ["All","Just OLY", "Just WCH"], key="MTP comp type Selector")
                     if comp == "Just OLY":
@@ -2951,8 +2946,9 @@ if authentication_status:
                     df_show['Int'] = np.nan
                     
                     
-                    pred_int = (st.number_input("Prediction interval", value=0.95, key="pred_int"))
-                    
+                    pred_int = (st.number_input("Prediction interval", value=0.90, key="pred_int"))
+                    from scipy.stats import t
+                    import statsmodels.formula.api as smf
                     # Iterate over each row to calculate the linear regression forecast for the year 2028
                     for i in range(len(df_show)):
                         # Select data up to and including the current year
@@ -2961,21 +2957,25 @@ if authentication_status:
                         # Prepare the data for linear regression
                         X = df_subset['DateSerial'].values.reshape(-1, 1)
                         y = df_subset['Time'].values
-
+                        
                         # Create and fit the linear regression model
                         model = LinearRegression()
-                        model.fit(X, y)
-                    
+                        results = model.fit(X, y)
+
+                        # model = sm.OLS(y, X).fit()
+                        # model.summary()
+                        
+                        # results.summary()
                         # Predict the value for the year 2028 or 46948 in DateSerial
 
-                        forecast_2028 = model.predict(np.array([[46948]]))[0]
+                        forecast_2028 = model.predict(np.array([[46948]]))
                         
-                        from scipy.stats import t
+                        
                         # Calculate the prediction interval
                         
                         n = len(X)
                         mean_x = np.mean(X)
-                        t_value = t.ppf(pred_int + (1 - pred_int) /2., n -2) # for a two-tailed test with alpha=0.20 (60% prediction interval)
+                        t_value = t.ppf(pred_int + (1 - pred_int)/2, n -2) # for a two-tailed test with alpha=0.20 (60% prediction interval)
                         s_err = np.sqrt(np.sum((y - model.predict(X))**2) / (n -2))
                         conf = t_value * s_err * np.sqrt(1 + (1/n) + ((46948 - mean_x)**2 / np.sum((X - mean_x)**2)))
                         
@@ -3003,8 +3003,8 @@ if authentication_status:
                         
 
                         
-                        df_mask = df_show[df_show["Year"] > date_range[0]]
-                        df_mask = df_mask[df_mask["Year"] < date_range[1]]
+                        df_mask = df_show[df_show["Year"] >= date_range[0]]
+                        df_mask = df_mask[df_mask["Year"] <= date_range[1]]
                         
 
                         df_mask['MUB'] = df_mask['UB'].min()
@@ -3088,6 +3088,23 @@ if authentication_status:
 
 
     if race_type=="Women's Team Pursuit":
+
+        @st.cache_data
+        def get_medal_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Medals_Women_TP.xlsx',
+                engine ='openpyxl',
+                sheet_name='Sheet1',
+                skiprows=0,
+                usecols='A:N',
+                nrows=40
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
         @st.cache_data
         def get_data_from_excel():
             df = pd.read_excel(
@@ -3112,7 +3129,7 @@ if authentication_status:
         c1,c2=st.columns([1,3])
 
         with c1:
-            trend = st.selectbox("WR or Medal trend?:", ["World Record progression","Medal progression"], key="trend type Selector")
+            trend = st.selectbox("WR or Medal trend?:", ["World Record progression","Medal progression","LA prediction"], key="trend type Selector")
             
         if trend=="World Record progression":
             
@@ -3197,30 +3214,14 @@ if authentication_status:
                     st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {m}:{s}.")
 
 
-        else:
-            @st.cache_data
-            def get_placing_data_from_excel():
-                df = pd.read_excel(
-                    io='pages/WR_progressions/Medals_Women_TP.xlsx',
-                    engine ='openpyxl',
-                    sheet_name='Sheet1',
-                    skiprows=0,
-                    usecols='A:L',
-                    nrows=40
-                    )
-                #df = df.replace(',','')
-
-
-                return df
-
-
+        elif trend == "Medal progression":
             c1,c2=st.columns([1,3])
             with c1:
     #             trend = st.selectbox("WR or Placings trend?:", ["World Record progression","Placing progression"], key="MSP trend type Selector")
 
                 #if trend=="World Record progression":
 
-                df = get_placing_data_from_excel()
+                df = get_medal_data_from_excel()
                 df_master=df
                 df_show=df
                 comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
@@ -3361,7 +3362,180 @@ if authentication_status:
 
 
 
+        elif trend=="LA prediction":
+            df = get_medal_data_from_excel()
+            df_master=df
+            
+            with c1:
+                time_type = st.selectbox("Medal or qual times?", ["Qual times", "Fastest time"], key="WTP time type Selector")
+            
+            if time_type == "Qual times":
+                    df_show=df[["Year","DateSerial","Competition","1st_seconds"]]
+                    df_show = df_show.rename(columns={'1st_seconds': 'Time'})
+            # elif time_type == "Gold Medal time":
+            #         df_show=df[["Year","DateSerial","Event","Gold_Seconds"]]
+            #         df_show = df_show.rename(columns={'Gold_Seconds': 'Time'})
+            elif time_type == "Fastest time":
+                df_show=df[["Year","DateSerial","Competition","Fastest_seconds"]]
+                df_show = df_show.rename(columns={'Fastest_seconds': 'Time'})
+            
+            with c1:
+                comp = st.selectbox("Which competitions?", ["All","Just OLY", "Just WCH"], key="WTP comp type Selector")
+            if comp == "Just OLY":
+                    df_show=df_show.loc[(df_show["Competition"]=="OLY")].reset_index(drop=True)
+            elif comp == "Just WCH":
+                    df_show=df_show.loc[df_show["Competition"]=="WCH"].reset_index(drop=True)
+                
+            
 
+            
+            
+            
+            # Initialize the LFF column with NaN values
+            df_show = df_show.dropna(subset=['Time']).reset_index(drop=True)
+            df_show['LFF'] = np.nan
+            df_show['Int'] = np.nan
+            
+            with c1:
+                pred_int = (st.number_input("Prediction interval", value=0.90, key="pred_int"))
+            from scipy.stats import t
+            import statsmodels.formula.api as smf
+            # Iterate over each row to calculate the linear regression forecast for the year 2028
+            for i in range(len(df_show)):
+                # Select data up to and including the current year
+                df_subset = df_show.iloc[:i+1]
+                
+                # Prepare the data for linear regression
+                X = df_subset['DateSerial'].values.reshape(-1, 1)
+                y = df_subset['Time'].values
+                
+                # Create and fit the linear regression model
+                model = LinearRegression()
+                results = model.fit(X, y)
+
+                # model = sm.OLS(y, X).fit()
+                # model.summary()
+                
+                # results.summary()
+                # Predict the value for the year 2028 or 46948 in DateSerial
+
+                forecast_2028 = model.predict(np.array([[46948]]))
+                
+                
+                # Calculate the prediction interval
+                
+                n = len(X)
+                mean_x = np.mean(X)
+                t_value = t.ppf(pred_int + (1 - pred_int)/2, n -2) # for a two-tailed test with alpha=0.20 (60% prediction interval)
+                s_err = np.sqrt(np.sum((y - model.predict(X))**2) / (n -2))
+                conf = t_value * s_err * np.sqrt(1 + (1/n) + ((46948 - mean_x)**2 / np.sum((X - mean_x)**2)))
+                
+                # Assign the forecast value to the LFF column
+                df_show.at[i,'LFF'] = forecast_2028
+                
+                # Assign the prediction interval to the Int column
+                df_show.at[i,'Int'] = conf
+
+            
+            # Add upper bound (UB) and lower bound (LB) columns
+            df_show['UB'] = df_show['LFF'] + df_show['Int']
+            df_show['LB'] = df_show['LFF'] - df_show['Int']
+            
+
+            
+
+            with c2:
+                date_range = st.slider(
+        "Restrict date range?",
+                value = (df_show['Year'].min(),df_show['Year'].max()),
+                    min_value = df_show['Year'].min(),
+                    max_value = df_show['Year'].max())
+                
+                
+
+                
+                df_mask = df_show[df_show["Year"] >= date_range[0]]
+                df_mask = df_mask[df_mask["Year"] <= date_range[1]]
+                
+
+                df_mask['MUB'] = df_mask['UB'].min()
+                df_mask['MLB'] = df_mask['LB'].max()
+
+            with c1:
+                df_mask
+                
+            with c2:
+                fig = px.scatter(df_mask,
+                x='DateSerial',
+                y='LFF',
+                title='Year vs 2028 Linear Forward Forecast (LFF) with Prediction Intervals',
+                labels={'LFF': 'LFF'},
+                error_y='Int')
+
+                
+                # Add horizontal lines for MUB and MLB
+                fig.add_hline(y=df_mask['MUB'].iloc[-1], line_dash="dash", line_color="green", annotation=dict(text="Min UB",font=dict(size=20)), annotation_position="top right")
+                fig.add_hline(y=df_mask['MLB'].iloc[-1], line_dash="dash", line_color="red", annotation=dict(text="Max LB",font=dict(size=20)), annotation_position="bottom right")
+
+
+                # Show the plot
+                if df_mask['MUB'].iloc[-1]<=df_mask['MLB'].iloc[-1]:
+                    st.subheader("Interval collapse (lower bound greater than upper bound)! Try increasing prediction interval or restricting date range.")
+                
+                fig.update_layout(
+                    title_font=dict(size=24),
+                    xaxis_title_font=dict(size=18),
+                    yaxis_title_font=dict(size=18),
+                    xaxis=dict(tickfont=dict(size=18)),
+                    yaxis=dict(tickfont=dict(size=18))
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+                
+                # Given high and low values for the confidence interval
+                high_value = df_mask['MUB'].iloc[-1]
+                low_value = df_mask['MLB'].iloc[-1]
+
+                # Calculate the mean and standard deviation for the normal distribution
+                mean = (high_value + low_value) / 2
+                z_score = z_score_from_confidence_level(pred_int)
+                std_dev = (high_value - mean) / z_score # 60% confidence level corresponds to z-score of ±0.8416
+
+                # Generate normal distribution data
+                x = np.linspace(mean - 3*std_dev, mean + 3*std_dev, 1000)
+                y = (1 / (std_dev * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / std_dev)**2)
+
+                # Create a dataframe for the normal distribution
+                df_normal_dist = pd.DataFrame({"Value": x, "Probability Density": y})
+                
+                # Plot the normal distribution using plotly express
+                fig = px.line(df_normal_dist, x="Value", y="Probability Density", title=f"Bounds for 2028 LFF at {round(pred_int*100,0)}% Confidence Level")
+                
+                
+                # Add a vertical line for the mean
+                fig.add_vline(x=mean, line_dash="dash", line_color="gold", annotation=dict(text=f"Mid-point = {round(mean,3)}",font=dict(size=16)), annotation_position="top right")
+
+                # Shade the tails of the plot
+        
+                
+                fig.add_traces(go.Scatter(x=x[x <= low_value], y=y[x <= low_value], fill='tozeroy', mode='none', fillcolor='blue'))
+                fig.add_traces(go.Scatter(x=x[x >= high_value], y=y[x >= high_value], fill='tozeroy', mode='none', fillcolor='blue'))
+                
+                fig.update_layout(showlegend=False)
+
+
+                # Label the high and low points on the plot
+                fig.add_annotation(x=low_value, y=max(y)/2, text=f"Max Lower Bound: {round(low_value,3)}", showarrow=True, arrowhead=2,arrowcolor="red", font=dict(size=16))
+                fig.add_annotation(x=high_value, y=max(y)/2, text=f"Min Upper Bound: {round(high_value,3)}", showarrow=True, arrowhead=2,arrowcolor="green", font=dict(size=16))
+                fig.update_layout(
+                    title_font=dict(size=24),
+                    xaxis_title_font=dict(size=18),
+                    yaxis_title_font=dict(size=18),
+                    xaxis=dict(tickfont=dict(size=18)),
+                    yaxis=dict(tickfont=dict(size=18))
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
 
 
