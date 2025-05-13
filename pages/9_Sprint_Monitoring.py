@@ -117,3 +117,72 @@ if authentication_status:
         st.plotly_chart(fig_exercise_hist,use_container_width=True)
         
         
+    if data_type=="Track Monitoring":
+        
+        @st.cache_data
+        def get_track_data_from_excel():
+            df = pd.read_excel(
+                io='pages/Sprint Monitoring/Training Data - Track Sprint.xlsx',
+                engine ='openpyxl',
+                sheet_name='Metrics',
+                skiprows=0,
+                usecols='A:BV',
+                nrows=13000
+                )
+            #df = df.replace(',','')
+
+#             df["Datetime"]=df["Date"]
+#             df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
+            return df
+        df_master =get_track_data_from_excel()
+        df_master["Date"] = pd.to_datetime(df_master["Date"]).dt.date
+        df_master = df_master.drop(columns=["Month","Week","Time","Standardised Time","Session","Activity","Level","Metrics Available"
+                                            ,"LapDistance","GearRatio","KnownMaxPower","StartTime","Version"])
+        
+        
+        
+
+        c1,c2,c3,c4,c5=st.columns(5)
+        with c1:
+            athlete = st.multiselect("Select Athlete:",df_master["Rider"].sort_values().unique(),key="Athlete Select")
+            if len(athlete)>0:
+                df=df_master.loc[df_master["Rider"].isin(athlete)]
+            else:
+                df=df_master
+        with c2:
+            start = st.multiselect("Select start type:",df["Start"].sort_values().unique(),key="Start Select")
+            if len(start)>0:
+                df=df.loc[df["Start"].isin(start)]
+        with c3:
+            structure = st.multiselect("Select structure:",df["Structure"].sort_values().unique(),key="Structure Select")
+            if len(structure)>0:
+                df=df.loc[df["Structure"].isin(structure)]
+        with c4:
+            lead = st.multiselect("Select lead type:",df["Lead"].sort_values().unique(),key="Lead Select")
+            if len(lead)>0:
+                df=df.loc[df["Lead"].isin(lead)]
+        with c5:
+            distance = st.multiselect("Select distance:",df["Distance"].sort_values().unique(),key="Distance Select")
+            if len(distance)>0:
+                df=df.loc[df["Distance"].isin(distance)]
+            
+        df = df.reset_index(drop=True)
+        df['GearInches'] = df['GearInches'].round(1)
+
+        df
+        cols = df.columns.tolist()
+        cols.insert(0,"None")
+        c1,c2,c3=st.columns(3)
+        with c1:
+            xaxis = st.selectbox("Select x-axis:",cols,key="xaxis Select")
+        with c2:
+            yaxis = st.selectbox("Select x-axis:",cols,key="yaxis Select") 
+        with c3:
+            group = st.selectbox("Group by:",cols,key="group Select")
+
+        if (xaxis != "None") & (yaxis != "None") & (group == "None"):
+            fig_exercise_hist = px.scatter(df, x=f"{xaxis}", y = f"{yaxis}", title = f"{xaxis} & {yaxis}")
+            st.plotly_chart(fig_exercise_hist,use_container_width=True)
+        elif (xaxis != "None") & (yaxis != "None") & (group != "None"):
+            fig_exercise_hist = px.scatter(df, x=f"{xaxis}", y = f"{yaxis}", title = f"{xaxis} & {yaxis}",  color=f"{group}",hover_data=['Distance','GearInches'])
+            st.plotly_chart(fig_exercise_hist,use_container_width=True)
