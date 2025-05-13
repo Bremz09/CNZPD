@@ -176,7 +176,7 @@ if authentication_status:
         with c1:
             xaxis = st.selectbox("Select x-axis:",cols,key="xaxis Select")
         with c2:
-            yaxis = st.selectbox("Select x-axis:",cols,key="yaxis Select") 
+            yaxis = st.selectbox("Select y-axis:",cols,key="yaxis Select") 
         with c3:
             group = st.selectbox("Group by:",cols,key="group Select")
 
