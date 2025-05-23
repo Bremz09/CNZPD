@@ -60,25 +60,312 @@ if authentication_status == None:
     st.warning("Please enter your username and password")
 
 if authentication_status:
-    data_types=["Gym Monitoring","Track Monitoring"]
+    @st.cache_data
+    def get_gym_data_from_excel():
+        df = pd.read_excel(
+            io='pages/Sprint Monitoring/TeamBuildr - Track Sprint.xlsx',
+            engine ='openpyxl',
+            sheet_name='TeamBuildr',
+            skiprows=0,
+            usecols='A:AU',
+            nrows=130000
+            )
+        return df
+    @st.cache_data
+    def get_track_training_data_from_excel():
+        df = pd.read_excel(
+            io='pages/Sprint Monitoring/Training Data - Track Sprint.xlsx',
+            engine ='openpyxl',
+            sheet_name='Metrics',
+            skiprows=0,
+            usecols='A:BV',
+            nrows=13000
+            )
+        return df
+    data_types=["Athlete Dashboards","Gym Monitoring","Track Monitoring"]
     data_type = st.selectbox("Select Data:", data_types, key="Data Selector")
-    if data_type=="Gym Monitoring":
-        
-        @st.cache_data
-        def get_gym_data_from_excel():
-            df = pd.read_excel(
-                io='pages/Sprint Monitoring/TeamBuildr - Track Sprint.xlsx',
-                engine ='openpyxl',
-                sheet_name='TeamBuildr',
-                skiprows=0,
-                usecols='A:AU',
-                nrows=130000
-                )
-            #df = df.replace(',','')
 
-#             df["Datetime"]=df["Date"]
-#             df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
-            return df
+    if data_type=="Athlete Dashboards":
+        athletes=["Rebecca Petch", "Shaane Fulton", "Ellesse Andrews", "Olivia King", "Sam Dakin"]
+        athlete = st.selectbox("Select Athlete:", athletes, key="Athlete Selector")
+
+        df_gym_master =get_gym_data_from_excel()
+        df_gym_master = df_gym_master.loc[df_gym_master["Last Name"] == athlete.split(" ")[1]].sort_values("Completed Date", ascending=False).reset_index(drop=True)
+        df_gym_master["Completed Date"] = pd.to_datetime(df_gym_master["Completed Date"]).dt.date
+        df_gym_master=df_gym_master.drop(columns=["User ID","External ID","Workout ID","Exercise Type","Assigned Date"])
+        # df_gym_master["Name"]=df_gym_master["First Name"].astype(str)+" "+df_gym_master["Last Name"].astype(str)
+        
+
+        df_track_master =get_track_training_data_from_excel()
+        df_track_master = df_track_master.loc[df_track_master["Rider"] == athlete.split(" ")[0][0] +" "+athlete.split(" ")[1]].sort_values("Date", ascending=False).reset_index(drop=True)
+        df_track_master["Date"] = pd.to_datetime(df_track_master["Date"]).dt.date
+        df_track_master["GearInches"] = df_track_master["GearInches"].round(2)
+        df_track_master["Lead"] = df_track_master["Lead"].fillna("None")
+
+
+        
+
+        if athlete == "Rebecca Petch":
+            
+            
+            # Convert 'Completed Date' to datetime
+            df_gym_master['Completed Date'] = pd.to_datetime(df_gym_master['Completed Date'])
+            df_track_master['Date'] = pd.to_datetime(df_track_master['Date'])
+            # Create a new column for the start of the week (Monday)
+            df_gym_master['WeekStart'] = df_gym_master['Completed Date'] - pd.to_timedelta(df_gym_master['Completed Date'].dt.weekday, unit='d')
+
+            # Group by 'WeekStart' and calculate weekly totals
+            df_gym_master['weekly_totals'] = df_gym_master.groupby('WeekStart')['Volume Load'].transform('sum')
+
+            # Create a new column for the start of the month
+            df_gym_master['MonthStart'] = df_gym_master['Completed Date'].dt.to_period('M').dt.start_time
+
+            # Group by 'MonthStart' and calculate monthly totals
+            df_gym_master['monthly_totals'] = df_gym_master.groupby('MonthStart')['Volume Load'].transform('sum')
+
+            
+            # Create a new column for the year and quarter
+            df_gym_master['Year-Quarter'] = df_gym_master['Completed Date'].dt.to_period('Q').astype(str)
+            df_track_master['Year-Quarter'] = df_track_master['Date'].dt.to_period('Q').astype(str)
+
+            # Optional: drop 'WeekStart' and 'MonthStart' if not needed
+            df_gym_master.drop(columns=['WeekStart', 'MonthStart'], inplace=True)
+
+            # Reset index if needed
+            df_gym_master.reset_index(drop=True, inplace=True)
+
+            
+            # Group by 'Year-Quarter' and calculate total volume load for each quarter
+            quarterly_volume_load = df_gym_master.groupby('Year-Quarter')['Volume Load'].sum().reset_index()
+
+            # Plotly Express bar chart
+            fig = px.bar(quarterly_volume_load, x='Year-Quarter', y='Volume Load', title='Total Gym Volume Load by Quarter')
+
+            # Display the chart in Streamlit
+            st.plotly_chart(fig)
+
+            
+            quarterly_work = df_track_master.groupby('Year-Quarter')['TotalWorkDoneOverall'].sum().reset_index()
+            fig_quarterly_work = px.bar(quarterly_work, x='Year-Quarter', y='TotalWorkDoneOverall', title='Total Track Work Done by Quarter')
+            st.plotly_chart(fig_quarterly_work,use_container_width=True)
+
+            daily_work = df_track_master.groupby('Date')['TotalWorkDoneOverall'].sum().reset_index()
+            fig_daily_work = px.bar(daily_work, x='Date', y='TotalWorkDoneOverall', title='Total Track Work Done by Day')
+            st.plotly_chart(fig_daily_work,use_container_width=True)
+
+            
+            merged_df = pd.merge(quarterly_volume_load, quarterly_work, on='Year-Quarter', how='outer')
+            merged_df.rename(columns={'Volume Load': 'Gym Volume Load', 'TotalWorkDoneOverall': 'Track Work Done'}, inplace=True)
+            
+
+            
+            fig = px.bar(
+            merged_df,
+            x='Year-Quarter',
+            y=['Gym Volume Load', 'Track Work Done'],
+            title='Gym Volume and Track Work',
+            labels={'value': 'Volume', 'variable': 'Category'},
+            )
+
+            # Show the chart in Streamlit
+            st.plotly_chart(fig)
+
+
+
+       
+
+
+####################### Hip Thrust #############################################################
+
+            # Filter the DataFrame
+            df_hip_thrust = df_gym_master[df_gym_master["Exercise Name"] == "Hip Thrust"]
+
+            # Create the figure
+            fig_hip_thrust = go.Figure()
+
+            # Add Volume Load to primary y-axis
+            fig_hip_thrust.add_trace(go.Scatter(
+                x=df_hip_thrust["Completed Date"],
+                y=df_hip_thrust["Volume Load"],
+                mode='lines+markers',
+                name='Volume Load',
+                yaxis='y1',
+                customdata=df_hip_thrust[["Sets", "Reps/Time"]],
+                hovertemplate='<b>Completed Date</b>: %{x}<br><b>Volume Load</b>: %{y}<br><b>Sets</b>: %{customdata[0]}<br><b>Reps/Time</b>: %{customdata[1]}<extra></extra>'
+            ))
+
+            # Add Highest Max to secondary y-axis
+            fig_hip_thrust.add_trace(go.Scatter(
+                x=df_hip_thrust["Completed Date"],
+                y=df_hip_thrust["Highest Max"],
+                mode='lines+markers',
+                name='Highest Max',
+                yaxis='y2',
+                customdata=df_hip_thrust[["Sets", "Reps/Time"]],
+                hovertemplate='<b>Completed Date</b>: %{x}<br><b>Highest Max</b>: %{y}<br><b>Sets</b>: %{customdata[0]}<br><b>Reps/Time</b>: %{customdata[1]}<extra></extra>'
+            ))
+
+            # Update layout with dual y-axes
+            fig_hip_thrust.update_layout(
+                title="Hip thrust highest weight and volume load",
+                xaxis=dict(title="Completed Date"),
+                yaxis=dict(title="Volume Load"),
+                yaxis2=dict(title="Highest Max", overlaying='y', side='right'),
+                legend=dict(title='Legend')
+            )
+
+            # Display in Streamlit
+            st.plotly_chart(fig_hip_thrust, use_container_width=True)
+
+
+######################## Back Squat ############################################################
+
+
+            # Filter the DataFrame
+            df_squat = df_gym_master[df_gym_master["Exercise Name"].str.contains("Back Squat", case=False, na=False)]
+            
+            # Create the figure
+            fig_squat = go.Figure()
+
+            # Add Volume Load to primary y-axis
+            fig_squat.add_trace(go.Scatter(
+                x=df_squat["Completed Date"],
+                y=df_squat["Volume Load"],
+                mode='lines+markers',
+                name='Volume Load',
+                yaxis='y1',
+                customdata=df_squat[["Exercise Name","Sets", "Reps/Time"]],
+                hovertemplate='<b>Completed Date</b>: %{x}<br><b>Volume Load</b>: %{y}<br><b>Exercise</b>: %{customdata[0]}<br><b>Sets/Time</b>: %{customdata[1]}<br><b>Reps/Time</b>: %{customdata[2]}<extra></extra>'
+            ))
+
+            # Add Highest Max to secondary y-axis
+            fig_squat.add_trace(go.Scatter(
+                x=df_squat["Completed Date"],
+                y=df_squat["Highest Max"],
+                mode='lines+markers',
+                name='Highest Max',
+                yaxis='y2',
+                customdata=df_squat[["Exercise Name","Sets", "Reps/Time"]],
+                hovertemplate='<b>Completed Date</b>: %{x}<br><b>Volume Load</b>: %{y}<br><b>Exercise</b>: %{customdata[0]}<br><b>Sets/Time</b>: %{customdata[1]}<br><b>Reps/Time</b>: %{customdata[2]}<extra></extra>'
+            ))
+
+            # Update layout with dual y-axes
+            fig_squat.update_layout(
+                title="Squat variations highest weight and volume load",
+                xaxis=dict(title="Completed Date"),
+                yaxis=dict(title="Volume Load"),
+                yaxis2=dict(title="Highest Max", overlaying='y', side='right'),
+                legend=dict(title='Legend')
+            )
+
+            # Display in Streamlit
+            st.plotly_chart(fig_squat, use_container_width=True)
+
+
+######################## Torque ############################################################
+
+            # Filter the DataFrame
+            df_torque = df_track_master[(df_track_master["Distance"] < 66) & (df_track_master["Start"] == "Standing")]
+
+            # Create the figure
+            fig_torque = go.Figure()
+
+            # Add Max Full Rev Torque to primary y-axis
+            fig_torque.add_trace(go.Scatter(
+                x=df_torque["Date"],
+                y=df_torque["MaxFullRevTorqueOverall"],
+                mode='lines+markers',
+                name='Max Full Rev Torque',
+                yaxis='y1',
+                customdata=df_torque[["Distance", "GearInches"]],
+                hovertemplate='<b>Date</b>: %{x}<br><b>Max Full Rev Torque</b>: %{y}<br><b>Distance</b>: %{customdata[0]}<br><b>Gear Inches</b>: %{customdata[1]}<extra></extra>'
+            ))
+
+            # Add 0.5s Mean Max Torque to secondary y-axis
+            fig_torque.add_trace(go.Scatter(
+                x=df_torque["Date"],
+                y=df_torque["0.5s Mean Max Torque (Overall)"],
+                mode='lines+markers',
+                name='0.5s Mean Max Torque',
+                yaxis='y2',
+                customdata=df_torque[["Distance", "GearInches"]],
+                hovertemplate='<b>Date</b>: %{x}<br><b>0.5s Mean Max Torque</b>: %{y}<br><b>Distance</b>: %{customdata[0]}<br><b>Gear Inches</b>: %{customdata[1]}<extra></extra>'
+            ))
+
+            # Update layout with dual y-axes
+            fig_torque.update_layout(
+                title="Max Full Rev Torque & 0.5s Mean Max Torque",
+                xaxis=dict(title="Date"),
+                yaxis=dict(title="Max Full Rev Torque"),
+                yaxis2=dict(title="0.5s Mean Max Torque", overlaying='y', side='right'),
+                legend=dict(title='Legend')
+            )
+
+            # Display in Streamlit
+            st.plotly_chart(fig_torque, use_container_width=True)
+
+
+######################## CdA ############################################################
+
+            # Filter the DataFrame
+            df_cda = df_track_master[(df_track_master["Distance"] > 250) & (df_track_master["Start"] != "Standing")]
+            
+            # Create the figure
+            fig_cda = go.Figure()
+
+            # Add Max Full Rev Torque to primary y-axis
+            fig_cda.add_trace(go.Scatter(
+                x=df_cda["Date"],
+                y=df_cda["CdA"],
+                mode='lines+markers',
+                name='CdA',
+                yaxis='y1',
+                customdata=df_cda[["Start", "Structure","Lead","Distance"]],
+                hovertemplate='<b>Date</b>: %{x}<br><b>CdA</b>: %{y}<br><b>Start</b>: %{customdata[0]}<br><b>Structure</b>: %{customdata[1]}<br><b>Lead</b>: %{customdata[2]}<br><b>Distance</b>: %{customdata[3]}<extra></extra>'
+            ))
+
+            # Add 0.5s Mean Max Torque to secondary y-axis
+            fig_cda.add_trace(go.Scatter(
+                x=df_cda["Date"],
+                y=df_cda["MeanPowerRep"],
+                mode='lines+markers',
+                name='Mean Power Rep',
+                yaxis='y2',
+                customdata=df_cda[["Start", "Structure","Lead","Distance"]],
+                hovertemplate='<b>Date</b>: %{x}<br><b>Mean Power</b>: %{y}<br><b>Start</b>: %{customdata[0]}<br><b>Structure</b>: %{customdata[1]}<br><b>Lead</b>: %{customdata[2]}<br><b>Distance</b>: %{customdata[3]}<extra></extra>'
+            ))
+
+            # Update layout with dual y-axes
+            fig_cda.update_layout(
+                title="CdA & Average Power",
+                xaxis=dict(title="Date"),
+                yaxis=dict(title="CdA"),
+                yaxis2=dict(title="Power", overlaying='y', side='right'),
+                legend=dict(title='Legend')
+            )
+
+            # Display in Streamlit
+            st.plotly_chart(fig_cda, use_container_width=True)
+
+
+######################## Cadence ############################################################
+
+            # Filter the DataFrame
+            df_cadence = df_track_master[(df_track_master["Distance"] >= 250) & (df_track_master["Start"] != "Standing")]
+            
+            fig_cadence = px.scatter(df_cadence, x="Date", y = ["CadenceAtMaxFullRevPowerOverall","MaxCadenceOverall","MeanCadenceRep"],
+                                   title = "Cadence")
+            st.plotly_chart(fig_cadence,use_container_width=True)
+            
+
+            df_track_master
+            df_gym_master
+
+
+
+
+
+    if data_type=="Gym Monitoring":
         df_master =get_gym_data_from_excel()
         df_master["Completed Date"] = pd.to_datetime(df_master["Completed Date"]).dt.date
         df_master["Name"]=df_master["First Name"].astype(str)+" "+df_master["Last Name"].astype(str)
@@ -118,22 +405,6 @@ if authentication_status:
         
         
     if data_type=="Track Monitoring":
-        
-        @st.cache_data
-        def get_track_data_from_excel():
-            df = pd.read_excel(
-                io='pages/Sprint Monitoring/Training Data - Track Sprint.xlsx',
-                engine ='openpyxl',
-                sheet_name='Metrics',
-                skiprows=0,
-                usecols='A:BV',
-                nrows=13000
-                )
-            #df = df.replace(',','')
-
-#             df["Datetime"]=df["Date"]
-#             df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
-            return df
         df_master =get_track_data_from_excel()
         df_master["Date"] = pd.to_datetime(df_master["Date"]).dt.date
         df_master = df_master.drop(columns=["Month","Week","Time","Standardised Time","Session","Activity","Level","Metrics Available"
