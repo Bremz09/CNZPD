@@ -168,7 +168,7 @@ if authentication_status:
             )
 
             # Show the chart in Streamlit
-            st.plotly_chart(fig)
+            st.plotly_chart(fig,use_container_width=True)
 
 
 
