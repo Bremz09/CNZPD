@@ -142,7 +142,7 @@ if authentication_status:
             fig = px.bar(quarterly_volume_load, x='Year-Quarter', y='Volume Load', title='Total Gym Volume Load by Quarter')
 
             # Display the chart in Streamlit
-            st.plotly_chart(fig)
+            st.plotly_chart(fig,use_container_width=True)
 
             
             quarterly_work = df_track_master.groupby('Year-Quarter')['TotalWorkDoneOverall'].sum().reset_index()
