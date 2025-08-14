@@ -197,7 +197,7 @@ if authentication_status == None:
 if authentication_status:
     st.header('Modelling Tool')
     if 'df_orig' not in st.session_state:
-        st.session_state['df_orig'] = pd.read_excel("C:\\Users\\SamB\\OneDrive - SportNZGroup\\Desktop\\Analysis\\Sprint Modelling\\COPILOT 240725 WTS Grenchen quarter lap summary.xlsx")
+        st.session_state['df_orig'] = pd.read_excel("pages/WTS model base.xlsx")
         # st.session_state['df_orig'] = pd.read_excel("C:\\Users\\SamB\\OneDrive - SportNZGroup\\Desktop\\Analysis\\Sprint Modelling\\WTS Q Olympics traces.xlsx")
 
     # --- Initial Calculations ---
