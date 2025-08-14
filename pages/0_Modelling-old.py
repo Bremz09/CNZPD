@@ -294,6 +294,35 @@ if authentication_status:
                 self.max_power = max_power
                 self.stand_TC_slope = stand_TC_slope
                 self.seat_TC_slope = seat_TC_slope
+
+            def initialize_state(self, initial_speed, bank_angle, rad_of_curve, air_density, mu_rr, ks, efficiency, bike_length):
+                self.time = 0
+                self.COM_speed = initial_speed
+                self.COM_dist = 0
+                self.CdA = self.stand_CdA
+                self.cadence = 0
+                self.torque = self.stand_max_torque
+                self.power_input = self.cadence * self.torque * (math.pi / 30)
+                self.power_usable = self.power_input * efficiency
+                self.acc_fatigue = 0
+                self.bank = bank_angle
+                self.lean = 0
+                self.camber = abs(self.bank - self.lean)
+                self.r_wh = 2 * rad_of_curve
+                self.r_cm = 2 * rad_of_curve
+                self.prop_force = 2 * math.pi * self.torque / (2.096 * (self.gear / 27))
+                self.aero_drag = 0.5 * air_density * self.CdA * self.COM_speed ** 2
+                self.weight_force = 9.81 * self.total_mass
+                self.centripetal_force = 0
+                self.reaction_force = math.sqrt(self.weight_force ** 2 + self.centripetal_force ** 2)
+                self.normal_force = self.reaction_force * math.cos(math.radians(self.camber))
+                self.rr = self.normal_force * mu_rr * (1 + (self.camber * ks))
+                self.wheel_speed = 0
+                self.wheel_dist = 0
+                self.segment = self.wheel_dist % 125
+                self.accel = (self.prop_force - (self.rr + self.aero_drag)) / self.total_mass
+                self.air_speed = 0
+                self.gap = -bike_length
                 
         p1 = Athlete(seat_max_RPM_1,seat_max_torque_1,stand_max_RPM_1,stand_max_torque_1,stand_CdA_1,seat_CdA_1,total_mass_1,27*chainring_1/sprocket_1, seat_height_1, seat_max_RPM_1*seat_max_torque_1*math.pi/120,-stand_max_torque_1/stand_max_RPM_1,-seat_max_torque_1/seat_max_RPM_1)
         p2 = Athlete(seat_max_RPM_2,seat_max_torque_2,stand_max_RPM_2,stand_max_torque_2,stand_CdA_2,seat_CdA_2,total_mass_2,27*chainring_2/sprocket_2, seat_height_2, seat_max_RPM_2*seat_max_torque_2*math.pi/120,-stand_max_torque_2/stand_max_RPM_2,-seat_max_torque_2/seat_max_RPM_2)
@@ -310,6 +339,14 @@ if authentication_status:
         rad_of_curve = (250 - 4*(pl_to_trans))/(2*math.pi)
         deg_to_rad = math.pi/180
         rad_to_deg = 180/math.pi
+
+
+        p1.initialize_state(1.8, straight_bank_angle, rad_of_curve, air_density, mu_rr, ks, efficiency, bike_length)
+        p2.initialize_state(1.6, straight_bank_angle, rad_of_curve, air_density, mu_rr, ks, efficiency, bike_length)
+        p3.initialize_state(1.6, straight_bank_angle, rad_of_curve, air_density, mu_rr, ks, efficiency, bike_length)
+
+        
+
 
         ###P1 Initialisation###
         p1.time = 0
@@ -434,6 +471,9 @@ if authentication_status:
             
             return bank, r_wh, r_cm, lean_final, camber
 
+
+
+
         ############## P1 ######################
         df_p1=pd.DataFrame()
         p1_times = [p1.time]
@@ -523,6 +563,9 @@ if authentication_status:
         p3_aero_demand = [0]
         p3_power_demand = [0]
         p3_dem_sup = [1]
+
+
+
         
         while p1.wheel_dist<dist_at_sit:
             p1.time+=increment
