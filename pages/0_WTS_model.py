@@ -647,6 +647,14 @@ if authentication_status:
         ax.set_ylabel('Power (W)')
         ax.legend()
         st.pyplot(fig)
+        fig, ax = plt.subplots(figsize=(20, 4))
+        ax.plot(df[f'p{i} time'], df[f'p{i} torque'], label='Original Torque', color=color, alpha=0.5)
+        ax.plot(df[f'p{i} model time'], df[f'p{i} model torque'], label='Model Torque', color=color, linestyle='--')
+        ax.set_title(f'Rider p{i} Original vs Model Torque')
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Torque (Nm)')
+        ax.legend()
+        st.pyplot(fig)
 
 
 

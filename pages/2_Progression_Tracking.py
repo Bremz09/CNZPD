@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import io
 import datetime
 import numpy as np
-from datetime import datetime
+from datetime import datetime, date
 from sklearn.linear_model import LinearRegression
 
 import scipy.stats as stats
@@ -62,7 +62,14 @@ if authentication_status == None:
     st.warning("Please enter your username and password")
 
 if authentication_status:
-    race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Team Sprint","Women's Team Sprint","Men's Team Pursuit","Women's Team Pursuit","Men's Individual Pursuit","Women's Individual Pursuit","Junior Men's Sprint Qualifying","Junior Women's Sprint Qualifying","Junior Men's Team Sprint","Junior Women's Team Sprint","Junior Men's Team Pursuit","Junior Women's Team Pursuit","Junior Men's Individual Pursuit","Junior Women's Individual Pursuit","Junior Men's Kilo","Junior Women's 500TT"]
+    race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Team Sprint",
+                "Women's Team Sprint","Men's Team Pursuit","Women's Team Pursuit",
+                "Men's Individual Pursuit","Women's Individual Pursuit",
+                "Men's Madison","Women's Madison","Men's Omnium","Women's Omnium"
+                "Junior Men's Sprint Qualifying","Junior Women's Sprint Qualifying",
+                "Junior Men's Team Sprint","Junior Women's Team Sprint","Junior Men's Team Pursuit",
+                "Junior Women's Team Pursuit","Junior Men's Individual Pursuit",
+                "Junior Women's Individual Pursuit","Junior Men's Kilo","Junior Women's 500TT"]
     race_type = st.selectbox("Select Event:", race_types, key="Event Selector")
     if race_type=="Men's Sprint Qualifying":
         
@@ -166,7 +173,7 @@ if authentication_status:
                     st.write(f"R-squared = {round(a,3)}")
                     col1,col2=st.columns(2)
                     with col1:
-                        date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                        date = st.date_input("Select date for WR prediction:", date.today(),format="DD/MM/YYYY")
                         date_formatted=date.strftime('%d/%m/%Y')
 
                     with col2:
@@ -377,9 +384,9 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2024),
+                    value = (2000,datetime.now().year),
                         min_value = 2000,
-                        max_value = 2021)
+                        max_value = datetime.now().year)
                     
                     time_range = st.slider(
             "Restrict time range?",
@@ -778,7 +785,7 @@ if authentication_status:
                     st.write(f"R-squared = {round(a,3)}")
                     col1,col2=st.columns(2)
                     with col1:
-                        date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                        date = st.date_input("Select date for WR prediction:", date.today(),format="DD/MM/YYYY")
                         date_formatted=date.strftime('%d/%m/%Y')
 
                     with col2:
@@ -828,9 +835,9 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2024),
+                    value = (2000,datetime.now().year),
                         min_value = 2000,
-                        max_value = 2024)
+                        max_value = datetime.now().year)
                     
                     time_range = st.slider(
             "Restrict time range?",
@@ -991,9 +998,9 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2024),
+                    value = (2000,datetime.now().year),
                         min_value = 2000,
-                        max_value = 2024)
+                        max_value = datetime.now().year)
                     
                     time_range = st.slider(
             "Restrict time range?",
@@ -1374,7 +1381,7 @@ if authentication_status:
                     st.write(f"R-squared = {round(a,3)}")
                     col1,col2=st.columns(2)
                     with col1:
-                        date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                        date = st.date_input("Select date for WR prediction:", date.today(),format="DD/MM/YYYY")
                         date_formatted=date.strftime('%d/%m/%Y')
                         
                     with col2:
@@ -1423,9 +1430,9 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2024),
+                    value = (2000,datetime.now().year),
                         min_value = 2000,
-                        max_value = 2023)
+                        max_value = datetime.now().year)
                     
                     time_range = st.slider(
             "Restrict time range?",
@@ -1560,9 +1567,9 @@ if authentication_status:
                 with c2:
                     date_range = st.slider(
             "Restrict date range?",
-                    value = (2000,2024),
+                    value = (2000,datetime.now().year),
                         min_value = 2000,
-                        max_value = 2023)
+                        max_value = datetime.now().year)
                     
                     time_range = st.slider(
             "Restrict time range?",
@@ -1912,7 +1919,7 @@ if authentication_status:
                         st.write(f"R-squared = {round(a,3)}")
                         col1,col2=st.columns(2)
                         with col1:
-                            date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                            date = st.date_input("Select date for WR prediction:", date.today(),format="DD/MM/YYYY")
                             date_formatted=date.strftime('%d/%m/%Y')
 
                         with col2:
@@ -1962,9 +1969,9 @@ if authentication_status:
                     with c2:
                         date_range = st.slider(
                 "Restrict date range?",
-                        value = (2021,2024),
+                        value = (2021,datetime.now().year),
                             min_value = 2021,
-                            max_value = 2023)
+                            max_value = datetime.now().year)
 
                         time_range = st.slider(
                 "Restrict time range?",
@@ -2105,9 +2112,9 @@ if authentication_status:
                     with c2:
                         date_range = st.slider(
                 "Restrict date range?",
-                        value = (2021,2024),
+                        value = (2021,datetime.now().year),
                             min_value = 2021,
-                            max_value = 2023)
+                            max_value = datetime.now().year)
 
                         time_range = st.slider(
                 "Restrict time range?",
@@ -2481,7 +2488,7 @@ if authentication_status:
                     st.write(f"R-squared = {round(a,3)}")
                     col1,col2=st.columns(2)
                     with col1:
-                        date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                        date = st.date_input("Select date for WR prediction:", date.today(),format="DD/MM/YYYY")
                         date_formatted=date.strftime('%d/%m/%Y')
                         
                     with col2:
@@ -3197,7 +3204,7 @@ if authentication_status:
                 st.write(f"R-squared = {round(a,3)}")
                 col1,col2=st.columns(2)
                 with col1:
-                    date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                    date = st.date_input("Select date for WR prediction:", date.today(),format="DD/MM/YYYY")
                     date_formatted=date.strftime('%d/%m/%Y')
 
                 with col2:
@@ -3322,7 +3329,7 @@ if authentication_status:
 
 
                 with col2:
-                    predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=2024,step=1)
+                    predict_year = st.number_input("Select year for fastest time prediction:",min_value=2020,max_value=3000,value=datetime.now().year,step=1)
 
 
                     first_m, first_s = divmod(first_x1*predict_year +first_const, 60)
@@ -3643,7 +3650,7 @@ if authentication_status:
                 st.write(f"R-squared = {round(a,3)}")
                 col1,col2=st.columns(2)
                 with col1:
-                    date = st.date_input("Select date for WR prediction:", datetime(2024, 8, 15),format="DD/MM/YYYY")
+                    date = st.date_input("Select date for WR prediction:", date.today(),format="DD/MM/YYYY")
                     date_formatted=date.strftime('%d/%m/%Y')
 
                 with col2:
@@ -3711,9 +3718,9 @@ if authentication_status:
             with c2:
                 date_range = st.slider(
         "Restrict date range?",
-                value = (2000,2024),
+                value = (2000,datetime.now().year),
                     min_value = 2000,
-                    max_value = 2024)
+                    max_value = datetime.now().year)
 
                 time_range = st.slider(
         "Restrict time range?",
@@ -3888,9 +3895,9 @@ if authentication_status:
         with c2:
             date_range = st.slider(
     "Restrict date range?",
-            value = (2000,2024),
+            value = (2000,datetime.now().year),
                 min_value = 2000,
-                max_value = 2024)
+                max_value = datetime.now().year)
 
             time_range = st.slider(
     "Restrict time range?",
@@ -4004,10 +4011,132 @@ if authentication_status:
                 st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_m}:{sixteenth_s} in {predict_year}.")
 
 
+    if race_type=="Men's Madison":
+        # Helper function to plot and predict for a given y_column and label
+        def madison_plot_and_predict(y_column, y_label, color, prediction_label):
+            # Use the same filtered data as above
+            df_first = df_mask.loc[df_mask["Rank"]==1]
+            df_second = df_mask.loc[df_mask["Rank"]==2]
+            df_third = df_mask.loc[df_mask["Rank"]==3]
+            from datetime import datetime
+            df_first_dates = pd.to_datetime(df_first["Date"])
+            df_second_dates = pd.to_datetime(df_second["Date"])
+            df_third_dates = pd.to_datetime(df_third["Date"])
+            df_plot = pd.DataFrame({
+                "Date": df_first["Date"].values,
+                "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
+                "Gold": df_first[y_column].values,
+                "Silver": df_second[y_column].values,
+                "Bronze": df_third[y_column].values,
+                "Year": df_first["Year"].values,
+                "Location": df_first["Location"].values,
+                "Event": df_first["Event"].values
+            })
+            import plotly.express as px
+            import numpy as np
+            fig = px.scatter(
+                df_plot,
+                x="DateSerial",
+                y=["Gold", "Silver", "Bronze"],
+                title=f"Men's Madison {y_label} progression",
+                labels={"value": y_label, "DateSerial": "Date (serial)"},
+                trendline="ols",
+                color_discrete_sequence=color
+            )
+            customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event'], df_plot['Date']), axis=-1)
+            hovertemplate = (
+                f'Gold: %{{customdata[0]}}<br>'
+                f'Silver: %{{customdata[1]}}<br>'
+                f'Bronze: %{{customdata[2]}}<br>'
+                'Year: %{customdata[3]}<br>'
+                'Location: %{customdata[4]}<br>'
+                'Event: %{customdata[5]}<br>'
+                'Date: %{customdata[6]}<br>'
+                '<extra></extra>'
+            )
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            import streamlit as st
+            st.plotly_chart(fig, use_container_width=True)
+            # Regression and prediction
+         
+            fit_results = px.get_trendline_results(fig).px_fit_results
+            first_a = fit_results.iloc[0].rsquared
+            first_const = fit_results.iloc[0].params[0]
+            first_x1 = fit_results.iloc[0].params[1]
+            second_a = fit_results.iloc[1].rsquared
+            second_const = fit_results.iloc[1].params[0]
+            second_x1 = fit_results.iloc[1].params[1]
+            third_a = fit_results.iloc[2].rsquared
+            third_const = fit_results.iloc[2].params[0]
+            third_x1 = fit_results.iloc[2].params[1]
+
+        
+            predict_year = st.selectbox(f"Select year for {prediction_label} predictions:", [2024,2028,2032,2036,2040,2044,2048], key=f"{y_column}_predict_year")
+            predict_date = datetime(predict_year, 1, 1)
+            predict_serial = predict_date.toordinal()
+            first_total = first_x1 * predict_serial + first_const
+            st.write(f"This trend predicts a winning {y_label.lower()} of {round(first_total,1)} in {predict_year}.")
+            second_total = second_x1 * predict_serial + second_const
+            st.write(f"This trend predicts a second {y_label.lower()} of {round(second_total,1)} in {predict_year}.")
+            third_total = third_x1 * predict_serial + third_const
+            st.write(f"This trend predicts a third {y_label.lower()} of {round(third_total,1)} in {predict_year}.")
 
 
-                
-                
+        
+        
+        @st.cache_data
+        def get_placing_data_from_excel():
+            df = pd.read_excel(
+                io='pages/WR_progressions/Mens_Madison.xlsx',
+                engine ='openpyxl',
+                sheet_name='Sheet1',
+                skiprows=0,
+                usecols='A:O',
+                nrows=100
+                )
+            #df = df.replace(',','')
+
+
+            return df
+
+
+        
+        events = st.selectbox("Include which events:", ["All","Just NC","Just WCH","Just OLY & WCH"], key="M mado event selector")
+
+        df = get_placing_data_from_excel()
+        df_master=df
+        
+        
+
+        if events=="Just NC":
+            df_mask=df[df["Event"]=="NC"]
+        elif events=="Just WCH":
+            df_mask=df[df["Event"]=="WCH"]
+        elif events=="Just OLY & WCH":
+            df_mask=df[(df["Event"]=="WCH") | (df["Event"]=="OLY")]
+        else:
+            df_mask=df
+
+        
+        date_range = st.slider(
+"Restrict date range?",
+        value = (2017,datetime.now().year),
+            min_value = 2017,
+            max_value = datetime.now().year)
+
+        df_mask = df_mask.mask(df_mask["Year"] < date_range[0])
+        df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+        df_mask.reset_index(drop=True,inplace=True)
+        df_mask
+
+        madison_plot_and_predict("Total", "Total Points", ['#FFD700', '#C0C0C0', '#CD7F32'], "Total")
+        madison_plot_and_predict("Sprints Scored", "Sprints Scored", ['#FFD700', '#C0C0C0', '#CD7F32'], "Sprints Scored")
+        madison_plot_and_predict("Sprints Won", "Sprints Won", ['#FFD700', '#C0C0C0', '#CD7F32'], "Sprints Won")
+        madison_plot_and_predict("P.Laps", "Points Laps", ['#FFD700', '#C0C0C0', '#CD7F32'], "P.Laps")
+        madison_plot_and_predict("Avg Speed", "Average Speed (km/h)", ['#FFD700', '#C0C0C0', '#CD7F32'], "Avg Speed")
+
+
+                    
                 
                 
                 
