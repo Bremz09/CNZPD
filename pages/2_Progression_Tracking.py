@@ -4241,160 +4241,160 @@ if authentication_status:
     min_value=2017,
     max_value=datetime.now().year)
 
-    df_scratch_mask = df_scratch_mask[(df_scratch_mask["Year"] >= date_range[0]) & (df_scratch_mask["Year"] <= date_range[1])].reset_index(drop=True)
-    df_tempo_mask = df_tempo_mask[(df_tempo_mask["Year"] >= date_range[0]) & (df_tempo_mask["Year"] <= date_range[1])].reset_index(drop=True)
-    df_elimination_mask = df_elimination_mask[(df_elimination_mask["Year"] >= date_range[0]) & (df_elimination_mask["Year"] <= date_range[1])].reset_index(drop=True)
-    df_points_mask = df_points_mask[(df_points_mask["Year"] >= date_range[0]) & (df_points_mask["Year"] <= date_range[1])].reset_index(drop=True)
+        df_scratch_mask = df_scratch_mask[(df_scratch_mask["Year"] >= date_range[0]) & (df_scratch_mask["Year"] <= date_range[1])].reset_index(drop=True)
+        df_tempo_mask = df_tempo_mask[(df_tempo_mask["Year"] >= date_range[0]) & (df_tempo_mask["Year"] <= date_range[1])].reset_index(drop=True)
+        df_elimination_mask = df_elimination_mask[(df_elimination_mask["Year"] >= date_range[0]) & (df_elimination_mask["Year"] <= date_range[1])].reset_index(drop=True)
+        df_points_mask = df_points_mask[(df_points_mask["Year"] >= date_range[0]) & (df_points_mask["Year"] <= date_range[1])].reset_index(drop=True)
 
-    st.header("Scratch")
-    st.dataframe(df_scratch_mask)
-    def avg_speed_plot_predict(df,race):
-        df["DateSerial"] = df["Date"].apply(lambda d: d.toordinal()).values
-        fig = px.scatter(
-                    df,
-                    x="DateSerial",
-                    y="Avg Speed",
-                    title=f"Men's Omnium {race} avg speed progression",
-                    labels={"value": "Avg Speed", "DateSerial": "Date (serial)"},
-                    trendline="ols",
-                    color_discrete_sequence=['#FFD700']
-                    
-                )
-        customdata = np.stack((df['Name'], df['Year'], df['Location'], df['Event']), axis=-1)
-        hovertemplate = (
-            f'Name: %{{customdata[0]}}<br>'
-            'Year: %{customdata[1]}<br>'
-            'Location: %{customdata[2]}<br>'
-            'Event: %{customdata[3]}<br>'
-            
-            '<extra></extra>'
-        )
-        fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-        st.plotly_chart(fig, use_container_width=True)
-        # Regression and prediction
-        
-        fit_results = px.get_trendline_results(fig).px_fit_results
-        first_a = fit_results.iloc[0].rsquared
-        first_const = fit_results.iloc[0].params[0]
-        first_x1 = fit_results.iloc[0].params[1]
-        
-
-
-        predict_year = st.number_input(
-            "Select year for avg speed prediction:",
-            min_value=2024,
-            max_value=2048,
-            value=2025,
-            step=1,
-            key=f"men_{df}_avg_speed_predict_year"
-        )
-        predict_date = datetime(predict_year, 1, 1)
-        predict_serial = predict_date.toordinal()
-        first_total = first_x1 * predict_serial + first_const
-        st.write(f"This trend predicts a winning avg speed of {round(first_total,1)} kph in the {race} race in {predict_year}.")
-    avg_speed_plot_predict(df_scratch_mask,"Scratch")
-    st.markdown("---")
-
-
-
-
-
-    st.header("Tempo")
-    st.dataframe(df_tempo_mask)
-    def metric_plot_and_predict(df,race,metric):
-        df_first = df.loc[df["Rank"]==1]
-        df_second = df.loc[df["Rank"]==2]
-        df_third = df.loc[df["Rank"]==3]
-        df_first_dates = pd.to_datetime(df_first["Date"])
-        df_second_dates = pd.to_datetime(df_second["Date"])
-        df_third_dates = pd.to_datetime(df_third["Date"])
-        df_plot = pd.DataFrame({
-            "Date": df_first["Date"].values,
-            "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
-            "Gold": df_first[metric].values,
-            "Silver": df_second[metric].values,
-            "Bronze": df_third[metric].values,
-            "Year": df_first["Year"].values,
-            "Location": df_first["Location"].values,
-            "Event": df_first["Event"].values
-        })
-
-        fig = px.scatter(
-            df_plot,
-            x="DateSerial",
-            y=["Gold", "Silver", "Bronze"],
-            title=f"Men's Omnium {race} race {metric} progression",
-            labels={"value": metric, "DateSerial": "Date (serial)"},
-            trendline="ols",
-            color_discrete_sequence=['#FFD700', '#C0C0C0', '#CD7F32']
-        )
-        customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event']), axis=-1)
-        hovertemplate = (
-            f'Gold: %{{customdata[0]}}<br>'
-            f'Silver: %{{customdata[1]}}<br>'
-            f'Bronze: %{{customdata[2]}}<br>'
-            'Year: %{customdata[3]}<br>'
-            'Location: %{customdata[4]}<br>'
-            'Event: %{customdata[5]}<br>'
-            '<extra></extra>'
-        )
-        fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-
-        st.plotly_chart(fig, use_container_width=True)
-        # Regression and prediction
-
-        fit_results = px.get_trendline_results(fig).px_fit_results
-        first_a = fit_results.iloc[0].rsquared
-        first_const = fit_results.iloc[0].params[0]
-        first_x1 = fit_results.iloc[0].params[1]
-        second_a = fit_results.iloc[1].rsquared
-        second_const = fit_results.iloc[1].params[0]
-        second_x1 = fit_results.iloc[1].params[1]
-        third_a = fit_results.iloc[2].rsquared
-        third_const = fit_results.iloc[2].params[0]
-        third_x1 = fit_results.iloc[2].params[1]
-
-
-        predict_year = st.number_input(
-            f"Select year for {metric} prediction:",
-            min_value=2025,
-            max_value=2048,
-            value=2025,
-            step=1,
-            key=f"men_{race}_{metric}_predict_year"
-        )
-
-        predict_date = datetime(predict_year, 1, 1)
-        predict_serial = predict_date.toordinal()
-        first_total = first_x1 * predict_serial + first_const
-        st.write(f"This trend predicts a winning {metric} of {round(first_total,1)} in the {race} race in {predict_year}.")
-        second_total = second_x1 * predict_serial + second_const
-        st.write(f"This trend predicts a second {metric} of {round(second_total,1)} in the {race} race in {predict_year}.")
-        third_total = third_x1 * predict_serial + third_const
-        st.write(f"This trend predicts a third {metric} of {round(third_total,1)} in the {race} race in {predict_year}.")
-
-    metric_plot_and_predict(df_tempo_mask,"Tempo","Total")
-    metric_plot_and_predict(df_tempo_mask,"Tempo","Sprints Won")
-    metric_plot_and_predict(df_tempo_mask,"Tempo","P.Laps")
-    avg_speed_plot_predict(df_tempo_mask,"Tempo")
-
-    st.markdown("---")
-
-    st.header("Elimination")
-    st.dataframe(df_elimination_mask)
-    avg_speed_plot_predict(df_elimination_mask,"Elimination")
-    st.markdown("---")
-    st.header("Points")
-    st.dataframe(df_points_mask)
-    metric_plot_and_predict(df_points_mask,"Points","Final")
-    metric_plot_and_predict(df_points_mask,"Points","Sub Total")
-    metric_plot_and_predict(df_points_mask,"Points","Points Total")
-    metric_plot_and_predict(df_points_mask,"Points","P.Laps")
-    metric_plot_and_predict(df_points_mask,"Points","Sprints Scored")
-    metric_plot_and_predict(df_points_mask,"Points","Sprints Won")
-    avg_speed_plot_predict(df_points_mask,"Points")
-
+        st.header("Scratch")
+        st.dataframe(df_scratch_mask)
+        def avg_speed_plot_predict(df,race):
+            df["DateSerial"] = df["Date"].apply(lambda d: d.toordinal()).values
+            fig = px.scatter(
+                        df,
+                        x="DateSerial",
+                        y="Avg Speed",
+                        title=f"Men's Omnium {race} avg speed progression",
+                        labels={"value": "Avg Speed", "DateSerial": "Date (serial)"},
+                        trendline="ols",
+                        color_discrete_sequence=['#FFD700']
+                        
+                    )
+            customdata = np.stack((df['Name'], df['Year'], df['Location'], df['Event']), axis=-1)
+            hovertemplate = (
+                f'Name: %{{customdata[0]}}<br>'
+                'Year: %{customdata[1]}<br>'
+                'Location: %{customdata[2]}<br>'
+                'Event: %{customdata[3]}<br>'
                 
+                '<extra></extra>'
+            )
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+            st.plotly_chart(fig, use_container_width=True)
+            # Regression and prediction
+            
+            fit_results = px.get_trendline_results(fig).px_fit_results
+            first_a = fit_results.iloc[0].rsquared
+            first_const = fit_results.iloc[0].params[0]
+            first_x1 = fit_results.iloc[0].params[1]
+            
+
+
+            predict_year = st.number_input(
+                "Select year for avg speed prediction:",
+                min_value=2024,
+                max_value=2048,
+                value=2025,
+                step=1,
+                key=f"men_{df}_avg_speed_predict_year"
+            )
+            predict_date = datetime(predict_year, 1, 1)
+            predict_serial = predict_date.toordinal()
+            first_total = first_x1 * predict_serial + first_const
+            st.write(f"This trend predicts a winning avg speed of {round(first_total,1)} kph in the {race} race in {predict_year}.")
+        avg_speed_plot_predict(df_scratch_mask,"Scratch")
+        st.markdown("---")
+
+
+
+
+
+        st.header("Tempo")
+        st.dataframe(df_tempo_mask)
+        def metric_plot_and_predict(df,race,metric):
+            df_first = df.loc[df["Rank"]==1]
+            df_second = df.loc[df["Rank"]==2]
+            df_third = df.loc[df["Rank"]==3]
+            df_first_dates = pd.to_datetime(df_first["Date"])
+            df_second_dates = pd.to_datetime(df_second["Date"])
+            df_third_dates = pd.to_datetime(df_third["Date"])
+            df_plot = pd.DataFrame({
+                "Date": df_first["Date"].values,
+                "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
+                "Gold": df_first[metric].values,
+                "Silver": df_second[metric].values,
+                "Bronze": df_third[metric].values,
+                "Year": df_first["Year"].values,
+                "Location": df_first["Location"].values,
+                "Event": df_first["Event"].values
+            })
+
+            fig = px.scatter(
+                df_plot,
+                x="DateSerial",
+                y=["Gold", "Silver", "Bronze"],
+                title=f"Men's Omnium {race} race {metric} progression",
+                labels={"value": metric, "DateSerial": "Date (serial)"},
+                trendline="ols",
+                color_discrete_sequence=['#FFD700', '#C0C0C0', '#CD7F32']
+            )
+            customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event']), axis=-1)
+            hovertemplate = (
+                f'Gold: %{{customdata[0]}}<br>'
+                f'Silver: %{{customdata[1]}}<br>'
+                f'Bronze: %{{customdata[2]}}<br>'
+                'Year: %{customdata[3]}<br>'
+                'Location: %{customdata[4]}<br>'
+                'Event: %{customdata[5]}<br>'
+                '<extra></extra>'
+            )
+            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+
+            st.plotly_chart(fig, use_container_width=True)
+            # Regression and prediction
+
+            fit_results = px.get_trendline_results(fig).px_fit_results
+            first_a = fit_results.iloc[0].rsquared
+            first_const = fit_results.iloc[0].params[0]
+            first_x1 = fit_results.iloc[0].params[1]
+            second_a = fit_results.iloc[1].rsquared
+            second_const = fit_results.iloc[1].params[0]
+            second_x1 = fit_results.iloc[1].params[1]
+            third_a = fit_results.iloc[2].rsquared
+            third_const = fit_results.iloc[2].params[0]
+            third_x1 = fit_results.iloc[2].params[1]
+
+
+            predict_year = st.number_input(
+                f"Select year for {metric} prediction:",
+                min_value=2025,
+                max_value=2048,
+                value=2025,
+                step=1,
+                key=f"men_{race}_{metric}_predict_year"
+            )
+
+            predict_date = datetime(predict_year, 1, 1)
+            predict_serial = predict_date.toordinal()
+            first_total = first_x1 * predict_serial + first_const
+            st.write(f"This trend predicts a winning {metric} of {round(first_total,1)} in the {race} race in {predict_year}.")
+            second_total = second_x1 * predict_serial + second_const
+            st.write(f"This trend predicts a second {metric} of {round(second_total,1)} in the {race} race in {predict_year}.")
+            third_total = third_x1 * predict_serial + third_const
+            st.write(f"This trend predicts a third {metric} of {round(third_total,1)} in the {race} race in {predict_year}.")
+
+        metric_plot_and_predict(df_tempo_mask,"Tempo","Total")
+        metric_plot_and_predict(df_tempo_mask,"Tempo","Sprints Won")
+        metric_plot_and_predict(df_tempo_mask,"Tempo","P.Laps")
+        avg_speed_plot_predict(df_tempo_mask,"Tempo")
+
+        st.markdown("---")
+
+        st.header("Elimination")
+        st.dataframe(df_elimination_mask)
+        avg_speed_plot_predict(df_elimination_mask,"Elimination")
+        st.markdown("---")
+        st.header("Points")
+        st.dataframe(df_points_mask)
+        metric_plot_and_predict(df_points_mask,"Points","Final")
+        metric_plot_and_predict(df_points_mask,"Points","Sub Total")
+        metric_plot_and_predict(df_points_mask,"Points","Points Total")
+        metric_plot_and_predict(df_points_mask,"Points","P.Laps")
+        metric_plot_and_predict(df_points_mask,"Points","Sprints Scored")
+        metric_plot_and_predict(df_points_mask,"Points","Sprints Won")
+        avg_speed_plot_predict(df_points_mask,"Points")
+
+                    
                 
                 
 ########################################################Juniors#############################################################
