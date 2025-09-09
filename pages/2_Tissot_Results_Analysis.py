@@ -2592,7 +2592,7 @@ if authentication_status:
             ##Overall Scoring Summary
 
             df_summ=df_countryHistory_short.drop(["Age",'Time','Avg Speed','Lap +','Lap -',"Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10"],axis=1)
-            df_summ.insert(9, 'Points', df_summ["Final"]-df_summ["Sub Total"])
+            df_summ.insert(10, 'Points', df_summ["Final"]-df_summ["Sub Total"])
             df_summ_trans = pd.DataFrame()
             df_summ_trans["Race"] = ["Scratch","Tempo","Elimination","Points"]
             df_ch_Trans = pd.DataFrame()
@@ -2601,7 +2601,7 @@ if authentication_status:
                 var = str(i+1)+" "+str(df_summ["Name"].iloc[i])+" " +str(df_summ["Location"].iloc[i])+" " +str(df_summ["Event"].iloc[i])+" " +str(df_summ["Year"].iloc[i])
                 df_summ_trans[f"{var}"]=df_summ.iloc[i][7:11].values
                 df_ch_Trans[f"{var}"]=df_countryHistory_short.iloc[i][12:22].values
-
+            
             fig_event_mean = px.line(df_summ_trans, x="Race", y = df_summ_trans.columns[1:], title="Overall Scoring", markers=True)
             st.plotly_chart(fig_event_mean,use_container_width=True)
 
