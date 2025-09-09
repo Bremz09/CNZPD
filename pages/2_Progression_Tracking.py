@@ -4138,8 +4138,262 @@ if authentication_status:
 
                     
                 
-                
-                
+    if race_type=="Men's Omnium":
+       
+        @st.cache_data
+        def get_points_data_from_excel():
+            df_points = pd.read_excel(
+                io='pages/WR_progressions/Mens_Omnium.xlsx',
+                engine ='openpyxl',
+                sheet_name='Points',
+                skiprows=0,
+                usecols='A:R',
+                nrows=150
+                )
+            #df = df.replace(',','')
+
+            return df_points
+        df_points = get_points_data_from_excel()
+        df_points_master=df_points
+
+        @st.cache_data
+        def get_elimination_data_from_excel():
+            df_elimination = pd.read_excel(
+                io='pages/WR_progressions/Mens_Omnium.xlsx',
+                engine ='openpyxl',
+                sheet_name='Elim',
+                skiprows=0,
+                usecols='A:H',
+                nrows=60
+                )
+            #df = df.replace(',','')
+
+            return df_elimination
+        df_elimination = get_elimination_data_from_excel()
+        df_elimination_master=df_elimination
+
+        @st.cache_data
+        def get_tempo_data_from_excel():
+            df_tempo = pd.read_excel(
+                io='pages/WR_progressions/Mens_Omnium.xlsx',
+                engine ='openpyxl',
+                sheet_name='Tempo',
+                skiprows=0,
+                usecols='A:L',
+                nrows=150
+                )
+            #df = df.replace(',','')
+
+            return df_tempo
+        df_tempo = get_tempo_data_from_excel()
+        df_tempo_master=df_tempo
+
+        @st.cache_data
+        def get_scratch_data_from_excel():
+            df_scratch = pd.read_excel(
+                io='pages/WR_progressions/Mens_Omnium.xlsx',
+                engine ='openpyxl',
+                sheet_name='Scratch',
+                skiprows=0,
+                usecols='A:H',
+                nrows=60
+                )
+            #df = df.replace(',','')
+
+            return df_scratch
+        df_scratch = get_scratch_data_from_excel()
+        df_scratch_master=df_scratch
+
+
+        events = st.selectbox("Include which events:", ["All","Just NC","Just WCH","Just OLY & WCH"], key="M mado event selector")
+        
+
+        if events=="Just NC":
+            df_scratch_mask=df_scratch[df_scratch["Event"]=="NC"]
+            df_tempo_mask=df_tempo[df_tempo["Event"]=="NC"]
+            df_elimination_mask=df_elimination[df_elimination["Event"]=="NC"]
+            df_points_mask=df_points[df_points["Event"]=="NC"]
+        elif events=="Just WCH":
+            df_scratch_mask=df_scratch[df_scratch["Event"]=="WCH"]
+            df_tempo_mask=df_tempo[df_tempo["Event"]=="WCH"]
+            df_elimination_mask=df_elimination[df_elimination["Event"]=="WCH"]
+            df_points_mask=df_points[df_points["Event"]=="WCH"]
+        elif events=="Just OLY & WCH":
+            df_scratch_mask=df_scratch[(df_scratch["Event"]=="WCH") | (df_scratch["Event"]=="OLY")]
+            df_tempo_mask=df_tempo[(df_tempo["Event"]=="WCH") | (df_tempo["Event"]=="OLY")]
+            df_elimination_mask=df_elimination[(df_elimination["Event"]=="WCH") | (df_elimination["Event"]=="OLY")]
+            df_points_mask=df_points[(df_points["Event"]=="WCH") | (df_points["Event"]=="OLY")]
+        else:
+            df_scratch_mask=df_scratch
+            df_tempo_mask=df_tempo
+            df_elimination_mask=df_elimination
+            df_points_mask=df_points
+
+        df_scratch_mask.reset_index(drop=True,inplace=True)
+        df_tempo_mask.reset_index(drop=True,inplace=True)
+        df_elimination_mask.reset_index(drop=True,inplace=True)
+        df_points_mask.reset_index(drop=True,inplace=True)
+
+        
+        date_range = st.slider(
+"Restrict date range?",
+    value=(2017, datetime.now().year),
+    min_value=2017,
+    max_value=datetime.now().year)
+
+    df_scratch_mask = df_scratch_mask[(df_scratch_mask["Year"] >= date_range[0]) & (df_scratch_mask["Year"] <= date_range[1])].reset_index(drop=True)
+    df_tempo_mask = df_tempo_mask[(df_tempo_mask["Year"] >= date_range[0]) & (df_tempo_mask["Year"] <= date_range[1])].reset_index(drop=True)
+    df_elimination_mask = df_elimination_mask[(df_elimination_mask["Year"] >= date_range[0]) & (df_elimination_mask["Year"] <= date_range[1])].reset_index(drop=True)
+    df_points_mask = df_points_mask[(df_points_mask["Year"] >= date_range[0]) & (df_points_mask["Year"] <= date_range[1])].reset_index(drop=True)
+
+    st.header("Scratch")
+    st.dataframe(df_scratch_mask)
+    def avg_speed_plot_predict(df,race):
+        df["DateSerial"] = df["Date"].apply(lambda d: d.toordinal()).values
+        fig = px.scatter(
+                    df,
+                    x="DateSerial",
+                    y="Avg Speed",
+                    title=f"Men's Omnium {race} avg speed progression",
+                    labels={"value": "Avg Speed", "DateSerial": "Date (serial)"},
+                    trendline="ols",
+                    color_discrete_sequence=['#FFD700']
+                    
+                )
+        customdata = np.stack((df['Name'], df['Year'], df['Location'], df['Event']), axis=-1)
+        hovertemplate = (
+            f'Name: %{{customdata[0]}}<br>'
+            'Year: %{customdata[1]}<br>'
+            'Location: %{customdata[2]}<br>'
+            'Event: %{customdata[3]}<br>'
+            
+            '<extra></extra>'
+        )
+        fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+        st.plotly_chart(fig, use_container_width=True)
+        # Regression and prediction
+        
+        fit_results = px.get_trendline_results(fig).px_fit_results
+        first_a = fit_results.iloc[0].rsquared
+        first_const = fit_results.iloc[0].params[0]
+        first_x1 = fit_results.iloc[0].params[1]
+        
+
+
+        predict_year = st.number_input(
+            "Select year for avg speed prediction:",
+            min_value=2024,
+            max_value=2048,
+            value=2025,
+            step=1,
+            key=f"men_{df}_avg_speed_predict_year"
+        )
+        predict_date = datetime(predict_year, 1, 1)
+        predict_serial = predict_date.toordinal()
+        first_total = first_x1 * predict_serial + first_const
+        st.write(f"This trend predicts a winning avg speed of {round(first_total,1)} kph in the {race} race in {predict_year}.")
+    avg_speed_plot_predict(df_scratch_mask,"Scratch")
+    st.markdown("---")
+
+
+
+
+
+    st.header("Tempo")
+    st.dataframe(df_tempo_mask)
+    def metric_plot_and_predict(df,race,metric):
+        df_first = df.loc[df["Rank"]==1]
+        df_second = df.loc[df["Rank"]==2]
+        df_third = df.loc[df["Rank"]==3]
+        df_first_dates = pd.to_datetime(df_first["Date"])
+        df_second_dates = pd.to_datetime(df_second["Date"])
+        df_third_dates = pd.to_datetime(df_third["Date"])
+        df_plot = pd.DataFrame({
+            "Date": df_first["Date"].values,
+            "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
+            "Gold": df_first[metric].values,
+            "Silver": df_second[metric].values,
+            "Bronze": df_third[metric].values,
+            "Year": df_first["Year"].values,
+            "Location": df_first["Location"].values,
+            "Event": df_first["Event"].values
+        })
+
+        fig = px.scatter(
+            df_plot,
+            x="DateSerial",
+            y=["Gold", "Silver", "Bronze"],
+            title=f"Men's Omnium {race} race {metric} progression",
+            labels={"value": metric, "DateSerial": "Date (serial)"},
+            trendline="ols",
+            color_discrete_sequence=['#FFD700', '#C0C0C0', '#CD7F32']
+        )
+        customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event']), axis=-1)
+        hovertemplate = (
+            f'Gold: %{{customdata[0]}}<br>'
+            f'Silver: %{{customdata[1]}}<br>'
+            f'Bronze: %{{customdata[2]}}<br>'
+            'Year: %{customdata[3]}<br>'
+            'Location: %{customdata[4]}<br>'
+            'Event: %{customdata[5]}<br>'
+            '<extra></extra>'
+        )
+        fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+
+        st.plotly_chart(fig, use_container_width=True)
+        # Regression and prediction
+
+        fit_results = px.get_trendline_results(fig).px_fit_results
+        first_a = fit_results.iloc[0].rsquared
+        first_const = fit_results.iloc[0].params[0]
+        first_x1 = fit_results.iloc[0].params[1]
+        second_a = fit_results.iloc[1].rsquared
+        second_const = fit_results.iloc[1].params[0]
+        second_x1 = fit_results.iloc[1].params[1]
+        third_a = fit_results.iloc[2].rsquared
+        third_const = fit_results.iloc[2].params[0]
+        third_x1 = fit_results.iloc[2].params[1]
+
+
+        predict_year = st.number_input(
+            f"Select year for {metric} prediction:",
+            min_value=2025,
+            max_value=2048,
+            value=2025,
+            step=1,
+            key=f"men_{race}_{metric}_predict_year"
+        )
+
+        predict_date = datetime(predict_year, 1, 1)
+        predict_serial = predict_date.toordinal()
+        first_total = first_x1 * predict_serial + first_const
+        st.write(f"This trend predicts a winning {metric} of {round(first_total,1)} in the {race} race in {predict_year}.")
+        second_total = second_x1 * predict_serial + second_const
+        st.write(f"This trend predicts a second {metric} of {round(second_total,1)} in the {race} race in {predict_year}.")
+        third_total = third_x1 * predict_serial + third_const
+        st.write(f"This trend predicts a third {metric} of {round(third_total,1)} in the {race} race in {predict_year}.")
+
+    metric_plot_and_predict(df_tempo_mask,"Tempo","Total")
+    metric_plot_and_predict(df_tempo_mask,"Tempo","Sprints Won")
+    metric_plot_and_predict(df_tempo_mask,"Tempo","P.Laps")
+    avg_speed_plot_predict(df_tempo_mask,"Tempo")
+
+    st.markdown("---")
+
+    st.header("Elimination")
+    st.dataframe(df_elimination_mask)
+    avg_speed_plot_predict(df_elimination_mask,"Elimination")
+    st.markdown("---")
+    st.header("Points")
+    st.dataframe(df_points_mask)
+    metric_plot_and_predict(df_points_mask,"Points","Final")
+    metric_plot_and_predict(df_points_mask,"Points","Sub Total")
+    metric_plot_and_predict(df_points_mask,"Points","Points Total")
+    metric_plot_and_predict(df_points_mask,"Points","P.Laps")
+    metric_plot_and_predict(df_points_mask,"Points","Sprints Scored")
+    metric_plot_and_predict(df_points_mask,"Points","Sprints Won")
+    avg_speed_plot_predict(df_points_mask,"Points")
+
                 
                 
                 
