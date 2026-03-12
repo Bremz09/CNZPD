@@ -231,46 +231,28 @@ if authentication_status:
         st.header("Editor")
         st.write("Full CSV")
         
-        # Check file type by extension
-        file_name = uploaded_file.name.lower()
+        # Try reading with multiple encodings and error handling
         df_full = None
+        encodings_to_try = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252', 'utf-8-sig']
         
-        if file_name.endswith(('.xlsx', '.xls', '.xlsm')):
-            # Handle Excel files
+        for encoding in encodings_to_try:
             try:
-                df_full = pd.read_excel(uploaded_file)
-            except Exception as e:
-                st.error(f"Unable to read Excel file: {str(e)}")
-                st.stop()
-        else:
-            # Handle CSV files with different encodings and error handling
-            encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252', 'utf-8-sig']
-            for encoding in encodings:
-                try:
-                    uploaded_file.seek(0)  # Reset file pointer to beginning
-                    df_full = pd.read_csv(
-                        uploaded_file, 
-                        encoding=encoding,
-                        on_bad_lines='skip',  # Skip malformed lines
-                        engine='python'  # Use Python engine which is more forgiving
-                    )
-                    break
-                except (UnicodeDecodeError, LookupError, Exception):
-                    continue
-            
-            if df_full is None:
-                st.error("Unable to read the CSV file. Please check the file encoding and format.")
-                st.stop()
+                uploaded_file.seek(0)  # Reset file pointer
+                df_full = pd.read_csv(
+                    uploaded_file,
+                    encoding=encoding,
+                    on_bad_lines='skip',
+                    engine='python'
+                )
+                break
+            except Exception:
+                continue
         
-        # Display available columns for debugging
-        st.write("Columns found in file:", list(df_full.columns))
+        if df_full is None:
+            st.error("Unable to read file. Please try a different format or encoding.")
+            st.stop()
         
-        # Sort by "Start time" if it exists, otherwise keep original order
-        if "Start time" in df_full.columns:
-            df_full = df_full.sort_values(by=["Start time"]).reset_index(drop=True)
-        else:
-            st.warning("'Start time' column not found. Using file order. Available columns: " + ", ".join(df_full.columns))
-            df_full = df_full.reset_index(drop=True)
+        df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
         
         df_full
         c1,c2,c3=st.columns(3)
