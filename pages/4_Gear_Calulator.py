@@ -230,8 +230,47 @@ if authentication_status:
 
         st.header("Editor")
         st.write("Full CSV")
-        df_full = pd.read_csv(uploaded_file)
-        df_full=df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+        
+        # Check file type by extension
+        file_name = uploaded_file.name.lower()
+        df_full = None
+        
+        if file_name.endswith(('.xlsx', '.xls', '.xlsm')):
+            # Handle Excel files
+            try:
+                df_full = pd.read_excel(uploaded_file)
+            except Exception as e:
+                st.error(f"Unable to read Excel file: {str(e)}")
+                st.stop()
+        else:
+            # Handle CSV files with different encodings and error handling
+            encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252', 'utf-8-sig']
+            for encoding in encodings:
+                try:
+                    uploaded_file.seek(0)  # Reset file pointer to beginning
+                    df_full = pd.read_csv(
+                        uploaded_file, 
+                        encoding=encoding,
+                        on_bad_lines='skip',  # Skip malformed lines
+                        engine='python'  # Use Python engine which is more forgiving
+                    )
+                    break
+                except (UnicodeDecodeError, LookupError, Exception):
+                    continue
+            
+            if df_full is None:
+                st.error("Unable to read the CSV file. Please check the file encoding and format.")
+                st.stop()
+        
+        # Display available columns for debugging
+        st.write("Columns found in file:", list(df_full.columns))
+        
+        # Sort by "Start time" if it exists, otherwise keep original order
+        if "Start time" in df_full.columns:
+            df_full = df_full.sort_values(by=["Start time"]).reset_index(drop=True)
+        else:
+            st.warning("'Start time' column not found. Using file order. Available columns: " + ", ".join(df_full.columns))
+            df_full = df_full.reset_index(drop=True)
         
         df_full
         c1,c2,c3=st.columns(3)
@@ -247,7 +286,9 @@ if authentication_status:
 
         
         df=df_full[start:end]
-        df=df.sort_values("Start time", ascending=True)
+        # Sort by "Start time" if it exists
+        if "Start time" in df.columns:
+            df=df.sort_values("Start time", ascending=True)
         st.write("Cropped df - Just include all the relevant info and it'll do the rest")
         
         col_one, col_two = st.columns((5,4))
@@ -261,7 +302,9 @@ if authentication_status:
                 position = st.selectbox("Position:", options=[1,2,3,4],key="position")
             else:
                 position="Null"
-            name = st.text_input("Rider Name:",df["Row"].iloc[0])
+            # Get default name from "Row" column if it exists, otherwise use empty string
+            default_name = df["Row"].iloc[0] if "Row" in df.columns else ""
+            name = st.text_input("Rider Name:", default_name)
             nation = st.text_input("Nation (eg NZL):")
             location = st.text_input("Event Location:")
             sex = st.selectbox("Sex:", options=["M","F"],key="Sex")
@@ -272,24 +315,36 @@ if authentication_status:
             #wheel_circ = st.number_input("Wheel Circumference:",value=2.096,step=1e-3, format="%.3f")
         
         
-        #This is to find the revs per second
-        rev_start = df.loc[df["Row"]== "Rev Start"]["Start time"].item()
-        rev_end = df.loc[df["Row"]== "Rev End"]["Start time"].item()
-        rev_count = df['Row'].value_counts()['Full Rev'] +1
+        # Initialize default values for gear calculations
+        rps = None
+        mps = None
+        gear = None
         
-        rps = rev_count/(rev_end-rev_start)
-        
-        #This is to find Speed
-        pl_start=df.loc[df["Row"]== "Pursuit Line Start"]["Start time"].item()
-        pl_end=df.loc[df["Row"]== "Pursuit Line End"]["Start time"].item()
-        distance = 125
-        if (df['Row'].eq('Red Line')).any():
-            distance = 127.199
-        mps = distance/(pl_end-pl_start)
-        
-        mpr = mps/rps
-        m_developed = mpr*1.030819675 - 0.128785356
-        gear = round(27*m_developed/2.111,2)
+        # Only calculate if required columns exist
+        if "Row" in df.columns and "Start time" in df.columns:
+            try:
+                #This is to find the revs per second
+                if (df['Row']== "Rev Start").any() and (df['Row']== "Rev End").any():
+                    rev_start = df.loc[df["Row"]== "Rev Start"]["Start time"].item()
+                    rev_end = df.loc[df["Row"]== "Rev End"]["Start time"].item()
+                    rev_count = df['Row'].value_counts().get('Full Rev', 0) + 1
+                    rps = rev_count/(rev_end-rev_start)
+                
+                #This is to find Speed
+                if (df['Row']== "Pursuit Line Start").any() and (df['Row']== "Pursuit Line End").any():
+                    pl_start=df.loc[df["Row"]== "Pursuit Line Start"]["Start time"].item()
+                    pl_end=df.loc[df["Row"]== "Pursuit Line End"]["Start time"].item()
+                    distance = 125
+                    if (df['Row'].eq('Red Line')).any():
+                        distance = 127.199
+                    mps = distance/(pl_end-pl_start)
+                    
+                    if rps is not None and mps is not None:
+                        mpr = mps/rps
+                        m_developed = mpr*1.030819675 - 0.128785356
+                        gear = round(27*m_developed/2.111,2)
+            except Exception as e:
+                st.warning(f"Could not calculate gear metrics: {str(e)}")
         
         #Small cog 10 to 25, Chain ring 42 to 80
         
@@ -297,10 +352,15 @@ if authentication_status:
         
         
         with col_one:
-            st.subheader(f"Calculated gear is {gear}")
-            nearest_gear = min(round_to, key=lambda x: abs(x - gear))
-            st.subheader(f"Nearest possible gear is {nearest_gear}")
-            data = [[name,nation,sex,event,position,comp,location,Round,comp_date,gear,nearest_gear]]
+            if gear is not None:
+                st.subheader(f"Calculated gear is {gear}")
+                nearest_gear = min(round_to, key=lambda x: abs(x - gear))
+                st.subheader(f"Nearest possible gear is {nearest_gear}")
+            else:
+                st.warning("Could not calculate gear. Please check that the uploaded file has the required 'Row' and 'Start time' columns with proper data.")
+                nearest_gear = None
+            
+            data = [[name, nation, sex, event, position, comp, location, Round, comp_date, gear, nearest_gear]]
             df = pd.DataFrame(data, columns=['Name', 'Nation','Sex','Event','Position','Competition','Location','Round','Competition Date','Calculated Gear','Nearest Possible Gear'])
         
             df
