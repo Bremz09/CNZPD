@@ -375,7 +375,7 @@ if authentication_status:
 
 
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
-    #                     df_main
+                    df_main
                     hl_splits=[]
                     hl_rider =[] 
                     hl_distance=[]
@@ -385,7 +385,7 @@ if authentication_status:
                         hl_rider.append(df_main["Front"][i])
                         hl_distance.append(df_main["Distance"][i])
                         if df_main["Del_Speed"][i]!=df_main["Avg_Speed"][i]:
-                            hl_del_speed.append(df_main["Del_Speed"][i])
+                            hl_del_speed.append((df_main["Del_Speed"][i]+df_main["Del_Speed"][i])/2)
                         else:
                             hl_del_speed.append(125*3.6/(df_main["Split"][i]+df_main["Split"][i-1]))
                     df_gm=pd.DataFrame()

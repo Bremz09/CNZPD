@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 import io
 import datetime
 import numpy as np
+from pathlib import Path
 from datetime import datetime, date
 from sklearn.linear_model import LinearRegression
 
@@ -65,7 +66,7 @@ if authentication_status:
     race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Team Sprint",
                 "Women's Team Sprint","Men's Team Pursuit","Women's Team Pursuit",
                 "Men's Individual Pursuit","Women's Individual Pursuit",
-                "Men's Madison","Women's Madison","Men's Omnium","Women's Omnium"
+                "Men's Madison","Women's Madison","Men's Omnium","Women's Omnium",
                 "Junior Men's Sprint Qualifying","Junior Women's Sprint Qualifying",
                 "Junior Men's Team Sprint","Junior Women's Team Sprint","Junior Men's Team Pursuit",
                 "Junior Women's Team Pursuit","Junior Men's Individual Pursuit",
@@ -2023,7 +2024,7 @@ if authentication_status:
                             st.write(f"8th qual = {round(eigth_x1,6)}(DateSerial) + {round(eigth_const,3)}")
                             st.write(f"R-squared = {round(eigth_a,3)}")                        
                         with col2:
-                            date = st.date_input("Select date for WR prediction:", datetime(2028, 7, 14),format="DD/MM/YYYY")
+                            date = st.date_input("Select date for prediction:", datetime(2028, 7, 14),format="DD/MM/YYYY")
                             date_formatted=date.strftime('%d/%m/%Y')
 
                         with col2:
@@ -4011,388 +4012,347 @@ if authentication_status:
                 st.write(f"This trend predicts a sixteenth qualifying time of {sixteenth_m}:{sixteenth_s} in {predict_year}.")
 
 
-    if race_type=="Men's Madison":
-        # Helper function to plot and predict for a given y_column and label
-        def madison_plot_and_predict(y_column, y_label, color, prediction_label):
-            # Use the same filtered data as above
-            df_first = df_mask.loc[df_mask["Rank"]==1]
-            df_second = df_mask.loc[df_mask["Rank"]==2]
-            df_third = df_mask.loc[df_mask["Rank"]==3]
-            from datetime import datetime
-            df_first_dates = pd.to_datetime(df_first["Date"])
-            df_second_dates = pd.to_datetime(df_second["Date"])
-            df_third_dates = pd.to_datetime(df_third["Date"])
-            df_plot = pd.DataFrame({
-                "Date": df_first["Date"].values,
-                "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
-                "Gold": df_first[y_column].values,
-                "Silver": df_second[y_column].values,
-                "Bronze": df_third[y_column].values,
-                "Year": df_first["Year"].values,
-                "Location": df_first["Location"].values,
-                "Event": df_first["Event"].values
-            })
-            import plotly.express as px
-            import numpy as np
-            fig = px.scatter(
-                df_plot,
-                x="DateSerial",
-                y=["Gold", "Silver", "Bronze"],
-                title=f"Men's Madison {y_label} progression",
-                labels={"value": y_label, "DateSerial": "Date (serial)"},
-                trendline="ols",
-                color_discrete_sequence=color
-            )
-            customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event'], df_plot['Date']), axis=-1)
-            hovertemplate = (
-                f'Gold: %{{customdata[0]}}<br>'
-                f'Silver: %{{customdata[1]}}<br>'
-                f'Bronze: %{{customdata[2]}}<br>'
-                'Year: %{customdata[3]}<br>'
-                'Location: %{customdata[4]}<br>'
-                'Event: %{customdata[5]}<br>'
-                'Date: %{customdata[6]}<br>'
-                '<extra></extra>'
-            )
-            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-            import streamlit as st
-            st.plotly_chart(fig, use_container_width=True)
-            # Regression and prediction
-         
-            fit_results = px.get_trendline_results(fig).px_fit_results
-            first_a = fit_results.iloc[0].rsquared
-            first_const = fit_results.iloc[0].params[0]
-            first_x1 = fit_results.iloc[0].params[1]
-            second_a = fit_results.iloc[1].rsquared
-            second_const = fit_results.iloc[1].params[0]
-            second_x1 = fit_results.iloc[1].params[1]
-            third_a = fit_results.iloc[2].rsquared
-            third_const = fit_results.iloc[2].params[0]
-            third_x1 = fit_results.iloc[2].params[1]
+    if race_type in ["Men's Madison", "Women's Madison"]:
+        category = "Men's" if race_type == "Men's Madison" else "Women's"
+        madison_file = "pages/WR_progressions/Mens_Madison.xlsx" if category == "Men's" else "pages/WR_progressions/Womens_Madison.xlsx"
 
-        
-            predict_year = st.selectbox(f"Select year for {prediction_label} predictions:", [2024,2028,2032,2036,2040,2044,2048], key=f"{y_column}_predict_year")
-            predict_date = datetime(predict_year, 1, 1)
-            predict_serial = predict_date.toordinal()
-            first_total = first_x1 * predict_serial + first_const
-            st.write(f"This trend predicts a winning {y_label.lower()} of {round(first_total,1)} in {predict_year}.")
-            second_total = second_x1 * predict_serial + second_const
-            st.write(f"This trend predicts a second {y_label.lower()} of {round(second_total,1)} in {predict_year}.")
-            third_total = third_x1 * predict_serial + third_const
-            st.write(f"This trend predicts a third {y_label.lower()} of {round(third_total,1)} in {predict_year}.")
-
-
-        
-        
-        @st.cache_data
-        def get_placing_data_from_excel():
-            df = pd.read_excel(
-                io='pages/WR_progressions/Mens_Madison.xlsx',
-                engine ='openpyxl',
-                sheet_name='Sheet1',
-                skiprows=0,
-                usecols='A:O',
-                nrows=100
-                )
-            #df = df.replace(',','')
-
-
-            return df
-
-
-        
-        events = st.selectbox("Include which events:", ["All","Just NC","Just WCH","Just OLY & WCH"], key="M mado event selector")
-
-        df = get_placing_data_from_excel()
-        df_master=df
-        
-        
-
-        if events=="Just NC":
-            df_mask=df[df["Event"]=="NC"]
-        elif events=="Just WCH":
-            df_mask=df[df["Event"]=="WCH"]
-        elif events=="Just OLY & WCH":
-            df_mask=df[(df["Event"]=="WCH") | (df["Event"]=="OLY")]
+        if not Path(madison_file).exists():
+            st.warning(f"Data file not found for {category} Madison: {madison_file}")
         else:
-            df_mask=df
-
-        
-        date_range = st.slider(
-"Restrict date range?",
-        value = (2017,datetime.now().year),
-            min_value = 2017,
-            max_value = datetime.now().year)
-
-        df_mask = df_mask.mask(df_mask["Year"] < date_range[0])
-        df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
-        df_mask.reset_index(drop=True,inplace=True)
-        df_mask
-
-        madison_plot_and_predict("Total", "Total Points", ['#FFD700', '#C0C0C0', '#CD7F32'], "Total")
-        madison_plot_and_predict("Sprints Scored", "Sprints Scored", ['#FFD700', '#C0C0C0', '#CD7F32'], "Sprints Scored")
-        madison_plot_and_predict("Sprints Won", "Sprints Won", ['#FFD700', '#C0C0C0', '#CD7F32'], "Sprints Won")
-        madison_plot_and_predict("P.Laps", "Points Laps", ['#FFD700', '#C0C0C0', '#CD7F32'], "P.Laps")
-        madison_plot_and_predict("Avg Speed", "Average Speed (km/h)", ['#FFD700', '#C0C0C0', '#CD7F32'], "Avg Speed")
-
-
-                    
-                
-    if race_type=="Men's Omnium":
-       
-        @st.cache_data
-        def get_points_data_from_excel():
-            df_points = pd.read_excel(
-                io='pages/WR_progressions/Mens_Omnium.xlsx',
-                engine ='openpyxl',
-                sheet_name='Points',
-                skiprows=0,
-                usecols='A:R',
-                nrows=150
+            @st.cache_data
+            def load_madison_data(file_path):
+                return pd.read_excel(
+                    io=file_path,
+                    engine='openpyxl',
+                    sheet_name='Sheet1',
+                    skiprows=0,
+                    usecols='A:O',
+                    nrows=100
                 )
-            #df = df.replace(',','')
 
-            return df_points
-        df_points = get_points_data_from_excel()
-        df_points_master=df_points
+            def madison_plot_and_predict(df_filtered, y_column, y_label, prediction_label):
+                df_first = df_filtered.loc[df_filtered["Rank"] == 1].reset_index(drop=True)
+                df_second = df_filtered.loc[df_filtered["Rank"] == 2].reset_index(drop=True)
+                df_third = df_filtered.loc[df_filtered["Rank"] == 3].reset_index(drop=True)
 
-        @st.cache_data
-        def get_elimination_data_from_excel():
-            df_elimination = pd.read_excel(
-                io='pages/WR_progressions/Mens_Omnium.xlsx',
-                engine ='openpyxl',
-                sheet_name='Elim',
-                skiprows=0,
-                usecols='A:H',
-                nrows=60
+                min_len = min(len(df_first), len(df_second), len(df_third))
+                if min_len == 0:
+                    st.info(f"No rank 1-3 data available for {y_label} after filtering.")
+                    return
+
+                df_first = df_first.iloc[:min_len]
+                df_second = df_second.iloc[:min_len]
+                df_third = df_third.iloc[:min_len]
+
+                df_first_dates = pd.to_datetime(df_first["Date"])
+                df_plot = pd.DataFrame({
+                    "Date": df_first["Date"].values,
+                    "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
+                    "Gold": df_first[y_column].values,
+                    "Silver": df_second[y_column].values,
+                    "Bronze": df_third[y_column].values,
+                    "Year": df_first["Year"].values,
+                    "Location": df_first["Location"].values,
+                    "Event": df_first["Event"].values
+                })
+
+                fig = px.scatter(
+                    df_plot,
+                    x="DateSerial",
+                    y=["Gold", "Silver", "Bronze"],
+                    title=f"{category} Madison {y_label} progression",
+                    labels={"value": y_label, "DateSerial": "Date (serial)"},
+                    trendline="ols",
+                    color_discrete_sequence=['#FFD700', '#C0C0C0', '#CD7F32']
                 )
-            #df = df.replace(',','')
-
-            return df_elimination
-        df_elimination = get_elimination_data_from_excel()
-        df_elimination_master=df_elimination
-
-        @st.cache_data
-        def get_tempo_data_from_excel():
-            df_tempo = pd.read_excel(
-                io='pages/WR_progressions/Mens_Omnium.xlsx',
-                engine ='openpyxl',
-                sheet_name='Tempo',
-                skiprows=0,
-                usecols='A:L',
-                nrows=150
+                customdata = np.stack(
+                    (
+                        df_plot['Gold'],
+                        df_plot['Silver'],
+                        df_plot['Bronze'],
+                        df_plot['Year'],
+                        df_plot['Location'],
+                        df_plot['Event'],
+                        df_plot['Date']
+                    ),
+                    axis=-1
                 )
-            #df = df.replace(',','')
-
-            return df_tempo
-        df_tempo = get_tempo_data_from_excel()
-        df_tempo_master=df_tempo
-
-        @st.cache_data
-        def get_scratch_data_from_excel():
-            df_scratch = pd.read_excel(
-                io='pages/WR_progressions/Mens_Omnium.xlsx',
-                engine ='openpyxl',
-                sheet_name='Scratch',
-                skiprows=0,
-                usecols='A:H',
-                nrows=60
+                hovertemplate = (
+                    'Gold: %{customdata[0]}<br>'
+                    'Silver: %{customdata[1]}<br>'
+                    'Bronze: %{customdata[2]}<br>'
+                    'Year: %{customdata[3]}<br>'
+                    'Location: %{customdata[4]}<br>'
+                    'Event: %{customdata[5]}<br>'
+                    'Date: %{customdata[6]}<br>'
+                    '<extra></extra>'
                 )
-            #df = df.replace(',','')
+                fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                st.plotly_chart(fig, use_container_width=True)
 
-            return df_scratch
-        df_scratch = get_scratch_data_from_excel()
-        df_scratch_master=df_scratch
+                fit_results = px.get_trendline_results(fig).px_fit_results
+                if len(fit_results) < 3:
+                    st.info("Not enough points to compute all trendlines.")
+                    return
+
+                first_const, first_x1 = fit_results.iloc[0].params[0], fit_results.iloc[0].params[1]
+                second_const, second_x1 = fit_results.iloc[1].params[0], fit_results.iloc[1].params[1]
+                third_const, third_x1 = fit_results.iloc[2].params[0], fit_results.iloc[2].params[1]
+
+                predict_year = st.selectbox(
+                    f"Select year for {prediction_label} predictions:",
+                    [2024, 2028, 2032, 2036, 2040, 2044, 2048],
+                    key=f"{category}_{y_column}_predict_year"
+                )
+                predict_serial = datetime(predict_year, 1, 1).toordinal()
+                st.write(f"This trend predicts a winning {y_label.lower()} of {round(first_x1 * predict_serial + first_const, 1)} in {predict_year}.")
+                st.write(f"This trend predicts a second {y_label.lower()} of {round(second_x1 * predict_serial + second_const, 1)} in {predict_year}.")
+                st.write(f"This trend predicts a third {y_label.lower()} of {round(third_x1 * predict_serial + third_const, 1)} in {predict_year}.")
+
+            events = st.selectbox(
+                "Include which events:",
+                ["All", "Just NC", "Just WCH", "Just OLY & WCH"],
+                key=f"{category}_madison_event_selector"
+            )
+
+            df = load_madison_data(madison_file)
+
+            if events == "Just NC":
+                df_mask = df[df["Event"] == "NC"]
+            elif events == "Just WCH":
+                df_mask = df[df["Event"] == "WCH"]
+            elif events == "Just OLY & WCH":
+                df_mask = df[(df["Event"] == "WCH") | (df["Event"] == "OLY")]
+            else:
+                df_mask = df
+
+            date_range = st.slider(
+                "Restrict date range?",
+                value=(2017, datetime.now().year),
+                min_value=2017,
+                max_value=datetime.now().year,
+                key=f"{category}_madison_date_range"
+            )
+
+            df_mask = df_mask.mask(df_mask["Year"] < date_range[0])
+            df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
+            df_mask.reset_index(drop=True, inplace=True)
+            st.dataframe(df_mask)
+
+            madison_plot_and_predict(df_mask, "Total", "Total Points", "Total")
+            madison_plot_and_predict(df_mask, "Sprints Scored", "Sprints Scored", "Sprints Scored")
+            madison_plot_and_predict(df_mask, "Sprints Won", "Sprints Won", "Sprints Won")
+            madison_plot_and_predict(df_mask, "P.Laps", "Points Laps", "P.Laps")
+            madison_plot_and_predict(df_mask, "Avg Speed", "Average Speed (km/h)", "Avg Speed")
 
 
-        events = st.selectbox("Include which events:", ["All","Just NC","Just WCH","Just OLY & WCH"], key="M mado event selector")
-        
+    if race_type in ["Men's Omnium", "Women's Omnium"]:
+        category = "Men's" if race_type == "Men's Omnium" else "Women's"
+        omnium_file = "pages/WR_progressions/Mens_Omnium.xlsx" if category == "Men's" else "pages/WR_progressions/Womens_Omnium.xlsx"
 
-        if events=="Just NC":
-            df_scratch_mask=df_scratch[df_scratch["Event"]=="NC"]
-            df_tempo_mask=df_tempo[df_tempo["Event"]=="NC"]
-            df_elimination_mask=df_elimination[df_elimination["Event"]=="NC"]
-            df_points_mask=df_points[df_points["Event"]=="NC"]
-        elif events=="Just WCH":
-            df_scratch_mask=df_scratch[df_scratch["Event"]=="WCH"]
-            df_tempo_mask=df_tempo[df_tempo["Event"]=="WCH"]
-            df_elimination_mask=df_elimination[df_elimination["Event"]=="WCH"]
-            df_points_mask=df_points[df_points["Event"]=="WCH"]
-        elif events=="Just OLY & WCH":
-            df_scratch_mask=df_scratch[(df_scratch["Event"]=="WCH") | (df_scratch["Event"]=="OLY")]
-            df_tempo_mask=df_tempo[(df_tempo["Event"]=="WCH") | (df_tempo["Event"]=="OLY")]
-            df_elimination_mask=df_elimination[(df_elimination["Event"]=="WCH") | (df_elimination["Event"]=="OLY")]
-            df_points_mask=df_points[(df_points["Event"]=="WCH") | (df_points["Event"]=="OLY")]
+        if not Path(omnium_file).exists():
+            st.warning(f"Data file not found for {category} Omnium: {omnium_file}")
         else:
-            df_scratch_mask=df_scratch
-            df_tempo_mask=df_tempo
-            df_elimination_mask=df_elimination
-            df_points_mask=df_points
+            @st.cache_data
+            def load_omnium_sheet(file_path, sheet_name, use_cols, rows):
+                return pd.read_excel(
+                    io=file_path,
+                    engine='openpyxl',
+                    sheet_name=sheet_name,
+                    skiprows=0,
+                    usecols=use_cols,
+                    nrows=rows
+                )
 
-        df_scratch_mask.reset_index(drop=True,inplace=True)
-        df_tempo_mask.reset_index(drop=True,inplace=True)
-        df_elimination_mask.reset_index(drop=True,inplace=True)
-        df_points_mask.reset_index(drop=True,inplace=True)
+            df_points = load_omnium_sheet(omnium_file, 'Points', 'A:R', 150)
+            df_elimination = load_omnium_sheet(omnium_file, 'Elim', 'A:H', 60)
+            df_tempo = load_omnium_sheet(omnium_file, 'Tempo', 'A:L', 150)
+            df_scratch = load_omnium_sheet(omnium_file, 'Scratch', 'A:H', 60)
 
-        
-        date_range = st.slider(
-"Restrict date range?",
-    value=(2017, datetime.now().year),
-    min_value=2017,
-    max_value=datetime.now().year)
-
-        df_scratch_mask = df_scratch_mask[(df_scratch_mask["Year"] >= date_range[0]) & (df_scratch_mask["Year"] <= date_range[1])].reset_index(drop=True)
-        df_tempo_mask = df_tempo_mask[(df_tempo_mask["Year"] >= date_range[0]) & (df_tempo_mask["Year"] <= date_range[1])].reset_index(drop=True)
-        df_elimination_mask = df_elimination_mask[(df_elimination_mask["Year"] >= date_range[0]) & (df_elimination_mask["Year"] <= date_range[1])].reset_index(drop=True)
-        df_points_mask = df_points_mask[(df_points_mask["Year"] >= date_range[0]) & (df_points_mask["Year"] <= date_range[1])].reset_index(drop=True)
-
-        st.header("Scratch")
-        st.dataframe(df_scratch_mask)
-        def avg_speed_plot_predict(df,race):
-            df["DateSerial"] = df["Date"].apply(lambda d: d.toordinal()).values
-            fig = px.scatter(
-                        df,
-                        x="DateSerial",
-                        y="Avg Speed",
-                        title=f"Men's Omnium {race} avg speed progression",
-                        labels={"value": "Avg Speed", "DateSerial": "Date (serial)"},
-                        trendline="ols",
-                        color_discrete_sequence=['#FFD700']
-                        
-                    )
-            customdata = np.stack((df['Name'], df['Year'], df['Location'], df['Event']), axis=-1)
-            hovertemplate = (
-                f'Name: %{{customdata[0]}}<br>'
-                'Year: %{customdata[1]}<br>'
-                'Location: %{customdata[2]}<br>'
-                'Event: %{customdata[3]}<br>'
-                
-                '<extra></extra>'
-            )
-            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-            st.plotly_chart(fig, use_container_width=True)
-            # Regression and prediction
-            
-            fit_results = px.get_trendline_results(fig).px_fit_results
-            first_a = fit_results.iloc[0].rsquared
-            first_const = fit_results.iloc[0].params[0]
-            first_x1 = fit_results.iloc[0].params[1]
-            
-
-
-            predict_year = st.number_input(
-                "Select year for avg speed prediction:",
-                min_value=2024,
-                max_value=2048,
-                value=2025,
-                step=1,
-                key=f"men_{df}_avg_speed_predict_year"
-            )
-            predict_date = datetime(predict_year, 1, 1)
-            predict_serial = predict_date.toordinal()
-            first_total = first_x1 * predict_serial + first_const
-            st.write(f"This trend predicts a winning avg speed of {round(first_total,1)} kph in the {race} race in {predict_year}.")
-        avg_speed_plot_predict(df_scratch_mask,"Scratch")
-        st.markdown("---")
-
-
-
-
-
-        st.header("Tempo")
-        st.dataframe(df_tempo_mask)
-        def metric_plot_and_predict(df,race,metric):
-            df_first = df.loc[df["Rank"]==1]
-            df_second = df.loc[df["Rank"]==2]
-            df_third = df.loc[df["Rank"]==3]
-            df_first_dates = pd.to_datetime(df_first["Date"])
-            df_second_dates = pd.to_datetime(df_second["Date"])
-            df_third_dates = pd.to_datetime(df_third["Date"])
-            df_plot = pd.DataFrame({
-                "Date": df_first["Date"].values,
-                "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
-                "Gold": df_first[metric].values,
-                "Silver": df_second[metric].values,
-                "Bronze": df_third[metric].values,
-                "Year": df_first["Year"].values,
-                "Location": df_first["Location"].values,
-                "Event": df_first["Event"].values
-            })
-
-            fig = px.scatter(
-                df_plot,
-                x="DateSerial",
-                y=["Gold", "Silver", "Bronze"],
-                title=f"Men's Omnium {race} race {metric} progression",
-                labels={"value": metric, "DateSerial": "Date (serial)"},
-                trendline="ols",
-                color_discrete_sequence=['#FFD700', '#C0C0C0', '#CD7F32']
-            )
-            customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event']), axis=-1)
-            hovertemplate = (
-                f'Gold: %{{customdata[0]}}<br>'
-                f'Silver: %{{customdata[1]}}<br>'
-                f'Bronze: %{{customdata[2]}}<br>'
-                'Year: %{customdata[3]}<br>'
-                'Location: %{customdata[4]}<br>'
-                'Event: %{customdata[5]}<br>'
-                '<extra></extra>'
-            )
-            fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-
-            st.plotly_chart(fig, use_container_width=True)
-            # Regression and prediction
-
-            fit_results = px.get_trendline_results(fig).px_fit_results
-            first_a = fit_results.iloc[0].rsquared
-            first_const = fit_results.iloc[0].params[0]
-            first_x1 = fit_results.iloc[0].params[1]
-            second_a = fit_results.iloc[1].rsquared
-            second_const = fit_results.iloc[1].params[0]
-            second_x1 = fit_results.iloc[1].params[1]
-            third_a = fit_results.iloc[2].rsquared
-            third_const = fit_results.iloc[2].params[0]
-            third_x1 = fit_results.iloc[2].params[1]
-
-
-            predict_year = st.number_input(
-                f"Select year for {metric} prediction:",
-                min_value=2025,
-                max_value=2048,
-                value=2025,
-                step=1,
-                key=f"men_{race}_{metric}_predict_year"
+            events = st.selectbox(
+                "Include which events:",
+                ["All", "Just NC", "Just WCH", "Just OLY & WCH"],
+                key=f"{category}_omnium_event_selector"
             )
 
-            predict_date = datetime(predict_year, 1, 1)
-            predict_serial = predict_date.toordinal()
-            first_total = first_x1 * predict_serial + first_const
-            st.write(f"This trend predicts a winning {metric} of {round(first_total,1)} in the {race} race in {predict_year}.")
-            second_total = second_x1 * predict_serial + second_const
-            st.write(f"This trend predicts a second {metric} of {round(second_total,1)} in the {race} race in {predict_year}.")
-            third_total = third_x1 * predict_serial + third_const
-            st.write(f"This trend predicts a third {metric} of {round(third_total,1)} in the {race} race in {predict_year}.")
+            def event_filter(df_in):
+                if events == "Just NC":
+                    return df_in[df_in["Event"] == "NC"]
+                if events == "Just WCH":
+                    return df_in[df_in["Event"] == "WCH"]
+                if events == "Just OLY & WCH":
+                    return df_in[(df_in["Event"] == "WCH") | (df_in["Event"] == "OLY")]
+                return df_in
 
-        metric_plot_and_predict(df_tempo_mask,"Tempo","Total")
-        metric_plot_and_predict(df_tempo_mask,"Tempo","Sprints Won")
-        metric_plot_and_predict(df_tempo_mask,"Tempo","P.Laps")
-        avg_speed_plot_predict(df_tempo_mask,"Tempo")
+            df_scratch_mask = event_filter(df_scratch).reset_index(drop=True)
+            df_tempo_mask = event_filter(df_tempo).reset_index(drop=True)
+            df_elimination_mask = event_filter(df_elimination).reset_index(drop=True)
+            df_points_mask = event_filter(df_points).reset_index(drop=True)
 
-        st.markdown("---")
+            date_range = st.slider(
+                "Restrict date range?",
+                value=(2017, datetime.now().year),
+                min_value=2017,
+                max_value=datetime.now().year,
+                key=f"{category}_omnium_date_range"
+            )
 
-        st.header("Elimination")
-        st.dataframe(df_elimination_mask)
-        avg_speed_plot_predict(df_elimination_mask,"Elimination")
-        st.markdown("---")
-        st.header("Points")
-        st.dataframe(df_points_mask)
-        metric_plot_and_predict(df_points_mask,"Points","Final")
-        metric_plot_and_predict(df_points_mask,"Points","Sub Total")
-        metric_plot_and_predict(df_points_mask,"Points","Points Total")
-        metric_plot_and_predict(df_points_mask,"Points","P.Laps")
-        metric_plot_and_predict(df_points_mask,"Points","Sprints Scored")
-        metric_plot_and_predict(df_points_mask,"Points","Sprints Won")
-        avg_speed_plot_predict(df_points_mask,"Points")
+            def date_filter(df_in):
+                return df_in[
+                    (df_in["Year"] >= date_range[0]) & (df_in["Year"] <= date_range[1])
+                ].reset_index(drop=True)
+
+            df_scratch_mask = date_filter(df_scratch_mask)
+            df_tempo_mask = date_filter(df_tempo_mask)
+            df_elimination_mask = date_filter(df_elimination_mask)
+            df_points_mask = date_filter(df_points_mask)
+
+            def avg_speed_plot_predict(df_in, race):
+                df_plot = df_in.copy()
+                if df_plot.empty:
+                    st.info(f"No data available for {race} after filtering.")
+                    return
+
+                df_plot["DateSerial"] = pd.to_datetime(df_plot["Date"]).apply(lambda d: d.toordinal())
+                fig = px.scatter(
+                    df_plot,
+                    x="DateSerial",
+                    y="Avg Speed",
+                    title=f"{category} Omnium {race} avg speed progression",
+                    labels={"value": "Avg Speed", "DateSerial": "Date (serial)"},
+                    trendline="ols",
+                    color_discrete_sequence=['#FFD700']
+                )
+                customdata = np.stack((df_plot['Name'], df_plot['Year'], df_plot['Location'], df_plot['Event']), axis=-1)
+                hovertemplate = (
+                    'Name: %{customdata[0]}<br>'
+                    'Year: %{customdata[1]}<br>'
+                    'Location: %{customdata[2]}<br>'
+                    'Event: %{customdata[3]}<br>'
+                    '<extra></extra>'
+                )
+                fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                st.plotly_chart(fig, use_container_width=True)
+
+                fit_results = px.get_trendline_results(fig).px_fit_results
+                if fit_results.empty:
+                    st.info("Not enough points to compute trendline.")
+                    return
+
+                first_const = fit_results.iloc[0].params[0]
+                first_x1 = fit_results.iloc[0].params[1]
+
+                predict_year = st.number_input(
+                    "Select year for avg speed prediction:",
+                    min_value=2024,
+                    max_value=2048,
+                    value=2025,
+                    step=1,
+                    key=f"{category}_{race}_avg_speed_predict_year"
+                )
+                predict_serial = datetime(predict_year, 1, 1).toordinal()
+                st.write(
+                    f"This trend predicts a winning avg speed of {round(first_x1 * predict_serial + first_const, 1)} kph in the {race} race in {predict_year}."
+                )
+
+            def metric_plot_and_predict(df_in, race, metric):
+                df_first = df_in.loc[df_in["Rank"] == 1].reset_index(drop=True)
+                df_second = df_in.loc[df_in["Rank"] == 2].reset_index(drop=True)
+                df_third = df_in.loc[df_in["Rank"] == 3].reset_index(drop=True)
+
+                min_len = min(len(df_first), len(df_second), len(df_third))
+                if min_len == 0:
+                    st.info(f"No rank 1-3 data available for {race} {metric} after filtering.")
+                    return
+
+                df_first = df_first.iloc[:min_len]
+                df_second = df_second.iloc[:min_len]
+                df_third = df_third.iloc[:min_len]
+
+                df_first_dates = pd.to_datetime(df_first["Date"])
+                df_plot = pd.DataFrame({
+                    "Date": df_first["Date"].values,
+                    "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
+                    "Gold": df_first[metric].values,
+                    "Silver": df_second[metric].values,
+                    "Bronze": df_third[metric].values,
+                    "Year": df_first["Year"].values,
+                    "Location": df_first["Location"].values,
+                    "Event": df_first["Event"].values
+                })
+
+                fig = px.scatter(
+                    df_plot,
+                    x="DateSerial",
+                    y=["Gold", "Silver", "Bronze"],
+                    title=f"{category} Omnium {race} race {metric} progression",
+                    labels={"value": metric, "DateSerial": "Date (serial)"},
+                    trendline="ols",
+                    color_discrete_sequence=['#FFD700', '#C0C0C0', '#CD7F32']
+                )
+                customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event']), axis=-1)
+                hovertemplate = (
+                    'Gold: %{customdata[0]}<br>'
+                    'Silver: %{customdata[1]}<br>'
+                    'Bronze: %{customdata[2]}<br>'
+                    'Year: %{customdata[3]}<br>'
+                    'Location: %{customdata[4]}<br>'
+                    'Event: %{customdata[5]}<br>'
+                    '<extra></extra>'
+                )
+                fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+                st.plotly_chart(fig, use_container_width=True)
+
+                fit_results = px.get_trendline_results(fig).px_fit_results
+                if len(fit_results) < 3:
+                    st.info("Not enough points to compute all trendlines.")
+                    return
+
+                first_const, first_x1 = fit_results.iloc[0].params[0], fit_results.iloc[0].params[1]
+                second_const, second_x1 = fit_results.iloc[1].params[0], fit_results.iloc[1].params[1]
+                third_const, third_x1 = fit_results.iloc[2].params[0], fit_results.iloc[2].params[1]
+
+                predict_year = st.number_input(
+                    f"Select year for {metric} prediction:",
+                    min_value=2025,
+                    max_value=2048,
+                    value=2025,
+                    step=1,
+                    key=f"{category}_{race}_{metric}_predict_year"
+                )
+
+                predict_serial = datetime(predict_year, 1, 1).toordinal()
+                st.write(f"This trend predicts a winning {metric} of {round(first_x1 * predict_serial + first_const, 1)} in the {race} race in {predict_year}.")
+                st.write(f"This trend predicts a second {metric} of {round(second_x1 * predict_serial + second_const, 1)} in the {race} race in {predict_year}.")
+                st.write(f"This trend predicts a third {metric} of {round(third_x1 * predict_serial + third_const, 1)} in the {race} race in {predict_year}.")
+
+            st.header("Scratch")
+            st.dataframe(df_scratch_mask)
+            avg_speed_plot_predict(df_scratch_mask, "Scratch")
+            st.markdown("---")
+
+            st.header("Tempo")
+            st.dataframe(df_tempo_mask)
+            metric_plot_and_predict(df_tempo_mask, "Tempo", "Total")
+            metric_plot_and_predict(df_tempo_mask, "Tempo", "Sprints Won")
+            metric_plot_and_predict(df_tempo_mask, "Tempo", "P.Laps")
+            avg_speed_plot_predict(df_tempo_mask, "Tempo")
+            st.markdown("---")
+
+            st.header("Elimination")
+            st.dataframe(df_elimination_mask)
+            avg_speed_plot_predict(df_elimination_mask, "Elimination")
+            st.markdown("---")
+
+            st.header("Points")
+            st.dataframe(df_points_mask)
+            metric_plot_and_predict(df_points_mask, "Points", "Final")
+            metric_plot_and_predict(df_points_mask, "Points", "Sub Total")
+            metric_plot_and_predict(df_points_mask, "Points", "Points Total")
+            metric_plot_and_predict(df_points_mask, "Points", "P.Laps")
+            metric_plot_and_predict(df_points_mask, "Points", "Sprints Scored")
+            metric_plot_and_predict(df_points_mask, "Points", "Sprints Won")
+            avg_speed_plot_predict(df_points_mask, "Points")
 
                     
                 
