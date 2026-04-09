@@ -61,9 +61,9 @@ if authentication_status == None:
 if authentication_status:
     checkboxid=0
     ##This bit is the historical visualiser
-    def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    def filter_dataframe(df: pd.DataFrame, widget_key_prefix: str = "default") -> pd.DataFrame:
 
-        modify = st.checkbox("Add filters",key=f"filt{checkboxid}")
+        modify = st.checkbox("Add filters", key=f"{widget_key_prefix}_add_filters")
 
         if not modify:
             return df
@@ -84,8 +84,12 @@ if authentication_status:
         modification_container = st.container()
 
         with modification_container:
-            to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
-            for column in to_filter_columns:
+            to_filter_columns = st.multiselect(
+                "Filter dataframe on",
+                df.columns,
+                key=f"{widget_key_prefix}_filter_columns",
+            )
+            for col_idx, column in enumerate(to_filter_columns):
                 left, right = st.columns((1, 20))
                 # Treat columns with < 10 unique values as categorical
                 if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
@@ -93,6 +97,7 @@ if authentication_status:
                         f"Values for {column}",
                         df[column].unique(),
                         default=list(df[column].unique()),
+                        key=f"{widget_key_prefix}_cat_{col_idx}_{column}",
                     )
                     df = df[df[column].isin(user_cat_input)]
                 elif is_numeric_dtype(df[column]):
@@ -105,6 +110,7 @@ if authentication_status:
                         max_value=_max,
                         value=(_min, _max),
                         step=step,
+                        key=f"{widget_key_prefix}_num_{col_idx}_{column}",
                     )
                     df = df[df[column].between(*user_num_input)]
                 elif is_datetime64_any_dtype(df[column]):
@@ -114,6 +120,7 @@ if authentication_status:
                             df[column].min(),
                             df[column].max(),
                         ),
+                        key=f"{widget_key_prefix}_date_{col_idx}_{column}",
                     )
                     if len(user_date_input) == 2:
                         user_date_input = tuple(map(pd.to_datetime, user_date_input))
@@ -122,6 +129,7 @@ if authentication_status:
                 else:
                     user_text_input = right.text_input(
                         f"Substring or regex in {column}",
+                        key=f"{widget_key_prefix}_text_{col_idx}_{column}",
                     )
                     if user_text_input:
                         df = df[df[column].astype(str).str.contains(user_text_input)]
@@ -2547,8 +2555,12 @@ if authentication_status:
                 df_table["2"] = [0,df_table["Lap 2"][1]+df_table["Gap 1"][1],0]
                 df_table["3"] = [0,0,df_table["Lap 3"][2]+df_table["Gap 2"][2]]
                 df_table["Time"] = [0,0,df_temp["Start time"][27]-start]
+                df_table_small = df_table[["Event", "Position", "Rider", "RT", "Lap 1", "Lap 2", "Lap 3", "Time"]].copy()
+                df_table_small = df_table_small.rename(columns={"Lap 1": "Lap1", "Lap 2": "Lap2", "Lap 3": "Lap3", "Time": "time"})
                 st.header(selections[i])
                 df_table
+                st.subheader("Compact Summary")
+                df_table_small
                 
                 gap1_2_1 = round(df_table["62.5"][1]-df_table["62.5"][0],2)
                 gap1_2_2 = round(df_table["125"][1]-df_table["125"][0] + gap1_2_1,2)
@@ -2583,8 +2595,10 @@ if authentication_status:
                 st.plotly_chart(f1, use_container_width=True)
                 if i==0:
                     df_table_all=df_table
+                    df_table_small_all = df_table_small
                 else:
                     df_table_all=pd.concat([df_table_all,df_table])
+                    df_table_small_all = pd.concat([df_table_small_all, df_table_small], ignore_index=True)
                 c1,c2=st.columns(2)
                 with c2:
                     if Videos == "Yes":
@@ -2613,8 +2627,11 @@ if authentication_status:
                 
             st.header("Full Summary", anchor="summary")
             df = df_table_all
-            df_filt = filter_dataframe(df)
+            df_filt = filter_dataframe(df, widget_key_prefix="full_summary")
             df_filt
+            st.subheader("Compact Full Summary")
+            df_small_filt = filter_dataframe(df_table_small_all, widget_key_prefix="compact_full_summary")
+            df_small_filt
             
             buffer = io.BytesIO()
             @st.cache_data
@@ -2645,6 +2662,18 @@ if authentication_status:
                     file_name='WTS_summary.xlsx',
                     mime='application/vnd.ms-excel'
                 ) 
+
+            compact_buffer = io.BytesIO()
+            with pd.ExcelWriter(compact_buffer, engine='xlsxwriter') as writer:
+                df_small_filt.to_excel(writer, sheet_name='Sheet1', index=False)
+                writer.close()
+
+                download3 = st.download_button(
+                    label="Download Compact Summary as Excel",
+                    data=compact_buffer,
+                    file_name='WTS_compact_summary.xlsx',
+                    mime='application/vnd.ms-excel'
+                )
             
             df_combine.rename(columns={ df_combine.columns[0]: "Speed (km/h)" }, inplace = True)
             
