@@ -6,7 +6,7 @@ import streamlit as st
 import plotly.express as px
 import io
 
-st.set_page_config(page_title='High Performance Development Database',
+st.set_page_config(page_title='High Performance Development Benchmarking',
                    page_icon=":bike:",
                    layout="wide")
 
@@ -35,15 +35,74 @@ if authentication_status == None:
 
 if authentication_status:
 
-    st.title(":bike: High Performance Development Database")
+    st.title(":bike: High Performance Development Benchmarking")
     st.markdown("---")
 
-    databases = ["Men's Endurance HPD", "Women's Endurance HPD"]
+    databases = ["Men's Endurance HPD", "Women's Endurance HPD", "Sprint HPD"]
     database = st.selectbox("Select Database:", databases, key="Database_Selector")
 
     @st.cache_data
     def convert_to_csv(df):
         return df.to_csv(index=False, sep=",").encode('utf-32')
+
+    # ============================================================
+    # Sprint HPD
+    # ============================================================
+    if database == "Sprint HPD":
+        st.header("Sprint HPD")
+
+        @st.cache_data
+        def get_sprint_sheet_names():
+            xls = pd.ExcelFile('pages/Sprint_HPD.xlsx', engine='openpyxl')
+            return [sheet for sheet in xls.sheet_names if sheet.strip().lower() != "sheet1"]
+
+        sprint_sheet_types = get_sprint_sheet_names()
+
+        if len(sprint_sheet_types) == 0:
+            st.warning("No Sprint HPD sheets available after excluding Sheet1.")
+        else:
+            sprint_sheet = st.selectbox("Select Sheet:", sprint_sheet_types, key="Sheet_Selector_Sprint")
+
+            @st.cache_data
+            def get_sprint_sheet(sheet_name):
+                df = pd.read_excel(
+                    io='pages/Sprint_HPD.xlsx',
+                    engine='openpyxl',
+                    sheet_name=sheet_name,
+                    skiprows=0,
+                    nrows=5000
+                )
+                return df
+
+            df_orig = get_sprint_sheet(sprint_sheet)
+            df = df_orig.copy()
+
+            filter_columns = ["Year", "Location", "Event", "Athlete"]
+            available_filter_columns = [col for col in filter_columns if col in df_orig.columns]
+
+            if len(available_filter_columns) != 0:
+                filter_cols = st.columns(len(available_filter_columns))
+                for idx, col_name in enumerate(available_filter_columns):
+                    with filter_cols[idx]:
+                        options = df_orig[col_name].dropna().unique()
+                        selected_values = st.multiselect(
+                            f"Select {col_name}:",
+                            options=options,
+                            key=f"sprint_{sprint_sheet}_{col_name}"
+                        )
+                        if selected_values:
+                            df = df[df[col_name].isin(selected_values)]
+
+            st.dataframe(df, use_container_width=True)
+
+            csv = convert_to_csv(df)
+            st.download_button(label="Download as CSV", data=csv, file_name='Sprint_HPD_Data.csv', mime='text/csv', key="sprint_csv")
+
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name='Sheet1', index=False)
+                writer.close()
+                st.download_button(label="Download as Excel", data=buffer, file_name='Sprint_HPD_Data.xlsx', mime='application/vnd.ms-excel', key="sprint_xlsx")
 
     # ============================================================
     # Men's Endurance HPD
