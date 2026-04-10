@@ -140,7 +140,7 @@ if authentication_status:
    
     racetype = st.selectbox(
         "Select Race Type:",
-        options=["Women's TP", "Men's TP", "Women's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP","Bunch"]
+        options=["Women's TP", "Men's TP", "Women's Team Sprint","Men's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP","Bunch"]
         ) 
     
     
@@ -2835,4 +2835,324 @@ if authentication_status:
                         mime='application/vnd.ms-excel'
                     )       
             
- 
+    ################################################ Men's Team Sprint ########################################
+    
+    if racetype == "Men's Team Sprint":
+        
+        st.markdown("---")            
+        df_master = pd.read_excel(f'pages/video_analysis/MTS_Master_Men.xlsx')
+        st.header("Race Viewer")
+        c1,c2=st.columns(2)
+        
+        with c1:
+            selections = st.multiselect(
+            "Select past effort(s):",
+            options=df_master["Title"].sort_values(ascending=False).unique()
+            ) 
+        with c2:
+            show_vids = ["No","Yes"]
+            Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids_MTS")
+        if len(selections) !=0:
+            st.markdown("[Jump to Full Summary](#summary)", unsafe_allow_html=True)
+            df_combine = pd.DataFrame()
+            for i in range(len(selections)):
+                checkboxid+=1
+                df_temp = df_master.loc[df_master['Title'] == selections[i]].reset_index(drop=True)
+                
+                
+                df_table = pd.DataFrame([1,2,3],columns=["Position"])
+                df_table.insert(0,"Event",df_temp["Title"][0:3])
+                df_table["Rider"]=df_temp["Riders"][0:3]
+                df_table["Gear"]=df_temp["Gears"][0:3]
+                
+                ind1=df_temp.index[df_temp['Row'] == "Rider 1 Forward"].tolist()[0]
+                ind2=df_temp.index[df_temp['Row'] == "Rider 2 Forward"].tolist()[0]
+                ind3=df_temp.index[df_temp['Row'] == "Rider 3 Forward"].tolist()[0]
+                indstart=df_temp.index[df_temp['Row'] == "Start"].tolist()[0]
+                start = df_temp["Start time"][indstart]
+                react1 = round(df_temp["Start time"][ind1]-start,2)
+                react2 = round(df_temp["Start time"][ind2]-start,2)
+                react3 = round(df_temp["Start time"][ind3]-start,2)
+                
+                
+                df_table["RT"]=[react1,react2,react3]
+                df_table["62.5"]=[df_temp["Start time"][4]-start,df_temp["Start time"][5]-start,df_temp["Start time"][6]-start]
+                
+                df_table["125"]=[df_temp["Start time"][7]-df_temp["Start time"][4],df_temp["Start time"][8]-df_temp["Start time"][5],df_temp["Start time"][9]-df_temp["Start time"][6]]
+                
+                df_table["187.5"]=[df_temp["Start time"][10]-df_temp["Start time"][7],df_temp["Start time"][11]-df_temp["Start time"][8],df_temp["Start time"][12]-df_temp["Start time"][9]]
+                
+                df_table["250"]=[df_temp["Start time"][13]-df_temp["Start time"][10],df_temp["Start time"][14]-df_temp["Start time"][11],df_temp["Start time"][15]-df_temp["Start time"][12]]
+                df_table["Lap 1"]=[df_temp["Start time"][13]-start,df_temp["Start time"][14]-start,df_temp["Start time"][15]-start]
+                
+                
+                df_table["Gap 1"]= [0.0,df_table["Lap 1"][1]-df_table["Lap 1"][0],df_table["Lap 1"][2]-df_table["Lap 1"][1]]
+                
+                df_table["312.5"]=[0,df_temp["Start time"][16]-df_temp["Start time"][14],df_temp["Start time"][17]-df_temp["Start time"][15]]
+                
+                df_table["375"]=[0,df_temp["Start time"][18]-df_temp["Start time"][16],df_temp["Start time"][19]-df_temp["Start time"][17]]
+                
+                df_table["437.5"]=[0,df_temp["Start time"][20]-df_temp["Start time"][18],df_temp["Start time"][21]-df_temp["Start time"][19]]
+                
+                df_table["500"]=[0,df_temp["Start time"][22]-df_temp["Start time"][20],df_temp["Start time"][23]-df_temp["Start time"][21]]
+                df_table["Lap 2"]=[0,df_temp["Start time"][22]-df_temp["Start time"][14],df_temp["Start time"][23]-df_temp["Start time"][15]]
+                df_table["500m Time"] = [0,df_table["Lap 1"][1]+df_table["Lap 2"][1],df_table["Lap 1"][2]+df_table["Lap 2"][2]]
+                df_table["Gap 2"]= [0,0,df_table["Lap 2"][2]-df_table["Lap 2"][1] + df_table["Gap 1"][2]]
+                
+                df_table["562.5"] = [0,0,df_temp["Start time"][24]-df_temp["Start time"][23]]
+                df_table["625"] = [0,0,df_temp["Start time"][25]-df_temp["Start time"][24]]
+                df_table["687.5"] = [0,0,df_temp["Start time"][26]-df_temp["Start time"][25]]
+                df_table["750"] = [0,0,df_temp["Start time"][27]-df_temp["Start time"][26]]
+                
+                df_table["Lap 3"] = [0,0,df_temp["Start time"][27]-df_temp["Start time"][23]]
+                df_table["1"] = [df_table["Lap 1"][0],0,0]
+                df_table["2"] = [0,df_table["Lap 2"][1]+df_table["Gap 1"][1],0]
+                df_table["3"] = [0,0,df_table["Lap 3"][2]+df_table["Gap 2"][2]]
+                df_table["Time"] = [0,0,df_temp["Start time"][27]-start]
+                df_table_small = df_table[["Event", "Position", "Rider", "RT", "Lap 1", "Lap 2", "Lap 3", "Time"]].copy()
+                df_table_small = df_table_small.rename(columns={"Lap 1": "Lap1", "Lap 2": "Lap2", "Lap 3": "Lap3", "Time": "time"})
+                st.header(selections[i])
+                df_table
+                st.subheader("Compact Summary")
+                df_table_small
+                
+                gap1_2_1 = round(df_table["62.5"][1]-df_table["62.5"][0],2)
+                gap1_2_2 = round(df_table["125"][1]-df_table["125"][0] + gap1_2_1,2)
+                gap1_2_3 = round(df_table["187.5"][1]-df_table["187.5"][0] + gap1_2_2,2)
+                gap1_2_4 = round(df_table["250"][1]-df_table["250"][0] + gap1_2_3,2)
+                
+                gap2_3_1 = round(df_table["62.5"][2]-df_table["62.5"][1],2)
+                gap2_3_2 = round(df_table["125"][2]-df_table["125"][1]+gap2_3_1,2)
+                gap2_3_3 = round(df_table["187.5"][2]-df_table["187.5"][1]+gap2_3_2,2)
+                gap2_3_4 = round(df_table["250"][2]-df_table["250"][1]+gap2_3_3,2)
+                gap2_3_5 = round(df_table["312.5"][2]-df_table["312.5"][1]+gap2_3_4,2)
+                gap2_3_6 = round(df_table["375"][2]-df_table["375"][1]+gap2_3_5,2)
+                gap2_3_7 = round(df_table["437.5"][2]-df_table["437.5"][1]+gap2_3_6,2)
+                gap2_3_8 = round(df_table["500"][2]-df_table["500"][1]+gap2_3_7,2)
+                
+                gaps1_2=[gap1_2_1,gap1_2_2,gap1_2_3,gap1_2_4,0,0,0,0]
+                gaps2_3=[gap2_3_1,gap2_3_2,gap2_3_3,gap2_3_4,gap2_3_5,gap2_3_6,gap2_3_7,gap2_3_8]
+                df_gap = pd.DataFrame(gaps1_2)
+                df_gap.rename(columns={ df_gap.columns[0]: "Gap1_2" }, inplace = True)
+                df_gap["Gap2_3"]=gaps2_3
+                
+              
+            
+                f1 = go.Figure(
+                data = [
+                    go.Scatter(y=gaps1_2[0:4], x=["Q1","Q2","Q3","Q4"], name="Rider 2 to 1"),
+                    go.Scatter(x=["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8"], y=gaps2_3, name="Rider 3 to 2"),
+                ],
+                layout = {"xaxis": {"title": "Quarters"}, "yaxis": {"title": "Seconds"}, "title": "Gaps by Quarter"}
+                )
+                
+                st.plotly_chart(f1, use_container_width=True)
+                if i==0:
+                    df_table_all=df_table
+                    df_table_small_all = df_table_small
+                else:
+                    df_table_all=pd.concat([df_table_all,df_table])
+                    df_table_small_all = pd.concat([df_table_small_all, df_table_small], ignore_index=True)
+                c1,c2=st.columns(2)
+                with c2:
+                    if Videos == "Yes":
+                    
+                        if pd.isnull(df_temp["Video"].iloc[0]):
+                            st.header("No video available")
+                        else:
+                            video_name = df_temp["Video"].iloc[0]
+                            st.header(df_temp["Title"].iloc[0])
+
+                            st.video(f"{video_name}")
+                
+                st.markdown("---")
+                
+                
+                teamsplits = [df_table["62.5"][0],df_table["125"][0],df_table["187.5"][0],df_table["250"][0],df_table["312.5"][1]+df_table["Gap 1"][1],df_table["375"][1],df_table["437.5"][1],df_table["500"][1],df_table["562.5"][2]+df_table["Gap 2"][2],df_table["625"][2],df_table["687.5"][2],df_table["750"][2]]
+                
+                teamspeeds = [round(3.6*62.5/i,2) for i in teamsplits]
+                
+                df_speeds = pd.DataFrame(teamspeeds)
+                
+                df_speeds["Title"] = selections[i]
+                df_speeds["Marker"] = ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12"]
+                df_speeds["Splits"] = teamsplits
+                df_combine = pd.concat([df_combine, df_speeds], axis=0)
+                
+            st.header("Full Summary", anchor="summary")
+            df = df_table_all
+            df_filt = filter_dataframe(df, widget_key_prefix="mts_full_summary")
+            df_filt
+            st.subheader("Compact Full Summary")
+            df_small_filt = filter_dataframe(df_table_small_all, widget_key_prefix="mts_compact_full_summary")
+            df_small_filt
+            
+            buffer = io.BytesIO()
+            @st.cache_data
+            def convert_to_csv(df):
+                # IMPORTANT: Cache the conversion to prevent computation on every rerun
+                return df.to_csv(index=False).encode('utf-8')
+
+            csv = convert_to_csv(df)
+
+            # download button 1 to download dataframe as csv
+            download1 = st.download_button(
+                label="Download Summary as CSV",
+                data=csv,
+                file_name='MTS_summary.csv',
+                mime='text/csv'
+            )
+
+            # download button 2 to download dataframe as xlsx
+            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                # Write each dataframe to a different worksheet.
+                df_filt.to_excel(writer, sheet_name='Sheet1', index=False)
+                # Close the Pandas Excel writer and output the Excel file to the buffer
+                writer.close()
+
+                download2 = st.download_button(
+                    label="Download Summary as Excel",
+                    data=buffer,
+                    file_name='MTS_summary.xlsx',
+                    mime='application/vnd.ms-excel'
+                ) 
+
+            compact_buffer = io.BytesIO()
+            with pd.ExcelWriter(compact_buffer, engine='xlsxwriter') as writer:
+                df_small_filt.to_excel(writer, sheet_name='Sheet1', index=False)
+                writer.close()
+
+                download3 = st.download_button(
+                    label="Download Compact Summary as Excel",
+                    data=compact_buffer,
+                    file_name='MTS_compact_summary.xlsx',
+                    mime='application/vnd.ms-excel'
+                )
+            
+            df_combine.rename(columns={ df_combine.columns[0]: "Speed (km/h)" }, inplace = True)
+            
+            fig_comp = px.line(df_combine, x="Marker", y = "Speed (km/h)", title="Average Speed Comparison",color="Title",markers="Splits",labels = {
+            "Marker":"Quarter"})
+
+            st.plotly_chart(fig_comp, use_container_width=True)
+            
+            fig_comp_split = px.line(df_combine, x="Marker", y = "Splits", title="Split Comparison",color="Title",markers="Splits",labels = {
+            "Marker":"Quarter"})
+
+            st.plotly_chart(fig_comp_split, use_container_width=True)
+        st.markdown('---')
+        st.header("Editor")
+
+
+        uploaded_file = st.file_uploader("Choose a file",key="mts_uploader")
+
+        if uploaded_file is not None:
+            st.markdown("---")
+
+            st.header("Editor")
+            st.write("Initial df")
+            df_full = pd.read_excel(uploaded_file)
+            df_full['Position'] = df_full['Position'].apply(
+    lambda t: t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1_000_000
+)
+            df_full.drop(['Duration'],
+          axis='columns', inplace=True)
+            
+            
+            c1,c2,c3=st.columns(3)
+            with c1:
+                df_full
+                start=st.number_input("Start Row (inclusive)", value=0, key="mts_start_row")
+            with c2:
+                df_check = pd.DataFrame(df_full.iloc[::28, :])
+                st.write("Checking we've got everything")
+                df_check = df_check.loc[:, ~df_check.columns.str.match(r'^Unnamed') & df_check.notna().any()]
+                df_check
+                end=st.number_input("End Row (inclusive)", value=start+27, key="mts_end_row")+1
+            
+            
+            df=df_full[start:end]
+            
+            
+            with c1:
+                rider1 = st.text_input("Select Rider 1:", key="mts_rider1")
+                rider2 = st.text_input("Select Rider 2:", key="mts_rider2")
+                rider3 = st.text_input("Select Rider 3:", key="mts_rider3")
+            
+            riders=[rider1,rider2,rider3]
+            
+            with c2:
+                rider1gear = st.text_input("Select Rider 1 gear:", key="mts_gear1")
+                rider2gear = st.text_input("Select Rider 2 gear:", key="mts_gear2")
+                rider3gear = st.text_input("Select Rider 3 gear:", key="mts_gear3")
+                Title = st.text_input("Plot Title:", key="mts_title")
+
+
+            df["Riders"]="NA"
+            df["Riders"].iloc[0]=rider1
+            df["Riders"].iloc[1]=rider2
+            df["Riders"].iloc[2]=rider3
+            df["Gears"]=0.0
+            df["Title"]=Title
+            col = df.pop('Title')
+            df.insert(0, col.name, col)
+            df["Gears"].iloc[0]=rider1gear
+            df["Gears"].iloc[1]=rider2gear
+            df["Gears"].iloc[2]=rider3gear
+            front=[rider1]
+            splits=[0]
+            del_speeds=[0]
+            speeds=[0]
+            r=0
+            
+            df = df.loc[:, ~df.columns.str.match(r'^Unnamed') & df.notna().any()]
+            df=df.reset_index(drop=True)
+            with c3:
+                df
+                ind1=df.index[df['Name'] == "Rider 1 Forward"].tolist()[0]
+                ind2=df.index[df['Name'] == "Rider 2 Forward"].tolist()[0]
+                ind3=df.index[df['Name'] == "Rider 3 Forward"].tolist()[0]
+                indstart=df.index[df['Name'] == "Start"].tolist()[0]
+                react1 = round(df["Position"][ind1]-df["Position"][indstart],2)
+                react2 = round(df["Position"][ind2]-df["Position"][indstart],2)
+                react3 = round(df["Position"][ind3]-df["Position"][indstart],2)
+                st.write(f'Reaction time for rider 1 is {react1} seconds')
+                st.write(f'Reaction time for rider 2 is {react2} seconds')
+                st.write(f'Reaction time for rider 3 is {react3} seconds')
+
+            if st.button("Append this effort to master",key="mts_upload"):
+
+                df_save=df
+                df_save = df_save.rename(columns={'Name': 'Row','Position':'Start time'})
+                df_save.insert(0, 'Save_Date', datetime.date.today())
+                df_save["Save_Date"] = pd.to_datetime(df_save['Save_Date'])
+                df = pd.concat([df_master, df_save], axis=0)
+                
+                df
+
+                buffer = io.BytesIO()
+
+                @st.cache_data
+                def convert_to_csv(df):
+                    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+                    return df.to_csv(index=False).encode('utf-8')
+
+                csv = convert_to_csv(df)
+
+                download1 = st.download_button(
+                    label="Download new Master as CSV",
+                    data=csv,
+                    file_name='MTS_Master_Men.csv',
+                    mime='text/csv'
+                )
+
+                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, sheet_name='Sheet1', index=False)
+                    writer.close()
+
+                    download2 = st.download_button(
+                        label="Download new Master as Excel",
+                        data=buffer,
+                        file_name='MTS_Master_Men.xlsx',
+                        mime='application/vnd.ms-excel'
+                    )       
