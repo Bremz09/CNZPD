@@ -61,9 +61,9 @@ if authentication_status == None:
 if authentication_status:
     checkboxid=0
     ##This bit is the historical visualiser
-    def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    def filter_dataframe(df: pd.DataFrame, widget_key_prefix: str = "default") -> pd.DataFrame:
 
-        modify = st.checkbox("Add filters",key=f"filt{checkboxid}")
+        modify = st.checkbox("Add filters", key=f"{widget_key_prefix}_add_filters")
 
         if not modify:
             return df
@@ -84,8 +84,12 @@ if authentication_status:
         modification_container = st.container()
 
         with modification_container:
-            to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
-            for column in to_filter_columns:
+            to_filter_columns = st.multiselect(
+                "Filter dataframe on",
+                df.columns,
+                key=f"{widget_key_prefix}_filter_columns",
+            )
+            for col_idx, column in enumerate(to_filter_columns):
                 left, right = st.columns((1, 20))
                 # Treat columns with < 10 unique values as categorical
                 if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
@@ -93,6 +97,7 @@ if authentication_status:
                         f"Values for {column}",
                         df[column].unique(),
                         default=list(df[column].unique()),
+                        key=f"{widget_key_prefix}_cat_{col_idx}_{column}",
                     )
                     df = df[df[column].isin(user_cat_input)]
                 elif is_numeric_dtype(df[column]):
@@ -105,6 +110,7 @@ if authentication_status:
                         max_value=_max,
                         value=(_min, _max),
                         step=step,
+                        key=f"{widget_key_prefix}_num_{col_idx}_{column}",
                     )
                     df = df[df[column].between(*user_num_input)]
                 elif is_datetime64_any_dtype(df[column]):
@@ -114,6 +120,7 @@ if authentication_status:
                             df[column].min(),
                             df[column].max(),
                         ),
+                        key=f"{widget_key_prefix}_date_{col_idx}_{column}",
                     )
                     if len(user_date_input) == 2:
                         user_date_input = tuple(map(pd.to_datetime, user_date_input))
@@ -122,6 +129,7 @@ if authentication_status:
                 else:
                     user_text_input = right.text_input(
                         f"Substring or regex in {column}",
+                        key=f"{widget_key_prefix}_text_{col_idx}_{column}",
                     )
                     if user_text_input:
                         df = df[df[column].astype(str).str.contains(user_text_input)]
@@ -272,27 +280,15 @@ if authentication_status:
                     r4WS = [0.459]
                     speed_diff=[df_small["Del_Speed"][0]]
 
-                    front_sequence = df_small["Front"].dropna()
-                    front_changes = front_sequence[front_sequence.ne(front_sequence.shift())].tolist()
-                    special_first_change = len(front_changes) >= 4 and front_changes[0] == front_changes[3]
-                    first_change_applied = False
-
                     no_riders=4
                     drag_feel = [0,0.971,0.612,0.495,0.459]
                     for j in range(1,len(df_small)):
                         speed_diff.append(df_small["Del_Speed"][j]-df_small["Del_Speed"][j-1])
                         if df_small["Action"][j-1] == "Change":
-                            if special_first_change and not first_change_applied and no_riders == 4:
-                                r1.append(3)
-                                r2.append(1)
-                                r3.append(2)
-                                r4.append(4)
-                                first_change_applied = True
-                            else:
-                                r1.append(r1[j-1]-1)
-                                r2.append(r2[j-1]-1)
-                                r3.append(r3[j-1]-1)
-                                r4.append(r4[j-1]-1)
+                            r1.append(r1[j-1]-1)
+                            r2.append(r2[j-1]-1)
+                            r3.append(r3[j-1]-1)
+                            r4.append(r4[j-1]-1)
                         elif df_small["Action"][j-1] == "Drop":
                             no_riders = 3
                             drag_feel = [0,0.972,0.617,0.517]
@@ -332,37 +328,59 @@ if authentication_status:
                         if r4[ind]==1:
                             r4[ind+1:]=[0]*(len(df_small)-ind-1)
                             r4WS[ind+1:]=[0]*(len(df_small)-ind-1)
-                    lead_riders = []
-                    for j in range(len(df_small)):
-                        if r1[j] == 1:
-                            lead_riders.append(1)
-                        elif r2[j] == 1:
-                            lead_riders.append(2)
-                        elif r3[j] == 1:
-                            lead_riders.append(3)
-                        elif r4[j] == 1:
-                            lead_riders.append(4)
-                        else:
-                            lead_riders.append(0)
+                    one_turn_1=0
+                    two_turn_1=0
+                    three_turn_1=0
+                    four_turn_1=0
+                    one_turn_2=0
+                    two_turn_2=0
+                    three_turn_2=0
+                    four_turn_2=0
+                    one_turn_3=0
+                    two_turn_3=0
+                    three_turn_3=0
+                    four_turn_3=0
+                    j=0
 
-                    turn_durations = {1: [], 2: [], 3: [], 4: []}
-                    if len(lead_riders) > 0:
-                        current_leader = lead_riders[0]
-                        current_len = 1
-                        for leader in lead_riders[1:]:
-                            if leader == current_leader:
-                                current_len += 1
-                            else:
-                                if current_leader in turn_durations:
-                                    turn_durations[current_leader].append(current_len / 4)
-                                current_leader = leader
-                                current_len = 1
-                        if current_leader in turn_durations:
-                            turn_durations[current_leader].append(current_len / 4)
-
-                    first_turns = [turn_durations[i][0] if len(turn_durations[i]) > 0 else 0 for i in [1, 2, 3, 4]]
-                    second_turns = [turn_durations[i][1] if len(turn_durations[i]) > 1 else 0 for i in [1, 2, 3, 4]]
-                    third_turns = [turn_durations[i][2] if len(turn_durations[i]) > 2 else 0 for i in [1, 2, 3, 4]]
+                    while j<df_small["Time"].count() and r1[j] == 1:
+                        one_turn_1+=1
+                        j+=1
+                    while j<df_small["Time"].count() and r2[j] == 1:
+                        two_turn_1+=1
+                        j+=1
+                    while j<df_small["Time"].count() and r3[j] == 1:
+                        three_turn_1+=1
+                        j+=1
+                    while j<df_small["Time"].count() and r4[j] == 1:
+                        four_turn_1+=1
+                        j+=1
+                    while j<df_small["Time"].count() and r1[j] == 1:
+                        one_turn_2+=1
+                        j+=1
+                    while j<df_small["Time"].count() and r2[j] == 1:
+                        two_turn_2+=1
+                        j+=1
+                    while j<df_small["Time"].count() and r3[j] == 1:
+                        three_turn_2+=1
+                        j+=1
+                    while j <df_small["Time"].count() and r4[j] == 1:
+                        four_turn_2+=1
+                        j+=1
+                    while j <df_small["Time"].count() and r1[j] == 1:
+                        one_turn_3+=1
+                        j+=1
+                    while j <df_small["Time"].count() and r2[j] == 1:
+                        two_turn_3+=1
+                        j+=1
+                    while j<df_small["Time"].count() and r3[j] == 1:
+                        three_turn_3+=1
+                        j+=1
+                    while j <df_small["Time"].count() and r4[j] == 1:
+                        four_turn_3+=1
+                        j+=1
+                    first_turns=[one_turn_1/4,two_turn_1/4,three_turn_1/4,four_turn_1/4]
+                    second_turns=[one_turn_2/4,two_turn_2/4,three_turn_2/4,four_turn_2/4]
+                    third_turns=[one_turn_3/4,two_turn_3/4,three_turn_3/4,four_turn_3/4]
                     df_small["Rider1"]=r1
                     df_small["Rider2"]=r2
                     df_small["Rider3"]=r3
@@ -375,7 +393,7 @@ if authentication_status:
 
 
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
-                    df_main
+    #                     df_main
                     hl_splits=[]
                     hl_rider =[] 
                     hl_distance=[]
@@ -385,7 +403,7 @@ if authentication_status:
                         hl_rider.append(df_main["Front"][i])
                         hl_distance.append(df_main["Distance"][i])
                         if df_main["Del_Speed"][i]!=df_main["Avg_Speed"][i]:
-                            hl_del_speed.append((df_main["Del_Speed"][i]+df_main["Del_Speed"][i])/2)
+                            hl_del_speed.append(df_main["Del_Speed"][i])
                         else:
                             hl_del_speed.append(125*3.6/(df_main["Split"][i]+df_main["Split"][i-1]))
                     df_gm=pd.DataFrame()
@@ -475,21 +493,18 @@ if authentication_status:
 
                     st.header(df_temp["Title"].iloc[0])
                     df_small
-                    rider_names = []
-                    for rider_col in ["Rider1", "Rider2", "Rider3", "Rider4"]:
-                        rider_front = df_small.loc[df_small[rider_col] == 1, "Front"].dropna()
-                        if len(rider_front) > 0:
-                            rider_names.append(rider_front.iloc[0])
-                        else:
-                            rider_names.append("empty")
-
-                    df_summ = pd.DataFrame({"Rider": rider_names})
+                    unq_riders = df_small["Front"].unique().tolist()
+                    
+                    if len(unq_riders)<4:
+                        unq_riders.append("empty")  
+                    df_summ=pd.DataFrame(unq_riders)
+                    df_summ.columns=["Rider"]
+                    df_summ=df_summ.dropna(axis=0)
                     front=[]
-                    for rider_name in rider_names:
-                        if rider_name == "empty":
-                            front.append(0)
-                        else:
-                            front.append(len(df_small.loc[df_small['Front'] == rider_name])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][0]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][1]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][2]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][3]])/4)
                     wind_scores = []
                     df_small['Rider1WS'].fillna(0)
                     wind_scores.append(round(sum(df_small['Rider1WS'].fillna(0),1)))
@@ -504,24 +519,12 @@ if authentication_status:
                     # df_summ["Event_Count"]=count
                     
                     # Calculating Splits based off delivery speeds - 900 is a conversion factor
-                    avg_splits=[]
-                    speed_var=[]
-                    for rider_name in rider_names:
-                        if rider_name == "empty":
-                            avg_splits.append(None)
-                            speed_var.append(None)
-                        else:
-                            rider_del_speeds = df_small[4:].loc[df_small["Front"] == rider_name]["Del_Speed"]
-                            if len(rider_del_speeds) == 0:
-                                avg_splits.append(None)
-                                speed_var.append(None)
-                            else:
-                                avg_splits.append(round(900/rider_del_speeds.mean(),2))
-                                speed_var.append(rider_del_speeds.max()-rider_del_speeds.min())
+                    avg_splits=[round(900/(df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].mean()),2), round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].mean(),2),round(900/df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].mean(),2)]
                     df_summ["Avg_Del_Split"]=avg_splits
                     
                     st.subheader("Rider Info")
                     
+                    speed_var=[df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].min()]
                     df_summ["Speed_Var"]=speed_var
 #                     st.write("Wind score is a measure of exposure. In each quarter lap split, WS is calculated as WS = Summ [df(delivery_speed + speed_change)]")
 #                     st.write("Delivery_speed is the speed assuming no positional change, speed_change is the difference in delivery speeds between intervals, and df is 'drag feel' - the portion of drag felt by a rider in a train, compared to a solo rider.")
@@ -932,29 +935,15 @@ if authentication_status:
                     r4WS = [0.459]
                     speed_diff=[df_small["Del_Speed"][0]]
 
-                    front_sequence = df_small["Front"].dropna()
-                    
-                    front_changes = front_sequence[front_sequence.ne(front_sequence.shift())].tolist()
-                    
-                    special_first_change = len(front_changes) >= 4 and front_changes[0] == front_changes[3]
-                    first_change_applied = False
-
                     no_riders=4
                     drag_feel = [0,0.971,0.612,0.495,0.459]
                     for j in range(1,len(df_small)):
                         speed_diff.append(df_small["Del_Speed"][j]-df_small["Del_Speed"][j-1])
                         if df_small["Action"][j-1] == "Change":
-                            if special_first_change and not first_change_applied and no_riders == 4:
-                                r1.append(3)
-                                r2.append(1)
-                                r3.append(2)
-                                r4.append(4)
-                                first_change_applied = True
-                            else:
-                                r1.append(r1[j-1]-1)
-                                r2.append(r2[j-1]-1)
-                                r3.append(r3[j-1]-1)
-                                r4.append(r4[j-1]-1)
+                            r1.append(r1[j-1]-1)
+                            r2.append(r2[j-1]-1)
+                            r3.append(r3[j-1]-1)
+                            r4.append(r4[j-1]-1)
                         elif df_small["Action"][j-1] == "Drop":
                             no_riders = 3
                             drag_feel = [0,0.972,0.617,0.517]
@@ -994,37 +983,59 @@ if authentication_status:
                         if r4[ind]==1:
                             r4[ind+1:]=[0]*(len(df_small)-ind-1)
                             r4WS[ind+1:]=[0]*(len(df_small)-ind-1)
-                    lead_riders = []
-                    for j in range(len(df_small)):
-                        if r1[j] == 1:
-                            lead_riders.append(1)
-                        elif r2[j] == 1:
-                            lead_riders.append(2)
-                        elif r3[j] == 1:
-                            lead_riders.append(3)
-                        elif r4[j] == 1:
-                            lead_riders.append(4)
-                        else:
-                            lead_riders.append(0)
+                    one_turn_1=0
+                    two_turn_1=0
+                    three_turn_1=0
+                    four_turn_1=0
+                    one_turn_2=0
+                    two_turn_2=0
+                    three_turn_2=0
+                    four_turn_2=0
+                    one_turn_3=0
+                    two_turn_3=0
+                    three_turn_3=0
+                    four_turn_3=0
+                    j=0
 
-                    turn_durations = {1: [], 2: [], 3: [], 4: []}
-                    if len(lead_riders) > 0:
-                        current_leader = lead_riders[0]
-                        current_len = 1
-                        for leader in lead_riders[1:]:
-                            if leader == current_leader:
-                                current_len += 1
-                            else:
-                                if current_leader in turn_durations:
-                                    turn_durations[current_leader].append(current_len / 4)
-                                current_leader = leader
-                                current_len = 1
-                        if current_leader in turn_durations:
-                            turn_durations[current_leader].append(current_len / 4)
-
-                    first_turns = [turn_durations[i][0] if len(turn_durations[i]) > 0 else 0 for i in [1, 2, 3, 4]]
-                    second_turns = [turn_durations[i][1] if len(turn_durations[i]) > 1 else 0 for i in [1, 2, 3, 4]]
-                    third_turns = [turn_durations[i][2] if len(turn_durations[i]) > 2 else 0 for i in [1, 2, 3, 4]]
+                    while j<len(df_small) and r1[j] == 1:
+                        one_turn_1+=1
+                        j+=1
+                    while j<len(df_small) and r2[j] == 1:
+                        two_turn_1+=1
+                        j+=1
+                    while j<len(df_small) and r3[j] == 1:
+                        three_turn_1+=1
+                        j+=1
+                    while j<len(df_small) and r4[j] == 1:
+                        four_turn_1+=1
+                        j+=1
+                    while j<len(df_small) and r1[j] == 1:
+                        one_turn_2+=1
+                        j+=1
+                    while j<len(df_small) and r2[j] == 1:
+                        two_turn_2+=1
+                        j+=1
+                    while j<len(df_small) and r3[j] == 1:
+                        three_turn_2+=1
+                        j+=1
+                    while j <len(df_small) and r4[j] == 1:
+                        four_turn_2+=1
+                        j+=1
+                    while j <len(df_small) and r1[j] == 1:
+                        one_turn_3+=1
+                        j+=1
+                    while j <len(df_small) and r2[j] == 1:
+                        two_turn_3+=1
+                        j+=1
+                    while j<len(df_small) and r3[j] == 1:
+                        three_turn_3+=1
+                        j+=1
+                    while j <len(df_small) and r4[j] == 1:
+                        four_turn_3+=1
+                        j+=1
+                    first_turns=[one_turn_1/4,two_turn_1/4,three_turn_1/4,four_turn_1/4]
+                    second_turns=[one_turn_2/4,two_turn_2/4,three_turn_2/4,four_turn_2/4]
+                    third_turns=[one_turn_3/4,two_turn_3/4,three_turn_3/4,four_turn_3/4]
                     df_small["Rider1"]=r1
                     df_small["Rider2"]=r2
                     df_small["Rider3"]=r3
@@ -1035,10 +1046,10 @@ if authentication_status:
                     df_small["Rider3WS"]=r3WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
                     df_small["Rider4WS"]=r4WS*(df_small["Del_Speed"]+df_small["Speed_Diff"])
                     
-                    
+                    df_small
                     df_main = df_small.drop(columns=["Rider1","Rider2","Rider3","Rider4","Action","Speed_Diff","Rider1WS","Rider2WS","Rider3WS","Rider4WS"])
                     
-                    df_small
+                    
                     hl_splits=[]
                     hl_rider =[] 
                     hl_distance=[]
@@ -1139,21 +1150,15 @@ if authentication_status:
                     #st.write("Current values for df are 0.971, 0.612, 0.495, 0.459 for lead, 2nd, 3rd and 4th riders respectively in a 4 person train, and 0.972, 0.617, 0.517 for lead, 2nd and 3rd riders in a 3 person chain.")
                     #st.write("We then sum all values to get the Wind_Score shown below:")
                     
-                    rider_names = []
-                    for rider_col in ["Rider1", "Rider2", "Rider3", "Rider4"]:
-                        rider_front = df_small.loc[df_small[rider_col] == 1, "Front"].dropna()
-                        if len(rider_front) > 0:
-                            rider_names.append(rider_front.iloc[0])
-                        else:
-                            rider_names.append("empty")
-
-                    df_summ = pd.DataFrame({"Rider": rider_names})
+                    unq_riders = df_small["Front"].unique()
+                    df_summ=pd.DataFrame(unq_riders)
+                    df_summ.columns=["Rider"]
+                    df_summ=df_summ.dropna(axis=0)
                     front=[]
-                    for rider_name in rider_names:
-                        if rider_name == "empty":
-                            front.append(0)
-                        else:
-                            front.append(len(df_small.loc[df_small['Front'] == rider_name])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][0]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][1]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][2]])/4)
+                    front.append(len(df_small.loc[df_small['Front'] == df_summ["Rider"][3]])/4)
                     wind_scores = []
                     df_small['Rider1WS'].fillna(0)
                     wind_scores.append(round(sum(df_small['Rider1WS'].fillna(0),1)))
@@ -1164,27 +1169,15 @@ if authentication_status:
                     df_summ["Turn_1"]=first_turns
                     df_summ["Turn_2"]=second_turns
                     df_summ["Turn_3"]=third_turns
-                    df_summ["1&2"]=[(df_small['Rider1'].value_counts().get(1,0)+df_small['Rider1'].value_counts().get(2,0))/4,(df_small['Rider2'].value_counts().get(1,0)+df_small['Rider2'].value_counts().get(2,0))/4,(df_small['Rider3'].value_counts().get(1,0)+df_small['Rider3'].value_counts().get(2,0))/4,(df_small['Rider4'].value_counts().get(1,0)+df_small['Rider4'].value_counts().get(2,0))/4]
+                    df_summ["1&2"]=[(df_small['Rider1'].value_counts()[1]+df_small['Rider1'].value_counts()[2])/4,(df_small['Rider2'].value_counts()[1]+df_small['Rider2'].value_counts()[2])/4,(df_small['Rider3'].value_counts()[1]+df_small['Rider3'].value_counts()[2])/4,(df_small['Rider4'].value_counts()[1]+df_small['Rider4'].value_counts()[2])/4]
                     df_summ["Wind_Score"] = wind_scores
                     
                     # Calculating Splits based off delivery speeds - 900 is a conversion factor
-                    avg_splits=[]
-                    speed_var=[]
-                    for rider_name in rider_names:
-                        if rider_name == "empty":
-                            avg_splits.append(None)
-                            speed_var.append(None)
-                        else:
-                            rider_del_speeds = df_small[4:].loc[df_small["Front"] == rider_name]["Del_Speed"]
-                            if len(rider_del_speeds) == 0:
-                                avg_splits.append(None)
-                                speed_var.append(None)
-                            else:
-                                avg_splits.append(round(900/rider_del_speeds.mean(),2))
-                                speed_var.append(rider_del_speeds.max()-rider_del_speeds.min())
+                    avg_splits=[round(900/(df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].mean()),2), round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].mean(),2),round(900/df_small[4:].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].mean(),2),round(900/df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].mean(),2)]
                     df_summ["Avg_Del_Split"]=avg_splits
                     
                     
+                    speed_var=[df_small[4:].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[0]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[1]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[2]]["Del_Speed"].min(),df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].max()-df_small[4:len(df_small)-1].loc[df_small["Front"] ==unq_riders[3]]["Del_Speed"].min()]
                     df_summ["Speed_Var"]=speed_var
                     
                     
@@ -2562,8 +2555,12 @@ if authentication_status:
                 df_table["2"] = [0,df_table["Lap 2"][1]+df_table["Gap 1"][1],0]
                 df_table["3"] = [0,0,df_table["Lap 3"][2]+df_table["Gap 2"][2]]
                 df_table["Time"] = [0,0,df_temp["Start time"][27]-start]
+                df_table_small = df_table[["Event", "Position", "Rider", "RT", "Lap 1", "Lap 2", "Lap 3", "Time"]].copy()
+                df_table_small = df_table_small.rename(columns={"Lap 1": "Lap1", "Lap 2": "Lap2", "Lap 3": "Lap3", "Time": "time"})
                 st.header(selections[i])
                 df_table
+                st.subheader("Compact Summary")
+                df_table_small
                 
                 gap1_2_1 = round(df_table["62.5"][1]-df_table["62.5"][0],2)
                 gap1_2_2 = round(df_table["125"][1]-df_table["125"][0] + gap1_2_1,2)
@@ -2598,8 +2595,10 @@ if authentication_status:
                 st.plotly_chart(f1, use_container_width=True)
                 if i==0:
                     df_table_all=df_table
+                    df_table_small_all = df_table_small
                 else:
                     df_table_all=pd.concat([df_table_all,df_table])
+                    df_table_small_all = pd.concat([df_table_small_all, df_table_small], ignore_index=True)
                 c1,c2=st.columns(2)
                 with c2:
                     if Videos == "Yes":
@@ -2628,8 +2627,11 @@ if authentication_status:
                 
             st.header("Full Summary", anchor="summary")
             df = df_table_all
-            df_filt = filter_dataframe(df)
+            df_filt = filter_dataframe(df, widget_key_prefix="full_summary")
             df_filt
+            st.subheader("Compact Full Summary")
+            df_small_filt = filter_dataframe(df_table_small_all, widget_key_prefix="compact_full_summary")
+            df_small_filt
             
             buffer = io.BytesIO()
             @st.cache_data
@@ -2660,6 +2662,18 @@ if authentication_status:
                     file_name='WTS_summary.xlsx',
                     mime='application/vnd.ms-excel'
                 ) 
+
+            compact_buffer = io.BytesIO()
+            with pd.ExcelWriter(compact_buffer, engine='xlsxwriter') as writer:
+                df_small_filt.to_excel(writer, sheet_name='Sheet1', index=False)
+                writer.close()
+
+                download3 = st.download_button(
+                    label="Download Compact Summary as Excel",
+                    data=compact_buffer,
+                    file_name='WTS_compact_summary.xlsx',
+                    mime='application/vnd.ms-excel'
+                )
             
             df_combine.rename(columns={ df_combine.columns[0]: "Speed (km/h)" }, inplace = True)
             
