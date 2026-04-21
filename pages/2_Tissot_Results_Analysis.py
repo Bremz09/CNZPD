@@ -56,7 +56,7 @@ if authentication_status:
     race_type = st.selectbox("Select Event:", race_types, key="Event Selector")
     if race_type=="Men's Sprint Qualifying":
         st.header('Men\'s Sprint Qualifying')
-        st.write("hello tim")
+        
 
 
 
