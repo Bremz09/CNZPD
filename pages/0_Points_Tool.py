@@ -145,10 +145,35 @@ if authentication_status:
         df = df.replace('\*','',regex=True)
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         return df
- 
-    date_made = time.ctime(os.path.getmtime('pages/Rankings/Mado_Points_Nat_Women.xlsx'))
+
+    def get_ms_ind_data():
+        df = pd.read_excel(
+            io='pages/Rankings/men_sprint_rankings.xlsx',
+            engine='openpyxl',
+            sheet_name='Rankings',
+            skiprows=0,
+            nrows=5000
+        )
+        df = df.drop(columns=['Name'])  # drop ranking list name column
+        df = df.rename(columns={'UCI_ID': 'Name'})  # actual athlete name
+        df = df.replace('\*', '', regex=True)
+        df['Date'] = pd.to_datetime(df['Date']).dt.date
+        df['Points'] = pd.to_numeric(df['Points'], errors='coerce').fillna(0).astype(int)
+        class_map = {
+            'Class 1': 'CL1',
+            'Class 2': 'CL2',
+            'UCI World Championships': 'WCh',
+            'World Cup': 'NCp',
+            'Continental Championships': 'CCh',
+            'National Championships': 'NCh',
+        }
+        df['Class'] = df['Class'].map(class_map).fillna(df['Class'])
+        df = df[df['Class'] != 'Regional Games']
+        return df
+
+    date_made = time.ctime(os.path.getmtime('pages/Rankings/men_sprint_rankings.xlsx'))
     st.write(f"Last updated on {date_made}")
-    Events = ["ME Worlds Picture", "WE Worlds Picture","ME Individual","ME Nation", "MS Individual", "MS Nation","MTS","MTP","M Mado Individual","M Mado Nation",
+    Events = ["MS Individual","ME Worlds Picture", "WE Worlds Picture","ME Individual","ME Nation", "MS Nation","MTS","MTP","M Mado Individual","M Mado Nation",
              "WE Individual","WE Nation", "WS Individual", "WS Nation","WTS","WTP","W Mado Individual","W Mado Nation"]
 
     Event = st.selectbox("Select Event:", Events, key="Event_selector")
@@ -186,7 +211,7 @@ if authentication_status:
         df=get_data("Endurance_Points_Nat_Men")
         df=df.drop(['UCI_ID', 'Name'], axis=1)
     elif Event == "MS Individual":
-        df=get_data("Sprint_Points_Ind_Men")
+        df=get_ms_ind_data()
     elif Event == "MS Nation":
         df=get_data("Sprint_Points_Nat_Men")
         df=df.drop(['UCI_ID', 'Name'], axis=1)
@@ -429,7 +454,108 @@ if authentication_status:
     
     
     
-    elif Event in ("ME Individual" , "MS Individual" , "M Mado Individual" , "WE Individual" , "WS Individual" , "W Mado Individual"):
+    elif Event == "MS Individual":
+        nations = st.multiselect("Select nations to include - default is to include all:",sorted(df["Country"].unique()))
+        if len(nations)>0:
+            filtered_df = df[df['Country'].isin(nations)]
+        else:
+            filtered_df=df
+        filtered_df
+
+        selected_date = st.date_input("Select an end date (2nd September is 6 weeks before Worlds)", datetime(2026, 9, 2))
+        one_year_before = selected_date - timedelta(days=365)
+
+        filtered_df = filtered_df[(filtered_df['Date'] >= one_year_before) & (filtered_df['Date'] <= selected_date)]
+
+        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_3_cl2).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_3_cl1).reset_index(drop=True)
+        filtered_df = filtered_df.groupby('Name', group_keys=False).apply(filter_top_1_NCp).reset_index(drop=True)
+
+        proj_points = filtered_df.groupby('Name')['Points'].sum().reset_index(name='Proj_Points')
+        filtered_df = filtered_df.merge(proj_points, on='Name').sort_values(by=['Proj_Points'],ascending=False)
+        move = filtered_df.pop("Proj_Points")
+        filtered_df.insert(1,"Proj_Points", move)
+        filtered_df['Proj_Rank'] = filtered_df['Proj_Points'].rank(ascending=False, method='dense').astype(int)
+        move = filtered_df.pop("Proj_Rank")
+        filtered_df.insert(2,"Proj_Rank", move)
+
+        st.subheader("Filtered DataFrame")
+        st.write("Filters one year before the chosen date. Takes top three CL1, CL2, and top NCp result only.")
+        filtered_df
+        st.header("Breakdown")
+
+        athletes = filtered_df['Name'].drop_duplicates()
+        Proj_Points = []
+        Proj_Rank = []
+        Country = []
+        Age_list = []
+        Team_list = []
+        Current_Points = []
+        Current_Rank = []
+        WCh_totals = []
+        NCp_totals = []
+        CCh_totals = []
+        NCh_totals = []
+        CL1_totals = []
+        CL2_totals = []
+
+        for idx, athlete in enumerate(athletes):
+            athlete_results = filtered_df.loc[(filtered_df.Name == athlete)]
+            Proj_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Points"].iloc[0])
+            Proj_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Proj_Rank"].iloc[0])
+            Country.append(filtered_df.loc[(filtered_df.Name == athlete)]["Country"].iloc[0])
+            Age_list.append(filtered_df.loc[(filtered_df.Name == athlete)]["Age"].iloc[0])
+            team_val = filtered_df.loc[(filtered_df.Name == athlete)]["Team"].iloc[0]
+            Team_list.append(team_val if pd.notna(team_val) else "")
+            Current_Points.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Points"].iloc[0])
+            Current_Rank.append(filtered_df.loc[(filtered_df.Name == athlete)]["Current_Rank"].iloc[0])
+            y = athlete_results.groupby('Class')['Points'].sum().reset_index()
+            points_by_class = pd.DataFrame(y)
+
+            x = points_by_class.loc[(points_by_class.Class == 'WCh')]["Points"]
+            if len(x)>0:
+                WCh_totals.append(x.iloc[0])
+            else:
+                WCh_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'NCp')]["Points"]
+            if len(x)>0:
+                NCp_totals.append(x.iloc[0])
+            else:
+                NCp_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'CCh')]["Points"]
+            if len(x)>0:
+                CCh_totals.append(x.iloc[0])
+            else:
+                CCh_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'NCh')]["Points"]
+            if len(x)>0:
+                NCh_totals.append(x.iloc[0])
+            else:
+                NCh_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'CL1')]["Points"]
+            if len(x)>0:
+                CL1_totals.append(x.iloc[0])
+            else:
+                CL1_totals.append(0)
+            x = points_by_class.loc[(points_by_class.Class == 'CL2')]["Points"]
+            if len(x)>0:
+                CL2_totals.append(x.iloc[0])
+            else:
+                CL2_totals.append(0)
+
+        d = {'Name': athletes, 'Country': Country, 'Age': Age_list, 'Team': Team_list, 'Current_Rank': Current_Rank, 'Current_Points': Current_Points, 'Proj_Rank': Proj_Rank, 'Proj_Points': Proj_Points, 'WCh': WCh_totals, 'NCp (World Cup)': NCp_totals, 'CCh': CCh_totals, 'NCh': NCh_totals, 'CL1': CL1_totals, 'CL2': CL2_totals}
+        nice_df = pd.DataFrame(d).reset_index(drop=True)
+        ath_per_nat = st.selectbox("Athletes per Nation (typically 2 for Sprint and Keirin):",("All","1","2"))
+        if ath_per_nat == "1":
+            nice_df = nice_df.loc[nice_df.groupby('Country')['Proj_Points'].idxmax()]
+        elif ath_per_nat == "2":
+            nice_df = nice_df.groupby('Country', group_keys=False).apply(lambda x: x.nlargest(2, 'Proj_Points'))
+        nice_df['Proj_Rank'] = nice_df['Proj_Points'].rank(ascending=False, method='dense').astype(int)
+        nice_df = nice_df.sort_values(by=['Proj_Rank']).reset_index(drop=True)
+        st.write("Maximum 1200 points available for C1, 600 for C2")
+        nice_df
+
+    elif Event in ("ME Individual" , "M Mado Individual" , "WE Individual" , "WS Individual" , "W Mado Individual"):
         nations = st.multiselect("Select nations to include - default is to include all:",sorted(df["Country"].unique()))
         if len(nations)>0:
             filtered_df = df[df['Country'].isin(nations)]
@@ -560,7 +686,7 @@ if authentication_status:
         nice_df=nice_df.sort_values(by=['Proj_Rank']).reset_index(drop=True)
         if Event in ("ME Individual" , "WE Individual"):
             st.write("Maximum 1950 points available for C1, 975 for C2")
-        elif Event in ("MS Individual" , "WS Individual"):
+        elif Event in ("WS Individual",):
             st.write("Maximum 1200 points available for C1, 600 for C2")
         elif Event in ("M Mado Individual" , "W Mado Individual"):
             st.write("Maximum 600 points available for C1, 300 for C2")
