@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from PIL import Image
  
 
-st.set_page_config(page_title='CNZ Performance Database',
+st.set_page_config(page_title='CNZ Performance Databas',
                   page_icon=":bike:",
                   layout="wide")
 
