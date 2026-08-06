@@ -5439,7 +5439,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Team Pursuit',
                 skiprows=0,
-                usecols='A:BC',
+                usecols='A:BD',
                 nrows=2000
                 )
             df = df.replace(',','', regex=True)

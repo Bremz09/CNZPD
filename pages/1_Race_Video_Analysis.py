@@ -153,16 +153,27 @@ if authentication_status:
         options=["Women's TP", "Men's TP", "Women's Team Sprint","Men's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP","Women's Madison","Men's Madison","Bunch"]
         ) 
 
-    def render_madison_analysis(file_path, header_text):
+    def render_madison_analysis(file_path, header_text, view_mode="all"):
         excel_book = pd.ExcelFile(file_path)
         sheet_names = excel_book.sheet_names
         df_master = pd.read_excel(excel_book, sheet_name=sheet_names[0])
         df_event_tags = pd.DataFrame()
+        df_changes = pd.DataFrame()
         if len(sheet_names) > 1:
             try:
                 df_event_tags = pd.read_excel(excel_book, sheet_name=sheet_names[1])
             except Exception:
                 df_event_tags = pd.DataFrame()
+        if len(sheet_names) > 2:
+            try:
+                df_changes = pd.read_excel(excel_book, sheet_name=sheet_names[2])
+            except Exception:
+                df_changes = pd.DataFrame()
+
+        view_mode = view_mode or "all"
+        show_summary_view = view_mode in ("all", "watts_kj")
+        show_laps_view = view_mode in ("all", "ten_laps")
+        show_changes_view = view_mode == "changes"
 
         sort_columns = [column for column in ["Save_Date", "Title"] if column in df_master.columns]
         if sort_columns:
@@ -229,6 +240,126 @@ if authentication_status:
 
         race_id_candidates = ["Race ID", "RaceID", "Race_Id", "Race #", "Race#", "Race Number", "RaceNumber", "ID"]
         race_id_col = _find_best_column(df_master.columns, race_id_candidates)
+
+        def _get_master_rows_for_selection(selection):
+            _selection_text = str(selection).strip()
+            _selected_race_id = np.nan
+            if session_title_col in df_master.columns:
+                _match_title = df_master[session_title_col].astype(str).str.strip() == _selection_text
+                if race_id_col and race_id_col in df_master.columns:
+                    _ids = pd.to_numeric(df_master.loc[_match_title, race_id_col], errors="coerce").dropna().unique()
+                    if len(_ids) > 0:
+                        _selected_race_id = _ids[0]
+                        _df_temp = df_master.loc[pd.to_numeric(df_master[race_id_col], errors="coerce") == _selected_race_id].copy()
+                    else:
+                        _df_temp = df_master.loc[_match_title].copy()
+                else:
+                    _df_temp = df_master.loc[_match_title].copy()
+            else:
+                _df_temp = df_master.loc[df_master[title_column].astype(str).str.strip() == _selection_text].copy()
+            return _df_temp, _selected_race_id
+
+        def _get_related_rows_for_selection(df_source, selection, selected_race_id=np.nan):
+            if df_source is None or df_source.empty:
+                return pd.DataFrame()
+
+            if pd.notna(selected_race_id):
+                for _candidate in race_id_candidates:
+                    _found_col = _find_best_column(df_source.columns, [_candidate])
+                    if _found_col is None:
+                        continue
+                    _source_ids = pd.to_numeric(df_source[_found_col], errors="coerce")
+                    _id_mask = _source_ids == selected_race_id
+                    if _id_mask.any():
+                        return df_source.loc[_id_mask].copy()
+
+            _selection_text = str(selection).strip()
+            _candidate_columns = []
+            for _candidate in [
+                session_title_col,
+                title_column,
+                "Selected Race",
+                "Title",
+                "Session Title",
+                "Session title",
+                "Session_Title",
+                "SessionName",
+                "Session Name",
+                "Session",
+                "Race",
+                "Race Name",
+                "Race Title",
+                "Event",
+                "Label",
+                "Name",
+            ]:
+                if _candidate is not None:
+                    _found = _find_best_column(df_source.columns, [_candidate])
+                    if _found is not None and _found not in _candidate_columns:
+                        _candidate_columns.append(_found)
+
+                _selector_keywords = ["race", "session", "title", "event", "name", "meet"]
+                for _col in df_source.columns:
+                    _col_l = str(_col).strip().lower()
+                    if any(_kw in _col_l for _kw in _selector_keywords) and _col not in _candidate_columns:
+                        _candidate_columns.append(_col)
+
+            for _col in _candidate_columns:
+                _series = df_source[_col].astype(str).str.strip()
+                _exact_mask = _series == _selection_text
+                if _exact_mask.any():
+                    return df_source.loc[_exact_mask].copy()
+
+            for _col in _candidate_columns:
+                _series = df_source[_col].astype(str).str.strip()
+                _contains_mask = _series.str.contains(_selection_text, case=False, na=False)
+                if _contains_mask.any():
+                    return df_source.loc[_contains_mask].copy()
+
+            return pd.DataFrame()
+
+        def _build_selector_options_for_df(df_source, preferred_candidates):
+            if df_source is None or df_source.empty:
+                return []
+
+            _candidate_cols = []
+            for _candidate in preferred_candidates:
+                _found = _find_best_column(df_source.columns, [_candidate])
+                if _found is not None and _found not in _candidate_cols:
+                    _candidate_cols.append(_found)
+
+            _selector_keywords = ["race", "session", "title", "event", "name", "meet"]
+            for _col in df_source.columns:
+                _col_l = str(_col).strip().lower()
+                if any(_kw in _col_l for _kw in _selector_keywords) and _col not in _candidate_cols:
+                    _candidate_cols.append(_col)
+
+            if not _candidate_cols:
+                _fallback_col = _pick_best_display_column(df_source, preferred_candidates, df_source.columns[0])
+                if _fallback_col in df_source.columns:
+                    _candidate_cols.append(_fallback_col)
+
+            _options = []
+            for _col in _candidate_cols:
+                _series = df_source[_col].dropna().astype(str).str.strip()
+                _series = _series[_series != ""]
+                _series = _series[_series.str.lower() != "nan"]
+                _options.extend(_series.tolist())
+
+            return list(dict.fromkeys(_options))
+
+        def _get_changes_race_options(df_source):
+            if df_source is None or df_source.empty:
+                return []
+
+            _race_col = _find_best_column(df_source.columns, ["Race"])
+            if _race_col is None:
+                return []
+
+            _race_values = df_source[_race_col].dropna().astype(str).str.strip()
+            _race_values = _race_values[_race_values != ""]
+            _race_values = _race_values[_race_values.str.lower() != "nan"]
+            return list(dict.fromkeys(_race_values.tolist()))
 
         def _get_event_tags_for_selection(selection):
             if df_event_tags.empty:
@@ -560,39 +691,621 @@ if authentication_status:
                     _parts.append(f"{_label}: {_first}")
             return " | ".join(_parts) if _parts else "Unlabeled"
 
+        def _get_change_metric_columns(df_obj):
+            _excluded_exact = {
+                "id",
+                "race id",
+                "race #",
+                "race number",
+                "bib",
+                "lap",
+                "block",
+                "index",
+                "rank",
+                "position",
+                "order",
+            }
+
+            def _is_excluded_column_name(col_name):
+                _col_l = str(col_name).strip().lower()
+                _col_norm = " ".join(_col_l.replace("_", " ").split())
+
+                # Exclude explicit ID/meta columns, but do not exclude rider metrics such as
+                # "Rider 1 kJ" where "id" appears inside "rider".
+                if _col_norm in _excluded_exact:
+                    return True
+
+                _prefixes = ["race id", "race #", "race number", "bib", "lap", "block", "index", "rank", "position", "order"]
+                for _prefix in _prefixes:
+                    if _col_norm.startswith(f"{_prefix} "):
+                        return True
+
+                if _col_norm.startswith("id ") or _col_norm.endswith(" id"):
+                    return True
+
+                return False
+
+            _metric_cols = []
+            for _col in df_obj.columns:
+                if _is_excluded_column_name(_col):
+                    continue
+                _numeric_values = _coerce_numeric_values(df_obj[_col])
+                if _numeric_values.notna().sum() > 0:
+                    _metric_cols.append(_col)
+            return _metric_cols
+
+        def _get_change_thrower_column(df_obj):
+            _candidate_aliases = [
+                "Outgoing rider",
+                "Outgoing Rider",
+                "Outgoing",
+                "Rider detail",
+                "Rider Detail",
+                "Throwing Rider",
+                "Throw Rider",
+                "Thrower",
+                "Rider Throwing",
+                "Throw",
+                "Rider",
+                "Athlete",
+                "Front",
+                "Detail",
+            ]
+            for _alias in _candidate_aliases:
+                _found = _find_best_column(df_obj.columns, [_alias])
+                if _found is None:
+                    continue
+                _values = df_obj[_found].dropna().astype(str).str.strip()
+                _values = _values[_values != ""]
+                if _values.nunique() >= 1:
+                    return _found
+            return None
+
+        def _get_change_rider_pair_columns(df_obj):
+            if df_obj is None or df_obj.empty:
+                return None, None
+
+            _outgoing_col = _find_best_column(
+                df_obj.columns,
+                ["Outgoing rider", "Outgoing Rider", "Outgoing", "Throwing Rider", "Thrower"],
+            )
+            _incoming_col = _find_best_column(
+                df_obj.columns,
+                ["Incoming rider", "Incoming Rider", "Incoming", "Receiving Rider", "Received Rider"],
+            )
+            return _outgoing_col, _incoming_col
+
+        def _extract_change_thrower_label(cell_value):
+            _text = str(cell_value).strip()
+            if not _text or _text.lower() == "nan":
+                return ""
+
+            for _arrow in ["--->", "->", "→"]:
+                if _arrow in _text:
+                    return _text.split(_arrow, 1)[0].strip()
+
+            return _text
+
+        def _split_change_rider_detail(cell_value):
+            _text = str(cell_value).strip()
+            if not _text or _text.lower() == "nan":
+                return "", ""
+
+            for _arrow in ["--->", "->", "→"]:
+                if _arrow in _text:
+                    _parts = _text.split(_arrow, 1)
+                    _left = str(_parts[0]).strip()
+                    _right = str(_parts[1]).strip() if len(_parts) > 1 else ""
+                    return _left, _right
+
+            return _text, ""
+
+        def _rgb_to_hex(_rgb):
+            return "#{:02x}{:02x}{:02x}".format(
+                int(max(0, min(255, _rgb[0]))),
+                int(max(0, min(255, _rgb[1]))),
+                int(max(0, min(255, _rgb[2]))),
+            )
+
+        def _hex_to_rgb(_hex):
+            _h = str(_hex).strip().lstrip("#")
+            if len(_h) != 6:
+                return (59, 130, 246)
+            try:
+                return tuple(int(_h[i:i + 2], 16) for i in (0, 2, 4))
+            except Exception:
+                return (59, 130, 246)
+
+        def _shade_color(_hex, factor):
+            _r, _g, _b = _hex_to_rgb(_hex)
+            if factor >= 1.0:
+                _r = _r + (255 - _r) * (factor - 1.0)
+                _g = _g + (255 - _g) * (factor - 1.0)
+                _b = _b + (255 - _b) * (factor - 1.0)
+            else:
+                _r = _r * factor
+                _g = _g * factor
+                _b = _b * factor
+            return _rgb_to_hex((int(_r), int(_g), int(_b)))
+
+        def _describe_change_metric(metric_name):
+            _metric_text = str(metric_name).strip()
+            _metric_lower = " ".join(_metric_text.lower().replace("_", " ").split())
+
+            # Treat rider-specific suffixes consistently after header updates.
+            for _token in [" - rider", " (rider", " | rider", " / rider"]:
+                if _token in _metric_lower:
+                    _metric_lower = _metric_lower.split(_token, 1)[0].strip()
+
+            _exact_definitions = {
+                "speed @ change (km/h)": "Speed at the exact change timestamp.",
+                "avg power over change (w)": "The average power over the change window.",
+                "before change speed (km/h)": "The average speed of the active rider before the change over the change window.",
+                "after change speed (km/h)": "The average speed of the active rider after the change over the change window.",
+                "speed retention (%)": "After change speed / Before change speed * 100.",
+                "team speed gain (km/h)": "After change speed - Before change speed.",
+                "incoming speed gain (km/h)": "Incoming rider speed after the change - incoming rider speed before the change (how much the incoming rider accelerates).",
+                "ke gain (kj)": "How much the change accelerated the incoming rider: 0.5*m*(v_out^2 - v_in^2).",
+            }
+            if _metric_lower in _exact_definitions:
+                return f"{_metric_text}: {_exact_definitions[_metric_lower]}"
+
+            if any(_token in _metric_lower for _token in ["watt", "power", " avg w", "avg_w", "mean w", " watts", " w "]):
+                return f"{_metric_text}: power output for each change row, shown in watts."
+            if any(_token in _metric_lower for _token in ["kj", "energy"]):
+                return f"{_metric_text}: energy used during each change row, shown in kilojoules."
+            if any(_token in _metric_lower for _token in ["speed", "velocity"]):
+                return f"{_metric_text}: speed recorded for each change row."
+            if any(_token in _metric_lower for _token in ["cadence", "rpm"]):
+                return f"{_metric_text}: pedalling cadence for each change row."
+            if any(_token in _metric_lower for _token in ["time", "duration", "elapsed", "second", " sec", "(s)"]):
+                return f"{_metric_text}: time-based measure for each change row."
+            if any(_token in _metric_lower for _token in ["distance", "metre", "meter", "lap"]):
+                return f"{_metric_text}: distance or lap-based measure for each change row."
+            if any(_token in _metric_lower for _token in ["heart rate", "hr", "bpm"]):
+                return f"{_metric_text}: heart-rate measure for each change row."
+            if any(_token in _metric_lower for _token in ["torque", "force"]):
+                return f"{_metric_text}: torque or force-related measure for each change row."
+            return f"{_metric_text}: numeric value from the changes tab for each plotted row."
+
+        def _build_change_relationship_stats(df_obj, x_metric, y_metric):
+            _stats = {"count": int(len(df_obj))}
+            if len(df_obj) < 2:
+                return _stats
+
+            _x_values = pd.to_numeric(df_obj[x_metric], errors="coerce")
+            _y_values = pd.to_numeric(df_obj[y_metric], errors="coerce")
+            _valid_mask = _x_values.notna() & _y_values.notna()
+            _x_values = _x_values[_valid_mask]
+            _y_values = _y_values[_valid_mask]
+            _stats["count"] = int(len(_x_values))
+
+            if len(_x_values) < 2:
+                return _stats
+
+            if _x_values.nunique() > 1 and _y_values.nunique() > 1:
+                _stats["pearson_r"] = float(_x_values.corr(_y_values, method="pearson"))
+                _stats["spearman_r"] = float(_x_values.corr(_y_values, method="spearman"))
+                _slope, _intercept = np.polyfit(_x_values.to_numpy(dtype=float), _y_values.to_numpy(dtype=float), 1)
+                _stats["slope"] = float(_slope)
+                _stats["intercept"] = float(_intercept)
+                if pd.notna(_stats["pearson_r"]):
+                    _stats["r_squared"] = float(_stats["pearson_r"] ** 2)
+
+            return _stats
+
+        def _describe_relationship_summary(stats_obj, x_metric, y_metric):
+            _count = int(stats_obj.get("count", 0))
+            _pearson_r = stats_obj.get("pearson_r")
+            _slope = stats_obj.get("slope")
+
+            if _count < 3 or _pearson_r is None or pd.isna(_pearson_r) or _slope is None or pd.isna(_slope):
+                return f"Not enough variation to reliably describe the relationship between {x_metric} and {y_metric}."
+
+            _abs_r = abs(float(_pearson_r))
+            if _abs_r >= 0.7:
+                _strength = "strong"
+            elif _abs_r >= 0.4:
+                _strength = "moderate"
+            elif _abs_r >= 0.2:
+                _strength = "weak"
+            else:
+                _strength = "very weak"
+
+            if float(_pearson_r) > 0:
+                _direction = "positive"
+            elif float(_pearson_r) < 0:
+                _direction = "negative"
+            else:
+                _direction = "no clear"
+
+            if float(_slope) > 0:
+                _slope_text = f"On average, {y_metric} increases by about {float(_slope):.3f} for each +1 unit of {x_metric}."
+            elif float(_slope) < 0:
+                _slope_text = f"On average, {y_metric} decreases by about {abs(float(_slope)):.3f} for each +1 unit of {x_metric}."
+            else:
+                _slope_text = f"The fitted linear slope is near zero, so changes in {x_metric} do not consistently shift {y_metric}."
+
+            return f"This plot shows a {_strength} {_direction} relationship between {x_metric} and {y_metric}. {_slope_text}"
+
+        def _find_speed_retention_column(df_obj):
+            if df_obj is None or df_obj.empty:
+                return None
+
+            _exact_candidates = [
+                "Speed retention (%)",
+                "Speed Retention (%)",
+                "Speed Retention %",
+                "Speed retention %",
+                "Speed Retention",
+                "Speed retention",
+            ]
+            for _candidate in _exact_candidates:
+                _found = _find_best_column(df_obj.columns, [_candidate])
+                if _found is not None:
+                    return _found
+
+            for _col in df_obj.columns:
+                _col_l = str(_col).strip().lower()
+                if "speed" in _col_l and "retention" in _col_l:
+                    return _col
+
+            return None
+
+        def _build_speed_retention_bucket_table(df_obj):
+            if df_obj is None or df_obj.empty:
+                return None
+
+            _speed_col = _find_speed_retention_column(df_obj)
+            _outgoing_col, _incoming_col = _get_change_rider_pair_columns(df_obj)
+            _throw_col = _find_best_column(df_obj.columns, ["Rider detail", "Rider Detail"])
+            if _throw_col is None and (_outgoing_col is None or _incoming_col is None):
+                _throw_col = _get_change_thrower_column(df_obj)
+            if _speed_col is None or ((_outgoing_col is None or _incoming_col is None) and _throw_col is None):
+                return None
+
+            _work = df_obj.copy()
+            _work["_speed_retention_numeric"] = _coerce_numeric_values(_work[_speed_col])
+
+            def _normalize_rider_name(_value):
+                _name = str(_value).strip()
+                _name = " ".join(_name.split())
+                return _name
+
+            def _parse_throw_direction(_raw_detail):
+                _text = str(_raw_detail).strip()
+                if not _text or _text.lower() == "nan":
+                    return "", ""
+
+                # Most common directional formats first.
+                for _arrow in ["--->", "->", "→", ">"]:
+                    if _arrow in _text:
+                        _left, _right = _text.split(_arrow, 1)
+                        return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+                _text_l = _text.lower()
+                if " throwing " in _text_l:
+                    _idx = _text_l.find(" throwing ")
+                    _left = _text[:_idx]
+                    _right = _text[_idx + len(" throwing "):]
+                    return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+                if " to " in _text_l:
+                    _idx = _text_l.find(" to ")
+                    _left = _text[:_idx]
+                    _right = _text[_idx + len(" to "):]
+                    return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+                _left, _right = _split_change_rider_detail(_text)
+                return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+            _work = _work.loc[_work["_speed_retention_numeric"].notna()].copy()
+            if _work.empty:
+                return pd.DataFrame(columns=["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"])
+
+            if _outgoing_col is not None and _incoming_col is not None:
+                _work["_outgoing_rider"] = _work[_outgoing_col].astype(str).str.strip()
+                _work["_incoming_rider"] = _work[_incoming_col].astype(str).str.strip()
+                _work.loc[_work["_outgoing_rider"].str.lower() == "nan", "_outgoing_rider"] = ""
+                _work.loc[_work["_incoming_rider"].str.lower() == "nan", "_incoming_rider"] = ""
+                _work["_outgoing_rider"] = _work["_outgoing_rider"].apply(_normalize_rider_name)
+                _work["_incoming_rider"] = _work["_incoming_rider"].apply(_normalize_rider_name)
+            else:
+                _parsed_pairs = _work[_throw_col].apply(_parse_throw_direction)
+                _work["_outgoing_rider"] = _parsed_pairs.apply(lambda x: x[0])
+                _work["_incoming_rider"] = _parsed_pairs.apply(lambda x: x[1])
+
+            _valid_pair_mask = (
+                _work["_outgoing_rider"].ne("")
+                & _work["_incoming_rider"].ne("")
+                & (_work["_outgoing_rider"].str.lower() != _work["_incoming_rider"].str.lower())
+            )
+            _work = _work.loc[_valid_pair_mask].copy()
+            if _work.empty:
+                return pd.DataFrame(columns=["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"])
+
+            _work["_bucket"] = np.where(
+                _work["_speed_retention_numeric"] < 100.0,
+                "Changes under 100%",
+                np.where(
+                    _work["_speed_retention_numeric"] <= 105.0,
+                    "Changes between 100% - 105%",
+                    "Changes over 105%",
+                ),
+            )
+
+            _summary = (
+                _work
+                .groupby(["_outgoing_rider", "_incoming_rider", "_bucket"], dropna=False)
+                .size()
+                .reset_index(name="count")
+                .pivot_table(
+                    index=["_outgoing_rider", "_incoming_rider"],
+                    columns="_bucket",
+                    values="count",
+                    aggfunc="sum",
+                    fill_value=0,
+                )
+                .reset_index()
+            )
+
+            for _col in ["Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"]:
+                if _col not in _summary.columns:
+                    _summary[_col] = 0
+
+            _summary["Throw direction"] = _summary.apply(
+                lambda _r: f"{str(_r['_outgoing_rider']).strip()} throwing {str(_r['_incoming_rider']).strip()}",
+                axis=1,
+            )
+            _summary = _summary.sort_values(
+                by=["Changes under 100%", "Changes between 100% - 105%", "Changes over 105%", "Throw direction"],
+                ascending=[False, False, False, True],
+            )
+            return _summary[
+                ["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"]
+            ].reset_index(drop=True)
+
         st.markdown("---")
         st.header(header_text)
         c1, c2 = st.columns(2)
+        _header_key = header_text.replace(" ", "_").replace("'", "")
 
         with c1:
-            _selector_options = (
-                df_master[session_title_col]
-                .dropna()
-                .astype(str)
-                .str.strip()
+            _master_selector_options = _build_selector_options_for_df(
+                df_master,
+                [session_title_col, title_column, "Title", "Race", "Race Name", "Session Title", "Event", "Name"],
             )
-            _selector_options = _selector_options[_selector_options != ""].unique().tolist()
-            if not _selector_options:
-                _selector_options = (
-                    df_master[title_column]
-                    .dropna()
-                    .astype(str)
-                    .str.strip()
-                    .unique()
-                    .tolist()
-                )
+
+            if show_changes_view:
+                _changes_selector_options = _get_changes_race_options(df_changes)
+                if not _changes_selector_options:
+                    _changes_selector_options = _build_selector_options_for_df(
+                        df_changes,
+                        ["Race", "Race Name"],
+                    )
+                _selector_options = _changes_selector_options
+            else:
+                _selector_options = _master_selector_options
 
             selections = st.multiselect(
-                "Select past race(s):",
+                "Select race/session(s):",
                 options=_selector_options,
+                key=f"madison_selection_{_header_key}",
             )
 
         with c2:
-            show_vids = ["No", "Yes"]
-            Videos = st.selectbox("Show Race Videos?", show_vids, key=f"Show_Vids_{title_column}")
+            Videos = "No"
+            if show_summary_view:
+                show_vids = ["No", "Yes"]
+                Videos = st.selectbox("Show Race Videos?", show_vids, key=f"Show_Vids_{title_column}")
+            elif show_changes_view and len(sheet_names) > 2:
+                st.caption(f"Changes source: {sheet_names[2]}")
+            elif show_laps_view:
+                st.caption("10 Laps view")
+
+        if show_changes_view:
+            if len(sheet_names) <= 2:
+                st.warning("No changes tab was found in the Men's Madison workbook.")
+            elif df_changes.empty:
+                st.warning("The changes tab could not be loaded or is empty.")
+            elif len(selections) == 0:
+                st.info("Select one or more races/sessions to view the changes data.")
+            else:
+                _change_frames = []
+                _change_frames_by_selection = []
+                _changes_race_col = _find_best_column(df_changes.columns, ["Race"]) if not df_changes.empty else None
+                for selection in selections:
+                    _change_source_rows, _change_race_id = _get_master_rows_for_selection(selection)
+                    if _changes_race_col is not None and _changes_race_col in df_changes.columns:
+                        _selection_text = str(selection).strip()
+                        _race_series = df_changes[_changes_race_col].astype(str).str.strip()
+                        _race_mask = _race_series == _selection_text
+                        _change_rows = df_changes.loc[_race_mask].copy()
+                    else:
+                        _change_rows = _get_related_rows_for_selection(df_changes, selection, _change_race_id)
+                    if _change_rows.empty:
+                        continue
+                    if "Selected Race" not in _change_rows.columns:
+                        _change_rows = _change_rows.copy()
+                        _change_rows.insert(0, "Selected Race", str(selection).strip())
+                    _change_frames.append(_change_rows)
+                    _change_frames_by_selection.append((str(selection).strip(), _change_rows.copy()))
+
+                if not _change_frames:
+                    st.info("No changes rows matched the selected race/session.")
+                else:
+                    _changes_display = pd.concat(_change_frames, ignore_index=True)
+                    st.subheader("Number of Changes based on Speed Retention")
+                    for _sel_name, _sel_df in _change_frames_by_selection:
+                        st.markdown(f"**{_sel_name}**")
+                        _bucket_table = _build_speed_retention_bucket_table(_sel_df)
+                        if _bucket_table is None:
+                            st.info("Could not build the summary for this race/session. Ensure this selection has speed-retention values and outgoing/incoming rider columns (or legacy Rider detail format).")
+                        else:
+                            st.table(_bucket_table)
+
+                    with st.expander("Detailed changes table and chart controls", expanded=False):
+                        st.subheader("Changes Data")
+                        st.dataframe(_changes_display, use_container_width=True, hide_index=True)
+
+                        _metric_options = _get_change_metric_columns(_changes_display)
+                        if len(_metric_options) < 2:
+                            st.warning("The changes tab does not contain at least two numeric metric columns for a scatter plot.")
+                        else:
+                            _default_y_index = 1 if len(_metric_options) > 1 else 0
+                            _cx1, _cx2 = st.columns(2)
+                            with _cx1:
+                                _x_metric = st.selectbox(
+                                    "Scatter X-axis",
+                                    options=_metric_options,
+                                    index=0,
+                                    key=f"changes_x_metric_{_header_key}",
+                                )
+                                st.caption(_describe_change_metric(_x_metric))
+                            with _cx2:
+                                _y_metric = st.selectbox(
+                                    "Scatter Y-axis",
+                                    options=_metric_options,
+                                    index=_default_y_index,
+                                    key=f"changes_y_metric_{_header_key}",
+                                )
+                                st.caption(_describe_change_metric(_y_metric))
+
+                            _plot_df = _changes_display.copy()
+                            _plot_df[_x_metric] = _coerce_numeric_values(_plot_df[_x_metric])
+                            _plot_df[_y_metric] = _coerce_numeric_values(_plot_df[_y_metric])
+                            _plot_df = _plot_df.dropna(subset=[_x_metric, _y_metric])
+
+                            if _plot_df.empty:
+                                st.info("No changes rows remain after converting the selected axes to numeric values.")
+                            else:
+                                _scatter_race_col = _find_best_column(
+                                    _plot_df.columns,
+                                    ["Selected Race", session_title_col, "Session Title", "Race", "Title"]
+                                )
+                                _scatter_thrower_col = _get_change_thrower_column(_plot_df)
+                                _scatter_hover_cols = [
+                                    _col for _col in ["Selected Race", session_title_col, "Race", "Title", _scatter_thrower_col, _x_metric, _y_metric]
+                                    if _col is not None and _col in _plot_df.columns
+                                ]
+                                _color_kwargs = {}
+                                if _scatter_thrower_col is not None and _scatter_thrower_col in _plot_df.columns:
+                                    _plot_df = _plot_df.copy()
+                                    _outgoing_col, _incoming_col = _get_change_rider_pair_columns(_plot_df)
+                                    if _outgoing_col is not None and _incoming_col is not None:
+                                        _plot_df["Throwing Rider"] = _plot_df[_outgoing_col].astype(str).str.strip()
+                                        _plot_df["Incoming Rider"] = _plot_df[_incoming_col].astype(str).str.strip()
+                                        _plot_df.loc[_plot_df["Throwing Rider"].str.lower() == "nan", "Throwing Rider"] = ""
+                                        _plot_df.loc[_plot_df["Incoming Rider"].str.lower() == "nan", "Incoming Rider"] = ""
+                                        _plot_df["Outgoing Rider"] = _plot_df["Throwing Rider"]
+                                    else:
+                                        _plot_df["Throwing Rider"] = _plot_df[_scatter_thrower_col].apply(_extract_change_thrower_label)
+                                        _pair_split = _plot_df[_scatter_thrower_col].apply(_split_change_rider_detail)
+                                        _plot_df["Outgoing Rider"] = _pair_split.apply(lambda x: x[0])
+                                        _plot_df["Incoming Rider"] = _pair_split.apply(lambda x: x[1])
+                                    _thrower_values = [
+                                        str(_value).strip() for _value in _plot_df["Throwing Rider"].dropna().astype(str).tolist()
+                                        if str(_value).strip()
+                                    ]
+                                    _thrower_values = list(dict.fromkeys(_thrower_values))
+                                    if _thrower_values:
+                                        _race_color_col = _scatter_race_col if _scatter_race_col is not None and _scatter_race_col in _plot_df.columns else "Selected Race"
+                                        if _race_color_col not in _plot_df.columns:
+                                            _plot_df[_race_color_col] = "Race"
+
+                                        _plot_df["Thrower (Race)"] = _plot_df.apply(
+                                            lambda _r: f"{str(_r.get('Throwing Rider', '')).strip()} | {str(_r.get(_race_color_col, '')).strip()}",
+                                            axis=1,
+                                        )
+
+                                        _base_palette = [
+                                            "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#17becf",
+                                            "#bcbd22", "#8c564b", "#9467bd", "#e377c2", "#7f7f7f",
+                                        ]
+                                        _race_values = [
+                                            str(_r).strip() for _r in _plot_df[_race_color_col].dropna().astype(str).tolist()
+                                            if str(_r).strip()
+                                        ]
+                                        _race_values = list(dict.fromkeys(_race_values))
+                                        _race_base_color = {
+                                            _race: _base_palette[_idx % len(_base_palette)]
+                                            for _idx, _race in enumerate(_race_values)
+                                        }
+
+                                        _race_thrower_color_map = {}
+                                        for _race in _race_values:
+                                            _race_mask = _plot_df[_race_color_col].astype(str).str.strip() == _race
+                                            _race_throwers = [
+                                                str(_t).strip()
+                                                for _t in _plot_df.loc[_race_mask, "Throwing Rider"].dropna().astype(str).tolist()
+                                                if str(_t).strip()
+                                            ]
+                                            _race_throwers = list(dict.fromkeys(_race_throwers))
+                                            _race_throwers = sorted(_race_throwers, key=lambda _n: _n.lower())
+                                            _base_col = _race_base_color.get(_race, "#1f77b4")
+
+                                            if len(_race_throwers) == 1:
+                                                _race_thrower_color_map[f"{_race_throwers[0]} | {_race}"] = _base_col
+                                            elif len(_race_throwers) >= 2:
+                                                _race_thrower_color_map[f"{_race_throwers[0]} | {_race}"] = _shade_color(_base_col, 0.72)
+                                                _race_thrower_color_map[f"{_race_throwers[1]} | {_race}"] = _shade_color(_base_col, 1.28)
+                                                for _extra_thrower in _race_throwers[2:]:
+                                                    _race_thrower_color_map[f"{_extra_thrower} | {_race}"] = _base_col
+
+                                        _color_kwargs["color"] = "Thrower (Race)"
+                                        if _race_thrower_color_map:
+                                            _color_kwargs["color_discrete_map"] = _race_thrower_color_map
+                                        if "Throwing Rider" not in _scatter_hover_cols:
+                                            _scatter_hover_cols.append("Throwing Rider")
+                                        if "Incoming Rider" not in _scatter_hover_cols and "Incoming Rider" in _plot_df.columns:
+                                            _scatter_hover_cols.append("Incoming Rider")
+                                        if _race_color_col not in _scatter_hover_cols and _race_color_col in _plot_df.columns:
+                                            _scatter_hover_cols.append(_race_color_col)
+                                        st.caption("Each race keeps one base colour, and riders in that race are shown as darker/lighter shades of that race colour.")
+                                elif _scatter_race_col is not None and _scatter_race_col in _plot_df.columns:
+                                    _color_kwargs["color"] = _scatter_race_col
+
+                                _scatter_fig = px.scatter(
+                                    _plot_df,
+                                    x=_x_metric,
+                                    y=_y_metric,
+                                    hover_data=_scatter_hover_cols,
+                                    title=f"{_y_metric} vs {_x_metric}",
+                                    **_color_kwargs,
+                                )
+                                st.plotly_chart(_scatter_fig, use_container_width=True)
+
+                                _relationship_stats = _build_change_relationship_stats(_plot_df, _x_metric, _y_metric)
+                                st.caption("Relationship summary for the currently filtered rows and selected axes.")
+                                _rs1, _rs2, _rs3, _rs4 = st.columns(4)
+                                with _rs1:
+                                    st.metric("Points", str(_relationship_stats.get("count", 0)))
+                                with _rs2:
+                                    _pearson_r = _relationship_stats.get("pearson_r")
+                                    st.metric("Pearson r", f"{_pearson_r:.3f}" if _pearson_r is not None and pd.notna(_pearson_r) else "N/A")
+                                with _rs3:
+                                    _r_squared = _relationship_stats.get("r_squared")
+                                    st.metric("R²", f"{_r_squared:.3f}" if _r_squared is not None and pd.notna(_r_squared) else "N/A")
+                                with _rs4:
+                                    _slope = _relationship_stats.get("slope")
+                                    st.metric("Slope", f"{_slope:.3f}" if _slope is not None and pd.notna(_slope) else "N/A")
+
+                                _spearman_r = _relationship_stats.get("spearman_r")
+                                _intercept = _relationship_stats.get("intercept")
+                                if _spearman_r is not None or _intercept is not None:
+                                    _extra_parts = []
+                                    if _spearman_r is not None and pd.notna(_spearman_r):
+                                        _extra_parts.append(f"Spearman rank correlation: {_spearman_r:.3f}")
+                                    if _intercept is not None and pd.notna(_intercept):
+                                        _extra_parts.append(f"Linear intercept: {_intercept:.3f}")
+                                    if _extra_parts:
+                                        st.caption(" | ".join(_extra_parts))
+
+                                st.caption(_describe_relationship_summary(_relationship_stats, _x_metric, _y_metric))
+            return
 
         _jump_anchor_suffix = "none"
-        if len(selections) != 0:
+        if show_laps_view and len(selections) != 0:
             _jump_anchor_suffix = "_".join(
                 [str(s).strip().replace(" ", "_").replace("'", "") for s in selections]
             )[:120]
@@ -601,7 +1314,7 @@ if authentication_status:
         if _jump_trend_state_key not in st.session_state:
             st.session_state[_jump_trend_state_key] = False
 
-        if len(selections) != 0:
+        if show_laps_view and len(selections) != 0:
             if st.button("Jump to Trend Lines", key=f"jump_to_trends_btn_{title_column}"):
                 st.session_state[_jump_trend_state_key] = True
 
@@ -610,24 +1323,13 @@ if authentication_status:
             _selected_efforts_meta = []
             for selection in selections:
                 st.markdown("---")
-                col_1, col_2 = st.columns(2)
                 _selection_text = str(selection).strip()
 
+                if show_summary_view:
+                    col_1, col_2 = st.columns(2)
+
                 # Resolve selected race rows by session title, then prefer filtering by Race ID.
-                _selected_race_id = np.nan
-                if session_title_col in df_master.columns:
-                    _match_title = df_master[session_title_col].astype(str).str.strip() == _selection_text
-                    if race_id_col and race_id_col in df_master.columns:
-                        _ids = pd.to_numeric(df_master.loc[_match_title, race_id_col], errors="coerce").dropna().unique()
-                        if len(_ids) > 0:
-                            _selected_race_id = _ids[0]
-                            df_temp = df_master.loc[pd.to_numeric(df_master[race_id_col], errors="coerce") == _selected_race_id].copy()
-                        else:
-                            df_temp = df_master.loc[_match_title].copy()
-                    else:
-                        df_temp = df_master.loc[_match_title].copy()
-                else:
-                    df_temp = df_master.loc[df_master[title_column].astype(str).str.strip() == _selection_text].copy()
+                df_temp, _selected_race_id = _get_master_rows_for_selection(selection)
 
                 _selected_efforts_meta.append(
                     {
@@ -637,8 +1339,16 @@ if authentication_status:
                     }
                 )
 
-                with col_1:
-                    df_combine = pd.concat([df_combine, df_temp], axis=0)
+                madison_summary = _build_unweighted_madison_summary(df_temp)
+                rider_map_str = madison_summary.attrs.get("rider_map", "") if madison_summary is not None else ""
+                if madison_summary is not None:
+                    _rider_map = dict(part.split(": ", 1) for part in rider_map_str.split(" | ") if ": " in part)
+                    _r1_name = str(_rider_map.get("Rider 1", "")).strip()
+                    _r2_name = str(_rider_map.get("Rider 2", "")).strip()
+                    _riders_joined = " / ".join([n for n in [_r1_name, _r2_name] if n])
+                    _selected_efforts_meta[-1]["rider_names"] = _riders_joined
+
+                if show_laps_view and not show_summary_view:
                     st.subheader(f"{_selection_text}")
                     st.dataframe(
                         df_temp.drop(columns=drop_columns, errors="ignore"),
@@ -646,43 +1356,45 @@ if authentication_status:
                         hide_index=True,
                     )
 
-                    if {"Distance", "Avg_Speed"}.issubset(df_temp.columns):
-                        hover_columns = [column for column in ["Split", "Avg_Speed"] if column in df_temp.columns]
-                        fig = px.bar(df_temp, x="Distance", y="Avg_Speed", hover_data=hover_columns)
-                        fig.update_layout(
-                            title={
-                                "text": str(df_temp[title_column].iloc[0]),
-                                "y": 0.9,
-                                "x": 0.5,
-                                "xanchor": "center",
-                                "yanchor": "top",
-                            }
+                if show_summary_view:
+                    with col_1:
+                        df_combine = pd.concat([df_combine, df_temp], axis=0)
+                        st.subheader(f"{_selection_text}")
+                        st.dataframe(
+                            df_temp.drop(columns=drop_columns, errors="ignore"),
+                            use_container_width=True,
+                            hide_index=True,
                         )
-                        st.plotly_chart(fig, use_container_width=True)
 
-                with col_2:
-                    madison_summary = _build_unweighted_madison_summary(df_temp)
-                    if madison_summary is not None:
-                        st.subheader("Watt and kJ (Unweighted)")
-                        rider_map_str = madison_summary.attrs.get("rider_map", "")
-                        st.caption(rider_map_str)
-                        st.dataframe(madison_summary, use_container_width=True)
+                        if {"Distance", "Avg_Speed"}.issubset(df_temp.columns):
+                            hover_columns = [column for column in ["Split", "Avg_Speed"] if column in df_temp.columns]
+                            fig = px.bar(df_temp, x="Distance", y="Avg_Speed", hover_data=hover_columns)
+                            fig.update_layout(
+                                title={
+                                    "text": str(df_temp[title_column].iloc[0]),
+                                    "y": 0.9,
+                                    "x": 0.5,
+                                    "xanchor": "center",
+                                    "yanchor": "top",
+                                }
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
 
-                        _rider_map = dict(part.split(": ", 1) for part in rider_map_str.split(" | ") if ": " in part)
-                        _r1_name = str(_rider_map.get("Rider 1", "")).strip()
-                        _r2_name = str(_rider_map.get("Rider 2", "")).strip()
-                        _riders_joined = " / ".join([n for n in [_r1_name, _r2_name] if n])
-                        _selected_efforts_meta[-1]["rider_names"] = _riders_joined
+                    with col_2:
+                        if madison_summary is not None:
+                            st.subheader("Watt and kJ (Unweighted)")
+                            st.caption(rider_map_str)
+                            st.dataframe(madison_summary, use_container_width=True)
 
-                    if Videos == "Yes" and "Video" in df_temp.columns:
-                        if pd.isnull(df_temp["Video"].iloc[0]):
-                            st.header("No video available")
-                        else:
-                            st.header(str(df_temp[title_column].iloc[0]))
-                            st.video(f"{df_temp['Video'].iloc[0]}")
+                        if Videos == "Yes" and "Video" in df_temp.columns:
+                            if pd.isnull(df_temp["Video"].iloc[0]):
+                                st.header("No video available")
+                            else:
+                                st.header(str(df_temp[title_column].iloc[0]))
+                                st.video(f"{df_temp['Video'].iloc[0]}")
 
                 # --- Filtered detail view (full width) ---
-                if madison_summary is not None:
+                if show_laps_view and madison_summary is not None:
                     st.subheader("Filtered Detail View")
 
                     _rmap = dict(part.split(": ", 1) for part in rider_map_str.split(" | ") if ": " in part)
@@ -1093,7 +1805,7 @@ if authentication_status:
 
                 st.markdown("---")
 
-            if {"Distance", "Avg_Speed"}.issubset(df_combine.columns):
+            if show_summary_view and {"Distance", "Avg_Speed"}.issubset(df_combine.columns):
                 fig_tt = px.line(df_combine, x="Distance", y="Avg_Speed", title="Comparison", color=title_column)
                 st.plotly_chart(fig_tt, use_container_width=True)
 
@@ -1205,7 +1917,7 @@ if authentication_status:
                 _agg["Race Order"] = _effort_idx
                 _trend_rows.append(_agg)
 
-            if _progress_rows:
+            if show_laps_view and _progress_rows:
                 st.markdown("---")
                 st.markdown(f'<div id="{_jump_anchor_id}"></div>', unsafe_allow_html=True)
                 if st.session_state.get(_jump_trend_state_key, False):
@@ -1432,10 +2144,13 @@ if authentication_status:
                         st.plotly_chart(_fig_prog_kj, use_container_width=True)
                 else:
                     st.info("No within-race trend points for the current note filters.")
-            elif len(selections) > 0:
+            elif show_laps_view and len(selections) > 0:
                 st.info("No event-tag trend data was found for the selected race(s).")
         else:
-            st.info("Select one or more races to view the Madison analysis.")
+            if show_changes_view:
+                st.info("Select one or more races/sessions to view the changes data.")
+            else:
+                st.info("Select one or more races to view the Madison analysis.")
     
     
     if racetype == "Bunch":
@@ -1515,7 +2230,22 @@ if authentication_status:
     ###################################################### Men's Madison #############################################
 
     if racetype == "Men's Madison":
-        render_madison_analysis('pages/video_analysis/Mens_Madison.xlsx', "Men's Madison")
+        _mens_madison_views = {
+            "Watts and kJ": "watts_kj",
+            "10 Laps": "ten_laps",
+            "Changes": "changes",
+        }
+        _mens_madison_view_label = st.radio(
+            "Men's Madison view",
+            options=list(_mens_madison_views.keys()),
+            horizontal=True,
+            key="mens_madison_view_selector",
+        )
+        render_madison_analysis(
+            'pages/video_analysis/Mens_Madison.xlsx',
+            "Men's Madison",
+            view_mode=_mens_madison_views[_mens_madison_view_label],
+        )
 
     ################################################ Women's Team Pursuit ###################################
     
