@@ -1004,7 +1004,7 @@ if authentication_status:
 
             _work = _work.loc[_work["_speed_retention_numeric"].notna()].copy()
             if _work.empty:
-                return pd.DataFrame(columns=["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"])
+                return pd.DataFrame(columns=["Throw direction", "Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"])
 
             if _outgoing_col is not None and _incoming_col is not None:
                 _work["_outgoing_rider"] = _work[_outgoing_col].astype(str).str.strip()
@@ -1025,15 +1025,15 @@ if authentication_status:
             )
             _work = _work.loc[_valid_pair_mask].copy()
             if _work.empty:
-                return pd.DataFrame(columns=["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"])
+                return pd.DataFrame(columns=["Throw direction", "Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"])
 
             _work["_bucket"] = np.where(
                 _work["_speed_retention_numeric"] < 100.0,
-                "Changes under 100%",
+                "Changes (<100% retention)",
                 np.where(
                     _work["_speed_retention_numeric"] <= 105.0,
-                    "Changes between 100% - 105%",
-                    "Changes over 105%",
+                    "Changes (100%-105%)",
+                    "Changes (>105%)",
                 ),
             )
 
@@ -1052,7 +1052,7 @@ if authentication_status:
                 .reset_index()
             )
 
-            for _col in ["Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"]:
+            for _col in ["Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"]:
                 if _col not in _summary.columns:
                     _summary[_col] = 0
 
@@ -1061,11 +1061,11 @@ if authentication_status:
                 axis=1,
             )
             _summary = _summary.sort_values(
-                by=["Changes under 100%", "Changes between 100% - 105%", "Changes over 105%", "Throw direction"],
+                by=["Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)", "Throw direction"],
                 ascending=[False, False, False, True],
             )
             return _summary[
-                ["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"]
+                ["Throw direction", "Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"]
             ].reset_index(drop=True)
 
         st.markdown("---")
@@ -1138,7 +1138,7 @@ if authentication_status:
                     st.info("No changes rows matched the selected race/session.")
                 else:
                     _changes_display = pd.concat(_change_frames, ignore_index=True)
-                    st.subheader("Number of Changes based on Speed Retention")
+                    st.subheader("Speed Retention by Throw Direction")
                     for _sel_name, _sel_df in _change_frames_by_selection:
                         st.markdown(f"**{_sel_name}**")
                         _bucket_table = _build_speed_retention_bucket_table(_sel_df)
