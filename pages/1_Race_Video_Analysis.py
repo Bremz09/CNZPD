@@ -99,10 +99,20 @@ if authentication_status:
                     user_cat_input = right.multiselect(
                         f"Values for {column}",
                         df[column].unique(),
-                        default=list(df[column].unique()),
+                        default=[],
                         key=f"{widget_key_prefix}_cat_{col_idx}_{column}",
                     )
-                    df = df[df[column].isin(user_cat_input)]
+                    if user_cat_input:
+                        if len(user_cat_input) == 1:
+                            df = df[df[column].isin(user_cat_input)]
+                        else:
+                            column_text = df[column].astype(str).str.lower()
+                            selected_text = [str(value).strip().lower() for value in user_cat_input if str(value).strip()]
+                            if selected_text:
+                                match_mask = pd.Series(True, index=df.index)
+                                for value_text in selected_text:
+                                    match_mask &= column_text.str.contains(value_text, regex=False, na=False)
+                                df = df[match_mask]
                 elif is_numeric_dtype(df[column]):
                     _min = float(df[column].min())
                     _max = float(df[column].max())
@@ -143,8 +153,2007 @@ if authentication_status:
    
     racetype = st.selectbox(
         "Select Race Type:",
-        options=["Women's TP", "Men's TP", "Women's Team Sprint","Men's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP","Bunch"]
+        options=["Women's TP", "Men's TP", "Women's Team Sprint","Men's Team Sprint","Mens' Keirin","WTS Starts","Men's IP","Women's IP","Women's Madison","Men's Madison","Bunch"]
         ) 
+
+    def render_madison_analysis(file_path, header_text, view_mode="all"):
+        excel_book = pd.ExcelFile(file_path)
+        sheet_names = excel_book.sheet_names
+        df_master = pd.read_excel(excel_book, sheet_name=sheet_names[0])
+        df_event_tags = pd.DataFrame()
+        df_changes = pd.DataFrame()
+        if len(sheet_names) > 1:
+            try:
+                df_event_tags = pd.read_excel(excel_book, sheet_name=sheet_names[1])
+            except Exception:
+                df_event_tags = pd.DataFrame()
+        if len(sheet_names) > 2:
+            try:
+                df_changes = pd.read_excel(excel_book, sheet_name=sheet_names[2])
+            except Exception:
+                df_changes = pd.DataFrame()
+
+        view_mode = view_mode or "all"
+        show_summary_view = view_mode in ("all", "watts_kj")
+        show_laps_view = view_mode in ("all", "ten_laps")
+        show_changes_view = view_mode == "changes"
+
+        sort_columns = [column for column in ["Save_Date", "Title"] if column in df_master.columns]
+        if sort_columns:
+            df_master = df_master.sort_values(by=sort_columns, ascending=[False] * len(sort_columns))
+
+        drop_columns = [column for column in ["Save_Date", "Action", "Video"] if column in df_master.columns]
+
+        title_column = "Title" if "Title" in df_master.columns else df_master.columns[0]
+
+        def _find_best_column(columns, candidates):
+            normalized_to_actual = {str(col).strip().lower(): col for col in columns}
+            for candidate in candidates:
+                found = normalized_to_actual.get(str(candidate).strip().lower())
+                if found is not None:
+                    return found
+            return None
+
+        def _pick_best_display_column(df, candidates, fallback):
+            existing = []
+            for candidate in candidates:
+                col = _find_best_column(df.columns, [candidate])
+                if col is not None and col not in existing:
+                    existing.append(col)
+
+            if fallback in df.columns and fallback not in existing:
+                existing.append(fallback)
+
+            if not existing:
+                return fallback
+
+            def _score(col):
+                values = df[col].dropna().astype(str).str.strip()
+                values = values[values != ""]
+                if values.empty:
+                    return (-1.0, -1.0, -1.0)
+
+                numeric = pd.to_numeric(values, errors="coerce")
+                numeric_ratio = float(numeric.notna().mean())
+                text_ratio = 1.0 - numeric_ratio
+                uniqueness = float(values.nunique() / max(len(values), 1))
+                avg_len = float(values.str.len().mean())
+
+                return (text_ratio, uniqueness, avg_len)
+
+            return max(existing, key=_score)
+
+        # Prefer showing session titles in the selector, while using Race ID for joins/matching.
+        session_title_candidates = [
+            "Session Title",
+            "Session title",
+            "Session_Title",
+            "SessionName",
+            "Session Name",
+            "Session",
+            "Race Title",
+            "Title",
+        ]
+        # Per workflow request, use Race column for the effort selector when available.
+        race_display_col = _find_best_column(df_master.columns, ["Race"])
+        if race_display_col is not None:
+            session_title_col = race_display_col
+        else:
+            session_title_col = _pick_best_display_column(df_master, session_title_candidates, title_column)
+
+        race_id_candidates = ["Race ID", "RaceID", "Race_Id", "Race #", "Race#", "Race Number", "RaceNumber", "ID"]
+        race_id_col = _find_best_column(df_master.columns, race_id_candidates)
+
+        def _get_master_rows_for_selection(selection):
+            _selection_text = str(selection).strip()
+            _selected_race_id = np.nan
+            if session_title_col in df_master.columns:
+                _match_title = df_master[session_title_col].astype(str).str.strip() == _selection_text
+                if race_id_col and race_id_col in df_master.columns:
+                    _ids = pd.to_numeric(df_master.loc[_match_title, race_id_col], errors="coerce").dropna().unique()
+                    if len(_ids) > 0:
+                        _selected_race_id = _ids[0]
+                        _df_temp = df_master.loc[pd.to_numeric(df_master[race_id_col], errors="coerce") == _selected_race_id].copy()
+                    else:
+                        _df_temp = df_master.loc[_match_title].copy()
+                else:
+                    _df_temp = df_master.loc[_match_title].copy()
+            else:
+                _df_temp = df_master.loc[df_master[title_column].astype(str).str.strip() == _selection_text].copy()
+            return _df_temp, _selected_race_id
+
+        def _get_related_rows_for_selection(df_source, selection, selected_race_id=np.nan):
+            if df_source is None or df_source.empty:
+                return pd.DataFrame()
+
+            if pd.notna(selected_race_id):
+                for _candidate in race_id_candidates:
+                    _found_col = _find_best_column(df_source.columns, [_candidate])
+                    if _found_col is None:
+                        continue
+                    _source_ids = pd.to_numeric(df_source[_found_col], errors="coerce")
+                    _id_mask = _source_ids == selected_race_id
+                    if _id_mask.any():
+                        return df_source.loc[_id_mask].copy()
+
+            _selection_text = str(selection).strip()
+            _candidate_columns = []
+            for _candidate in [
+                session_title_col,
+                title_column,
+                "Selected Race",
+                "Title",
+                "Session Title",
+                "Session title",
+                "Session_Title",
+                "SessionName",
+                "Session Name",
+                "Session",
+                "Race",
+                "Race Name",
+                "Race Title",
+                "Event",
+                "Label",
+                "Name",
+            ]:
+                if _candidate is not None:
+                    _found = _find_best_column(df_source.columns, [_candidate])
+                    if _found is not None and _found not in _candidate_columns:
+                        _candidate_columns.append(_found)
+
+                _selector_keywords = ["race", "session", "title", "event", "name", "meet"]
+                for _col in df_source.columns:
+                    _col_l = str(_col).strip().lower()
+                    if any(_kw in _col_l for _kw in _selector_keywords) and _col not in _candidate_columns:
+                        _candidate_columns.append(_col)
+
+            for _col in _candidate_columns:
+                _series = df_source[_col].astype(str).str.strip()
+                _exact_mask = _series == _selection_text
+                if _exact_mask.any():
+                    return df_source.loc[_exact_mask].copy()
+
+            for _col in _candidate_columns:
+                _series = df_source[_col].astype(str).str.strip()
+                _contains_mask = _series.str.contains(_selection_text, case=False, na=False)
+                if _contains_mask.any():
+                    return df_source.loc[_contains_mask].copy()
+
+            return pd.DataFrame()
+
+        def _build_selector_options_for_df(df_source, preferred_candidates):
+            if df_source is None or df_source.empty:
+                return []
+
+            _candidate_cols = []
+            for _candidate in preferred_candidates:
+                _found = _find_best_column(df_source.columns, [_candidate])
+                if _found is not None and _found not in _candidate_cols:
+                    _candidate_cols.append(_found)
+
+            _selector_keywords = ["race", "session", "title", "event", "name", "meet"]
+            for _col in df_source.columns:
+                _col_l = str(_col).strip().lower()
+                if any(_kw in _col_l for _kw in _selector_keywords) and _col not in _candidate_cols:
+                    _candidate_cols.append(_col)
+
+            if not _candidate_cols:
+                _fallback_col = _pick_best_display_column(df_source, preferred_candidates, df_source.columns[0])
+                if _fallback_col in df_source.columns:
+                    _candidate_cols.append(_fallback_col)
+
+            _options = []
+            for _col in _candidate_cols:
+                _series = df_source[_col].dropna().astype(str).str.strip()
+                _series = _series[_series != ""]
+                _series = _series[_series.str.lower() != "nan"]
+                _options.extend(_series.tolist())
+
+            return list(dict.fromkeys(_options))
+
+        def _get_changes_race_options(df_source):
+            if df_source is None or df_source.empty:
+                return []
+
+            _race_col = _find_best_column(df_source.columns, ["Race"])
+            if _race_col is None:
+                return []
+
+            _race_values = df_source[_race_col].dropna().astype(str).str.strip()
+            _race_values = _race_values[_race_values != ""]
+            _race_values = _race_values[_race_values.str.lower() != "nan"]
+            return list(dict.fromkeys(_race_values.tolist()))
+
+        def _get_event_tags_for_selection(selection):
+            if df_event_tags.empty:
+                return pd.DataFrame()
+
+            # Prefer matching by numeric Race ID between tabs.
+            selection_num = pd.to_numeric(pd.Series([selection]), errors="coerce").iloc[0]
+            race_id_candidates = [
+                "Race ID",
+                "RaceID",
+                "Race_Id",
+                "Race #",
+                "Race#",
+                "Race Number",
+                "RaceNumber",
+                "ID",
+            ]
+            race_id_candidates = [
+                _find_best_column(df_event_tags.columns, [c])
+                for c in race_id_candidates
+            ]
+            race_id_candidates = [c for c in race_id_candidates if c is not None]
+            if pd.notna(selection_num) and race_id_candidates:
+                for col in race_id_candidates:
+                    tag_ids = pd.to_numeric(df_event_tags[col], errors="coerce")
+                    id_mask = tag_ids == selection_num
+                    if id_mask.any():
+                        return df_event_tags.loc[id_mask].dropna(axis=1, how="all")
+
+            candidate_columns = [
+                title_column,
+                "Title",
+                "Race",
+                "Event",
+                "Race Label",
+                "Label",
+                "Name",
+            ]
+            candidate_columns = [c for c in candidate_columns if c in df_event_tags.columns]
+            selection_text = str(selection).strip()
+
+            for col in candidate_columns:
+                series = df_event_tags[col].astype(str).str.strip()
+                exact_mask = series == selection_text
+                if exact_mask.any():
+                    return df_event_tags.loc[exact_mask].copy()
+
+            for col in candidate_columns:
+                series = df_event_tags[col].astype(str).str.strip()
+                contains_mask = series.str.contains(selection_text, case=False, na=False)
+                if contains_mask.any():
+                    return df_event_tags.loc[contains_mask].copy()
+
+            if len(df_event_tags) == 1:
+                return df_event_tags.copy()
+
+            return pd.DataFrame()
+
+        def _select_rider_metric_columns(df_event, metric_tokens):
+            columns = list(df_event.columns)
+            metric_cols = [
+                col for col in columns
+                if any(token in str(col).lower() for token in metric_tokens)
+            ]
+            if not metric_cols:
+                return None, None
+
+            def _pick(metric_candidates, rider_tokens):
+                for candidate in metric_candidates:
+                    lowered = str(candidate).lower()
+                    if any(token in lowered for token in rider_tokens):
+                        return candidate
+                return None
+
+            rider_1_tokens = ["rider 1", "rider1", "r1", "athlete 1", "athlete1", "p1"]
+            rider_2_tokens = ["rider 2", "rider2", "r2", "athlete 2", "athlete2", "p2"]
+
+            rider_1_col = _pick(metric_cols, rider_1_tokens)
+            rider_2_col = _pick(metric_cols, rider_2_tokens)
+
+            if rider_1_col is None and len(metric_cols) >= 1:
+                rider_1_col = metric_cols[0]
+            if rider_2_col is None and len(metric_cols) >= 2:
+                rider_2_col = metric_cols[1] if metric_cols[1] != rider_1_col else None
+
+            return rider_1_col, rider_2_col
+
+        def _coerce_numeric_values(series):
+            _text = series.astype(str).str.replace(",", "", regex=False).str.extract(r"(-?\d+(?:\.\d+)?)")[0]
+            return pd.to_numeric(_text, errors="coerce")
+
+        def _find_columns_by_aliases(df_obj, aliases):
+            _matches = []
+            for _col in df_obj.columns:
+                _col_l = str(_col).strip().lower()
+                if any(str(_alias).strip().lower() in _col_l for _alias in aliases):
+                    _matches.append(_col)
+            return list(dict.fromkeys(_matches))
+
+        def _find_watt_columns(df_obj):
+            _matches = []
+            for _col in df_obj.columns:
+                _col_l = str(_col).strip().lower()
+                if "w" == _col_l:
+                    _matches.append(_col)
+                    continue
+                if "w" in _col_l:
+                    _matches.append(_col)
+                    continue
+            return list(dict.fromkeys(_matches))
+
+        def _build_unweighted_madison_summary(df_event):
+            columns = [str(col) for col in df_event.columns]
+            lowered_map = {str(col): str(col).lower() for col in df_event.columns}
+
+            def _find_column(pattern_groups):
+                for patterns in pattern_groups:
+                    for col in columns:
+                        col_lower = lowered_map[col]
+                        if all(token in col_lower for token in patterns):
+                            return col
+                return None
+
+            rider_name_col = _find_column([
+                ["rider", "name"],
+            ])
+            type_col = _find_column([
+                ["type"],
+            ])
+
+            # Extract rider names first to use for dynamic column detection
+            # Priority: Detail column > Rider Name > Front column
+            if "Detail" in df_event.columns:
+                rider_series_temp = df_event["Detail"].astype(str).str.strip()
+            elif rider_name_col and rider_name_col in df_event.columns:
+                rider_series_temp = df_event[rider_name_col].astype(str).str.strip()
+            elif "Front" in df_event.columns:
+                rider_series_temp = df_event["Front"].astype(str).str.strip()
+            else:
+                rider_series_temp = pd.Series(["" for _ in range(len(df_event))], index=df_event.index)
+
+            ordered_names_temp = [name for name in rider_series_temp.tolist() if name and name.lower() != "nan"]
+            ordered_unique_names_temp = list(dict.fromkeys(ordered_names_temp))
+            
+            rider_1_name_temp = ordered_unique_names_temp[0] if len(ordered_unique_names_temp) >= 1 else "Rider 1"
+            rider_2_name_temp = ordered_unique_names_temp[1] if len(ordered_unique_names_temp) >= 2 else "Rider 2"
+
+            # Try to find columns using rider names - flexible pattern matching
+            power_col_1 = _find_column([
+                ["rider 1", "avg", "w"],
+                ["rider 1", "av", "w"],
+                ["rider1", "avg", "w"],
+                ["rider1", "av", "w"],
+                ["rider 1", "w"],
+                ["rider1", "w"],
+                ["rider 1 av"],
+                ["rider 1 avg"],
+                ["rider1 av"],
+                ["rider1 avg"],
+            ])
+            power_col_2 = _find_column([
+                ["rider 2", "avg", "w"],
+                ["rider 2", "av", "w"],
+                ["rider2", "avg", "w"],
+                ["rider2", "av", "w"],
+                ["rider 2", "w"],
+                ["rider2", "w"],
+                ["rider 2 av"],
+                ["rider 2 avg"],
+                ["rider2 av"],
+                ["rider2 avg"],
+            ])
+            kj_col_1 = _find_column([
+                ["rider 1", "kj"],
+                ["rider1", "kj"],
+                ["rider 1 kj"],
+                ["rider1 kj"],
+                ["rider 1", "energy"],
+                ["rider1", "energy"],
+            ])
+            kj_col_2 = _find_column([
+                ["rider 2", "kj"],
+                ["rider2", "kj"],
+                ["rider 2 kj"],
+                ["rider2 kj"],
+                ["rider 2", "energy"],
+                ["rider2", "energy"],
+            ])
+
+            if power_col_1 is None or power_col_2 is None:
+                power_col_1, power_col_2 = _select_rider_metric_columns(df_event, ["power", "watt", "watts", "avg_w", "avgw", " w"])
+            if kj_col_1 is None or kj_col_2 is None:
+                kj_col_1, kj_col_2 = _select_rider_metric_columns(df_event, ["kj", "energy"])
+
+            if power_col_1 is None and power_col_2 is None and kj_col_1 is None and kj_col_2 is None:
+                return None
+
+            # Extract rider series for active/inactive filtering
+            # Priority: Detail column > Rider Name > Front column
+            if "Detail" in df_event.columns:
+                rider_series = df_event["Detail"].astype(str).str.strip()
+            elif rider_name_col and rider_name_col in df_event.columns:
+                rider_series = df_event[rider_name_col].astype(str).str.strip()
+            elif "Front" in df_event.columns:
+                rider_series = df_event["Front"].astype(str).str.strip()
+            else:
+                rider_series = pd.Series(["" for _ in range(len(df_event))], index=df_event.index)
+
+            ordered_names = [name for name in rider_series.tolist() if name and name.lower() != "nan"]
+            ordered_unique_names = list(dict.fromkeys(ordered_names))
+            if len(ordered_unique_names) >= 2:
+                rider_1_name = ordered_unique_names[0]
+                rider_2_name = ordered_unique_names[1]
+            else:
+                rider_1_name = "Rider 1"
+                rider_2_name = "Rider 2"
+
+            def _to_numeric(series):
+                if series is None:
+                    return None
+                return pd.to_numeric(series, errors="coerce")
+
+            p1 = _to_numeric(df_event[power_col_1]) if power_col_1 and power_col_1 in df_event.columns else None
+            p2 = _to_numeric(df_event[power_col_2]) if power_col_2 and power_col_2 in df_event.columns else None
+            k1 = _to_numeric(df_event[kj_col_1]) if kj_col_1 and kj_col_1 in df_event.columns else None
+            k2 = _to_numeric(df_event[kj_col_2]) if kj_col_2 and kj_col_2 in df_event.columns else None
+
+            def _mean_or_nan(series, mask=None):
+                if series is None:
+                    return np.nan
+                values = series[mask] if mask is not None else series
+                return float(values.mean()) if values.notna().any() else np.nan
+
+            def _sum_or_nan(series, mask=None):
+                if series is None:
+                    return np.nan
+                values = series[mask] if mask is not None else series
+                return float(values.sum()) if values.notna().any() else np.nan
+
+            if type_col and type_col in df_event.columns:
+                type_series = df_event[type_col].astype(str).str.lower().str.replace("_", " ", regex=False).str.replace("-", " ", regex=False)
+            elif "Action" in df_event.columns:
+                type_series = df_event["Action"].astype(str).str.lower().str.replace("_", " ", regex=False).str.replace("-", " ", regex=False)
+            else:
+                type_series = pd.Series(["bunch" for _ in range(len(df_event))], index=df_event.index)
+
+            kind_masks = {
+                "Bunch": ~(type_series.str.contains("sprint") | type_series.str.contains("lap") | type_series.str.contains("change")),
+                "Sprint": type_series.str.contains("sprint"),
+                "Lap Take": type_series.str.contains("lap"),
+                "Change": type_series.str.contains("change"),
+            }
+
+            def _role_mask(target_rider, role):
+                """Create mask for rows where target rider is active or inactive"""
+                if target_rider == 1:
+                    target_active_name = rider_1_name
+                else:
+                    target_active_name = rider_2_name
+                
+                if role == "active":
+                    return rider_series == target_active_name
+                else:
+                    return rider_series != target_active_name
+            
+            def _get_rider_data(rider_num):
+                """Get watts and kj series for a specific rider number"""
+                if rider_num == 1:
+                    return p1, k1
+                else:
+                    return p2, k2
+
+            metric_config = [
+                (f"Active {rider_1_name} W", 1, "active", "w"),
+                (f"Active {rider_1_name} KJ", 1, "active", "kj"),
+                (f"Inactive {rider_1_name} W", 1, "inactive", "w"),
+                (f"Inactive {rider_1_name} KJ", 1, "inactive", "kj"),
+                (f"Active {rider_2_name} W", 2, "active", "w"),
+                (f"Active {rider_2_name} KJ", 2, "active", "kj"),
+                (f"Inactive {rider_2_name} W", 2, "inactive", "w"),
+                (f"Inactive {rider_2_name} KJ", 2, "inactive", "kj"),
+            ]
+
+            rows = []
+            for row_label, rider_idx, role, metric in metric_config:
+                watts_series, kj_series = _get_rider_data(rider_idx)
+                source = watts_series if metric == "w" else kj_series
+                role_mask = _role_mask(rider_idx, role)
+                result_row = {"Row": row_label}
+
+                for kind_name, kind_mask in kind_masks.items():
+                    combined_mask = role_mask & kind_mask
+                    if metric == "w":
+                        result_row[kind_name] = _mean_or_nan(source, combined_mask)
+                    else:
+                        result_row[kind_name] = _sum_or_nan(source, combined_mask)
+
+                if metric == "w":
+                    result_row["Total"] = _mean_or_nan(source, role_mask)
+                else:
+                    result_row["Total"] = _sum_or_nan(source, role_mask)
+
+                rows.append(result_row)
+
+            summary = pd.DataFrame(rows, columns=["Row", "Bunch", "Sprint", "Lap Take", "Change", "Total"])
+            for col in ["Bunch", "Sprint", "Lap Take", "Change", "Total"]:
+                summary[col] = summary[col].map(lambda x: round(x, 3) if pd.notna(x) else np.nan)
+
+            summary.attrs["rider_map"] = f"Rider 1: {rider_1_name} | Rider 2: {rider_2_name}"
+            return summary
+
+        def _split_tag_tokens(cell_value):
+            _text = str(cell_value).strip()
+            if not _text or _text.lower() == "nan":
+                return []
+            for _sep in [";", "/", "|", "\n"]:
+                _text = _text.replace(_sep, ",")
+            return [t.strip() for t in _text.split(",") if t.strip()]
+
+        def _first_tag_token(cell_value):
+            _tokens = _split_tag_tokens(cell_value)
+            return _tokens[0] if _tokens else ""
+
+        def _build_note_group(value_map):
+            _parts = []
+            for _label, _value in value_map:
+                _first = _first_tag_token(_value)
+                if _first:
+                    _parts.append(f"{_label}: {_first}")
+            return " | ".join(_parts) if _parts else "Unlabeled"
+
+        def _get_change_metric_columns(df_obj):
+            _excluded_exact = {
+                "id",
+                "race id",
+                "race #",
+                "race number",
+                "bib",
+                "lap",
+                "block",
+                "index",
+                "rank",
+                "position",
+                "order",
+            }
+
+            def _is_excluded_column_name(col_name):
+                _col_l = str(col_name).strip().lower()
+                _col_norm = " ".join(_col_l.replace("_", " ").split())
+
+                # Exclude explicit ID/meta columns, but do not exclude rider metrics such as
+                # "Rider 1 kJ" where "id" appears inside "rider".
+                if _col_norm in _excluded_exact:
+                    return True
+
+                _prefixes = ["race id", "race #", "race number", "bib", "lap", "block", "index", "rank", "position", "order"]
+                for _prefix in _prefixes:
+                    if _col_norm.startswith(f"{_prefix} "):
+                        return True
+
+                if _col_norm.startswith("id ") or _col_norm.endswith(" id"):
+                    return True
+
+                return False
+
+            _metric_cols = []
+            for _col in df_obj.columns:
+                if _is_excluded_column_name(_col):
+                    continue
+                _numeric_values = _coerce_numeric_values(df_obj[_col])
+                if _numeric_values.notna().sum() > 0:
+                    _metric_cols.append(_col)
+            return _metric_cols
+
+        def _get_change_thrower_column(df_obj):
+            _candidate_aliases = [
+                "Outgoing rider",
+                "Outgoing Rider",
+                "Outgoing",
+                "Rider detail",
+                "Rider Detail",
+                "Throwing Rider",
+                "Throw Rider",
+                "Thrower",
+                "Rider Throwing",
+                "Throw",
+                "Rider",
+                "Athlete",
+                "Front",
+                "Detail",
+            ]
+            for _alias in _candidate_aliases:
+                _found = _find_best_column(df_obj.columns, [_alias])
+                if _found is None:
+                    continue
+                _values = df_obj[_found].dropna().astype(str).str.strip()
+                _values = _values[_values != ""]
+                if _values.nunique() >= 1:
+                    return _found
+            return None
+
+        def _get_change_rider_pair_columns(df_obj):
+            if df_obj is None or df_obj.empty:
+                return None, None
+
+            _outgoing_col = _find_best_column(
+                df_obj.columns,
+                ["Outgoing rider", "Outgoing Rider", "Outgoing", "Throwing Rider", "Thrower"],
+            )
+            _incoming_col = _find_best_column(
+                df_obj.columns,
+                ["Incoming rider", "Incoming Rider", "Incoming", "Receiving Rider", "Received Rider"],
+            )
+            return _outgoing_col, _incoming_col
+
+        def _extract_change_thrower_label(cell_value):
+            _text = str(cell_value).strip()
+            if not _text or _text.lower() == "nan":
+                return ""
+
+            for _arrow in ["--->", "->", "→"]:
+                if _arrow in _text:
+                    return _text.split(_arrow, 1)[0].strip()
+
+            return _text
+
+        def _split_change_rider_detail(cell_value):
+            _text = str(cell_value).strip()
+            if not _text or _text.lower() == "nan":
+                return "", ""
+
+            for _arrow in ["--->", "->", "→"]:
+                if _arrow in _text:
+                    _parts = _text.split(_arrow, 1)
+                    _left = str(_parts[0]).strip()
+                    _right = str(_parts[1]).strip() if len(_parts) > 1 else ""
+                    return _left, _right
+
+            return _text, ""
+
+        def _rgb_to_hex(_rgb):
+            return "#{:02x}{:02x}{:02x}".format(
+                int(max(0, min(255, _rgb[0]))),
+                int(max(0, min(255, _rgb[1]))),
+                int(max(0, min(255, _rgb[2]))),
+            )
+
+        def _hex_to_rgb(_hex):
+            _h = str(_hex).strip().lstrip("#")
+            if len(_h) != 6:
+                return (59, 130, 246)
+            try:
+                return tuple(int(_h[i:i + 2], 16) for i in (0, 2, 4))
+            except Exception:
+                return (59, 130, 246)
+
+        def _shade_color(_hex, factor):
+            _r, _g, _b = _hex_to_rgb(_hex)
+            if factor >= 1.0:
+                _r = _r + (255 - _r) * (factor - 1.0)
+                _g = _g + (255 - _g) * (factor - 1.0)
+                _b = _b + (255 - _b) * (factor - 1.0)
+            else:
+                _r = _r * factor
+                _g = _g * factor
+                _b = _b * factor
+            return _rgb_to_hex((int(_r), int(_g), int(_b)))
+
+        def _describe_change_metric(metric_name):
+            _metric_text = str(metric_name).strip()
+            _metric_lower = " ".join(_metric_text.lower().replace("_", " ").split())
+
+            # Treat rider-specific suffixes consistently after header updates.
+            for _token in [" - rider", " (rider", " | rider", " / rider"]:
+                if _token in _metric_lower:
+                    _metric_lower = _metric_lower.split(_token, 1)[0].strip()
+
+            _exact_definitions = {
+                "speed @ change (km/h)": "Speed at the exact change timestamp.",
+                "avg power over change (w)": "The average power over the change window.",
+                "before change speed (km/h)": "The average speed of the active rider before the change over the change window.",
+                "after change speed (km/h)": "The average speed of the active rider after the change over the change window.",
+                "speed retention (%)": "After change speed / Before change speed * 100.",
+                "team speed gain (km/h)": "After change speed - Before change speed.",
+                "incoming speed gain (km/h)": "Incoming rider speed after the change - incoming rider speed before the change (how much the incoming rider accelerates).",
+                "ke gain (kj)": "How much the change accelerated the incoming rider: 0.5*m*(v_out^2 - v_in^2).",
+            }
+            if _metric_lower in _exact_definitions:
+                return f"{_metric_text}: {_exact_definitions[_metric_lower]}"
+
+            if any(_token in _metric_lower for _token in ["watt", "power", " avg w", "avg_w", "mean w", " watts", " w "]):
+                return f"{_metric_text}: power output for each change row, shown in watts."
+            if any(_token in _metric_lower for _token in ["kj", "energy"]):
+                return f"{_metric_text}: energy used during each change row, shown in kilojoules."
+            if any(_token in _metric_lower for _token in ["speed", "velocity"]):
+                return f"{_metric_text}: speed recorded for each change row."
+            if any(_token in _metric_lower for _token in ["cadence", "rpm"]):
+                return f"{_metric_text}: pedalling cadence for each change row."
+            if any(_token in _metric_lower for _token in ["time", "duration", "elapsed", "second", " sec", "(s)"]):
+                return f"{_metric_text}: time-based measure for each change row."
+            if any(_token in _metric_lower for _token in ["distance", "metre", "meter", "lap"]):
+                return f"{_metric_text}: distance or lap-based measure for each change row."
+            if any(_token in _metric_lower for _token in ["heart rate", "hr", "bpm"]):
+                return f"{_metric_text}: heart-rate measure for each change row."
+            if any(_token in _metric_lower for _token in ["torque", "force"]):
+                return f"{_metric_text}: torque or force-related measure for each change row."
+            return f"{_metric_text}: numeric value from the changes tab for each plotted row."
+
+        def _build_change_relationship_stats(df_obj, x_metric, y_metric):
+            _stats = {"count": int(len(df_obj))}
+            if len(df_obj) < 2:
+                return _stats
+
+            _x_values = pd.to_numeric(df_obj[x_metric], errors="coerce")
+            _y_values = pd.to_numeric(df_obj[y_metric], errors="coerce")
+            _valid_mask = _x_values.notna() & _y_values.notna()
+            _x_values = _x_values[_valid_mask]
+            _y_values = _y_values[_valid_mask]
+            _stats["count"] = int(len(_x_values))
+
+            if len(_x_values) < 2:
+                return _stats
+
+            if _x_values.nunique() > 1 and _y_values.nunique() > 1:
+                _stats["pearson_r"] = float(_x_values.corr(_y_values, method="pearson"))
+                _stats["spearman_r"] = float(_x_values.corr(_y_values, method="spearman"))
+                _slope, _intercept = np.polyfit(_x_values.to_numpy(dtype=float), _y_values.to_numpy(dtype=float), 1)
+                _stats["slope"] = float(_slope)
+                _stats["intercept"] = float(_intercept)
+                if pd.notna(_stats["pearson_r"]):
+                    _stats["r_squared"] = float(_stats["pearson_r"] ** 2)
+
+            return _stats
+
+        def _describe_relationship_summary(stats_obj, x_metric, y_metric):
+            _count = int(stats_obj.get("count", 0))
+            _pearson_r = stats_obj.get("pearson_r")
+            _slope = stats_obj.get("slope")
+
+            if _count < 3 or _pearson_r is None or pd.isna(_pearson_r) or _slope is None or pd.isna(_slope):
+                return f"Not enough variation to reliably describe the relationship between {x_metric} and {y_metric}."
+
+            _abs_r = abs(float(_pearson_r))
+            if _abs_r >= 0.7:
+                _strength = "strong"
+            elif _abs_r >= 0.4:
+                _strength = "moderate"
+            elif _abs_r >= 0.2:
+                _strength = "weak"
+            else:
+                _strength = "very weak"
+
+            if float(_pearson_r) > 0:
+                _direction = "positive"
+            elif float(_pearson_r) < 0:
+                _direction = "negative"
+            else:
+                _direction = "no clear"
+
+            if float(_slope) > 0:
+                _slope_text = f"On average, {y_metric} increases by about {float(_slope):.3f} for each +1 unit of {x_metric}."
+            elif float(_slope) < 0:
+                _slope_text = f"On average, {y_metric} decreases by about {abs(float(_slope)):.3f} for each +1 unit of {x_metric}."
+            else:
+                _slope_text = f"The fitted linear slope is near zero, so changes in {x_metric} do not consistently shift {y_metric}."
+
+            return f"This plot shows a {_strength} {_direction} relationship between {x_metric} and {y_metric}. {_slope_text}"
+
+        def _find_speed_retention_column(df_obj):
+            if df_obj is None or df_obj.empty:
+                return None
+
+            _exact_candidates = [
+                "Speed retention (%)",
+                "Speed Retention (%)",
+                "Speed Retention %",
+                "Speed retention %",
+                "Speed Retention",
+                "Speed retention",
+            ]
+            for _candidate in _exact_candidates:
+                _found = _find_best_column(df_obj.columns, [_candidate])
+                if _found is not None:
+                    return _found
+
+            for _col in df_obj.columns:
+                _col_l = str(_col).strip().lower()
+                if "speed" in _col_l and "retention" in _col_l:
+                    return _col
+
+            return None
+
+        def _build_speed_retention_bucket_table(df_obj):
+            if df_obj is None or df_obj.empty:
+                return None
+
+            _speed_col = _find_speed_retention_column(df_obj)
+            _outgoing_col, _incoming_col = _get_change_rider_pair_columns(df_obj)
+            _throw_col = _find_best_column(df_obj.columns, ["Rider detail", "Rider Detail"])
+            if _throw_col is None and (_outgoing_col is None or _incoming_col is None):
+                _throw_col = _get_change_thrower_column(df_obj)
+            if _speed_col is None or ((_outgoing_col is None or _incoming_col is None) and _throw_col is None):
+                return None
+
+            _work = df_obj.copy()
+            _work["_speed_retention_numeric"] = _coerce_numeric_values(_work[_speed_col])
+
+            def _normalize_rider_name(_value):
+                _name = str(_value).strip()
+                _name = " ".join(_name.split())
+                return _name
+
+            def _parse_throw_direction(_raw_detail):
+                _text = str(_raw_detail).strip()
+                if not _text or _text.lower() == "nan":
+                    return "", ""
+
+                # Most common directional formats first.
+                for _arrow in ["--->", "->", "→", ">"]:
+                    if _arrow in _text:
+                        _left, _right = _text.split(_arrow, 1)
+                        return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+                _text_l = _text.lower()
+                if " throwing " in _text_l:
+                    _idx = _text_l.find(" throwing ")
+                    _left = _text[:_idx]
+                    _right = _text[_idx + len(" throwing "):]
+                    return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+                if " to " in _text_l:
+                    _idx = _text_l.find(" to ")
+                    _left = _text[:_idx]
+                    _right = _text[_idx + len(" to "):]
+                    return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+                _left, _right = _split_change_rider_detail(_text)
+                return _normalize_rider_name(_left), _normalize_rider_name(_right)
+
+            _work = _work.loc[_work["_speed_retention_numeric"].notna()].copy()
+            if _work.empty:
+                return pd.DataFrame(columns=["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"])
+
+            if _outgoing_col is not None and _incoming_col is not None:
+                _work["_outgoing_rider"] = _work[_outgoing_col].astype(str).str.strip()
+                _work["_incoming_rider"] = _work[_incoming_col].astype(str).str.strip()
+                _work.loc[_work["_outgoing_rider"].str.lower() == "nan", "_outgoing_rider"] = ""
+                _work.loc[_work["_incoming_rider"].str.lower() == "nan", "_incoming_rider"] = ""
+                _work["_outgoing_rider"] = _work["_outgoing_rider"].apply(_normalize_rider_name)
+                _work["_incoming_rider"] = _work["_incoming_rider"].apply(_normalize_rider_name)
+            else:
+                _parsed_pairs = _work[_throw_col].apply(_parse_throw_direction)
+                _work["_outgoing_rider"] = _parsed_pairs.apply(lambda x: x[0])
+                _work["_incoming_rider"] = _parsed_pairs.apply(lambda x: x[1])
+
+            _valid_pair_mask = (
+                _work["_outgoing_rider"].ne("")
+                & _work["_incoming_rider"].ne("")
+                & (_work["_outgoing_rider"].str.lower() != _work["_incoming_rider"].str.lower())
+            )
+            _work = _work.loc[_valid_pair_mask].copy()
+            if _work.empty:
+                return pd.DataFrame(columns=["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"])
+
+            _work["_bucket"] = np.where(
+                _work["_speed_retention_numeric"] < 100.0,
+                "Changes under 100%",
+                np.where(
+                    _work["_speed_retention_numeric"] <= 105.0,
+                    "Changes between 100% - 105%",
+                    "Changes over 105%",
+                ),
+            )
+
+            _summary = (
+                _work
+                .groupby(["_outgoing_rider", "_incoming_rider", "_bucket"], dropna=False)
+                .size()
+                .reset_index(name="count")
+                .pivot_table(
+                    index=["_outgoing_rider", "_incoming_rider"],
+                    columns="_bucket",
+                    values="count",
+                    aggfunc="sum",
+                    fill_value=0,
+                )
+                .reset_index()
+            )
+
+            for _col in ["Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"]:
+                if _col not in _summary.columns:
+                    _summary[_col] = 0
+
+            _summary["Throw direction"] = _summary.apply(
+                lambda _r: f"{str(_r['_outgoing_rider']).strip()} throwing {str(_r['_incoming_rider']).strip()}",
+                axis=1,
+            )
+            _summary = _summary.sort_values(
+                by=["Changes under 100%", "Changes between 100% - 105%", "Changes over 105%", "Throw direction"],
+                ascending=[False, False, False, True],
+            )
+            return _summary[
+                ["Throw direction", "Changes under 100%", "Changes between 100% - 105%", "Changes over 105%"]
+            ].reset_index(drop=True)
+
+        st.markdown("---")
+        st.header(header_text)
+        c1, c2 = st.columns(2)
+        _header_key = header_text.replace(" ", "_").replace("'", "")
+
+        with c1:
+            _master_selector_options = _build_selector_options_for_df(
+                df_master,
+                [session_title_col, title_column, "Title", "Race", "Race Name", "Session Title", "Event", "Name"],
+            )
+
+            if show_changes_view:
+                _changes_selector_options = _get_changes_race_options(df_changes)
+                if not _changes_selector_options:
+                    _changes_selector_options = _build_selector_options_for_df(
+                        df_changes,
+                        ["Race", "Race Name"],
+                    )
+                _selector_options = _changes_selector_options
+            else:
+                _selector_options = _master_selector_options
+
+            selections = st.multiselect(
+                "Select race/session(s):",
+                options=_selector_options,
+                key=f"madison_selection_{_header_key}",
+            )
+
+        with c2:
+            Videos = "No"
+            if show_summary_view:
+                show_vids = ["No", "Yes"]
+                Videos = st.selectbox("Show Race Videos?", show_vids, key=f"Show_Vids_{title_column}")
+            elif show_changes_view and len(sheet_names) > 2:
+                st.caption(f"Changes source: {sheet_names[2]}")
+            elif show_laps_view:
+                st.caption("10 Laps view")
+
+        if show_changes_view:
+            if len(sheet_names) <= 2:
+                st.warning("No changes tab was found in the Men's Madison workbook.")
+            elif df_changes.empty:
+                st.warning("The changes tab could not be loaded or is empty.")
+            elif len(selections) == 0:
+                st.info("Select one or more races/sessions to view the changes data.")
+            else:
+                _change_frames = []
+                _change_frames_by_selection = []
+                _changes_race_col = _find_best_column(df_changes.columns, ["Race"]) if not df_changes.empty else None
+                for selection in selections:
+                    _change_source_rows, _change_race_id = _get_master_rows_for_selection(selection)
+                    if _changes_race_col is not None and _changes_race_col in df_changes.columns:
+                        _selection_text = str(selection).strip()
+                        _race_series = df_changes[_changes_race_col].astype(str).str.strip()
+                        _race_mask = _race_series == _selection_text
+                        _change_rows = df_changes.loc[_race_mask].copy()
+                    else:
+                        _change_rows = _get_related_rows_for_selection(df_changes, selection, _change_race_id)
+                    if _change_rows.empty:
+                        continue
+                    if "Selected Race" not in _change_rows.columns:
+                        _change_rows = _change_rows.copy()
+                        _change_rows.insert(0, "Selected Race", str(selection).strip())
+                    _change_frames.append(_change_rows)
+                    _change_frames_by_selection.append((str(selection).strip(), _change_rows.copy()))
+
+                if not _change_frames:
+                    st.info("No changes rows matched the selected race/session.")
+                else:
+                    _changes_display = pd.concat(_change_frames, ignore_index=True)
+                    st.subheader("Number of Changes based on Speed Retention")
+                    for _sel_name, _sel_df in _change_frames_by_selection:
+                        st.markdown(f"**{_sel_name}**")
+                        _bucket_table = _build_speed_retention_bucket_table(_sel_df)
+                        if _bucket_table is None:
+                            st.info("Could not build the summary for this race/session. Ensure this selection has speed-retention values and outgoing/incoming rider columns (or legacy Rider detail format).")
+                        else:
+                            st.table(_bucket_table)
+
+                    with st.expander("Detailed changes table and chart controls", expanded=False):
+                        st.subheader("Changes Data")
+                        st.dataframe(_changes_display, use_container_width=True, hide_index=True)
+
+                        _metric_options = _get_change_metric_columns(_changes_display)
+                        if len(_metric_options) < 2:
+                            st.warning("The changes tab does not contain at least two numeric metric columns for a scatter plot.")
+                        else:
+                            _default_y_index = 1 if len(_metric_options) > 1 else 0
+                            _cx1, _cx2 = st.columns(2)
+                            with _cx1:
+                                _x_metric = st.selectbox(
+                                    "Scatter X-axis",
+                                    options=_metric_options,
+                                    index=0,
+                                    key=f"changes_x_metric_{_header_key}",
+                                )
+                                st.caption(_describe_change_metric(_x_metric))
+                            with _cx2:
+                                _y_metric = st.selectbox(
+                                    "Scatter Y-axis",
+                                    options=_metric_options,
+                                    index=_default_y_index,
+                                    key=f"changes_y_metric_{_header_key}",
+                                )
+                                st.caption(_describe_change_metric(_y_metric))
+
+                            _plot_df = _changes_display.copy()
+                            _plot_df[_x_metric] = _coerce_numeric_values(_plot_df[_x_metric])
+                            _plot_df[_y_metric] = _coerce_numeric_values(_plot_df[_y_metric])
+                            _plot_df = _plot_df.dropna(subset=[_x_metric, _y_metric])
+
+                            if _plot_df.empty:
+                                st.info("No changes rows remain after converting the selected axes to numeric values.")
+                            else:
+                                _scatter_race_col = _find_best_column(
+                                    _plot_df.columns,
+                                    ["Selected Race", session_title_col, "Session Title", "Race", "Title"]
+                                )
+                                _scatter_thrower_col = _get_change_thrower_column(_plot_df)
+                                _scatter_hover_cols = [
+                                    _col for _col in ["Selected Race", session_title_col, "Race", "Title", _scatter_thrower_col, _x_metric, _y_metric]
+                                    if _col is not None and _col in _plot_df.columns
+                                ]
+                                _color_kwargs = {}
+                                if _scatter_thrower_col is not None and _scatter_thrower_col in _plot_df.columns:
+                                    _plot_df = _plot_df.copy()
+                                    _outgoing_col, _incoming_col = _get_change_rider_pair_columns(_plot_df)
+                                    if _outgoing_col is not None and _incoming_col is not None:
+                                        _plot_df["Throwing Rider"] = _plot_df[_outgoing_col].astype(str).str.strip()
+                                        _plot_df["Incoming Rider"] = _plot_df[_incoming_col].astype(str).str.strip()
+                                        _plot_df.loc[_plot_df["Throwing Rider"].str.lower() == "nan", "Throwing Rider"] = ""
+                                        _plot_df.loc[_plot_df["Incoming Rider"].str.lower() == "nan", "Incoming Rider"] = ""
+                                        _plot_df["Outgoing Rider"] = _plot_df["Throwing Rider"]
+                                    else:
+                                        _plot_df["Throwing Rider"] = _plot_df[_scatter_thrower_col].apply(_extract_change_thrower_label)
+                                        _pair_split = _plot_df[_scatter_thrower_col].apply(_split_change_rider_detail)
+                                        _plot_df["Outgoing Rider"] = _pair_split.apply(lambda x: x[0])
+                                        _plot_df["Incoming Rider"] = _pair_split.apply(lambda x: x[1])
+                                    _thrower_values = [
+                                        str(_value).strip() for _value in _plot_df["Throwing Rider"].dropna().astype(str).tolist()
+                                        if str(_value).strip()
+                                    ]
+                                    _thrower_values = list(dict.fromkeys(_thrower_values))
+                                    if _thrower_values:
+                                        _race_color_col = _scatter_race_col if _scatter_race_col is not None and _scatter_race_col in _plot_df.columns else "Selected Race"
+                                        if _race_color_col not in _plot_df.columns:
+                                            _plot_df[_race_color_col] = "Race"
+
+                                        _plot_df["Thrower (Race)"] = _plot_df.apply(
+                                            lambda _r: f"{str(_r.get('Throwing Rider', '')).strip()} | {str(_r.get(_race_color_col, '')).strip()}",
+                                            axis=1,
+                                        )
+
+                                        _base_palette = [
+                                            "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#17becf",
+                                            "#bcbd22", "#8c564b", "#9467bd", "#e377c2", "#7f7f7f",
+                                        ]
+                                        _race_values = [
+                                            str(_r).strip() for _r in _plot_df[_race_color_col].dropna().astype(str).tolist()
+                                            if str(_r).strip()
+                                        ]
+                                        _race_values = list(dict.fromkeys(_race_values))
+                                        _race_base_color = {
+                                            _race: _base_palette[_idx % len(_base_palette)]
+                                            for _idx, _race in enumerate(_race_values)
+                                        }
+
+                                        _race_thrower_color_map = {}
+                                        for _race in _race_values:
+                                            _race_mask = _plot_df[_race_color_col].astype(str).str.strip() == _race
+                                            _race_throwers = [
+                                                str(_t).strip()
+                                                for _t in _plot_df.loc[_race_mask, "Throwing Rider"].dropna().astype(str).tolist()
+                                                if str(_t).strip()
+                                            ]
+                                            _race_throwers = list(dict.fromkeys(_race_throwers))
+                                            _race_throwers = sorted(_race_throwers, key=lambda _n: _n.lower())
+                                            _base_col = _race_base_color.get(_race, "#1f77b4")
+
+                                            if len(_race_throwers) == 1:
+                                                _race_thrower_color_map[f"{_race_throwers[0]} | {_race}"] = _base_col
+                                            elif len(_race_throwers) >= 2:
+                                                _race_thrower_color_map[f"{_race_throwers[0]} | {_race}"] = _shade_color(_base_col, 0.72)
+                                                _race_thrower_color_map[f"{_race_throwers[1]} | {_race}"] = _shade_color(_base_col, 1.28)
+                                                for _extra_thrower in _race_throwers[2:]:
+                                                    _race_thrower_color_map[f"{_extra_thrower} | {_race}"] = _base_col
+
+                                        _color_kwargs["color"] = "Thrower (Race)"
+                                        if _race_thrower_color_map:
+                                            _color_kwargs["color_discrete_map"] = _race_thrower_color_map
+                                        if "Throwing Rider" not in _scatter_hover_cols:
+                                            _scatter_hover_cols.append("Throwing Rider")
+                                        if "Incoming Rider" not in _scatter_hover_cols and "Incoming Rider" in _plot_df.columns:
+                                            _scatter_hover_cols.append("Incoming Rider")
+                                        if _race_color_col not in _scatter_hover_cols and _race_color_col in _plot_df.columns:
+                                            _scatter_hover_cols.append(_race_color_col)
+                                        st.caption("Each race keeps one base colour, and riders in that race are shown as darker/lighter shades of that race colour.")
+                                elif _scatter_race_col is not None and _scatter_race_col in _plot_df.columns:
+                                    _color_kwargs["color"] = _scatter_race_col
+
+                                _scatter_fig = px.scatter(
+                                    _plot_df,
+                                    x=_x_metric,
+                                    y=_y_metric,
+                                    hover_data=_scatter_hover_cols,
+                                    title=f"{_y_metric} vs {_x_metric}",
+                                    **_color_kwargs,
+                                )
+                                st.plotly_chart(_scatter_fig, use_container_width=True)
+
+                                _relationship_stats = _build_change_relationship_stats(_plot_df, _x_metric, _y_metric)
+                                st.caption("Relationship summary for the currently filtered rows and selected axes.")
+                                _rs1, _rs2, _rs3, _rs4 = st.columns(4)
+                                with _rs1:
+                                    st.metric("Points", str(_relationship_stats.get("count", 0)))
+                                with _rs2:
+                                    _pearson_r = _relationship_stats.get("pearson_r")
+                                    st.metric("Pearson r", f"{_pearson_r:.3f}" if _pearson_r is not None and pd.notna(_pearson_r) else "N/A")
+                                with _rs3:
+                                    _r_squared = _relationship_stats.get("r_squared")
+                                    st.metric("R²", f"{_r_squared:.3f}" if _r_squared is not None and pd.notna(_r_squared) else "N/A")
+                                with _rs4:
+                                    _slope = _relationship_stats.get("slope")
+                                    st.metric("Slope", f"{_slope:.3f}" if _slope is not None and pd.notna(_slope) else "N/A")
+
+                                _spearman_r = _relationship_stats.get("spearman_r")
+                                _intercept = _relationship_stats.get("intercept")
+                                if _spearman_r is not None or _intercept is not None:
+                                    _extra_parts = []
+                                    if _spearman_r is not None and pd.notna(_spearman_r):
+                                        _extra_parts.append(f"Spearman rank correlation: {_spearman_r:.3f}")
+                                    if _intercept is not None and pd.notna(_intercept):
+                                        _extra_parts.append(f"Linear intercept: {_intercept:.3f}")
+                                    if _extra_parts:
+                                        st.caption(" | ".join(_extra_parts))
+
+                                st.caption(_describe_relationship_summary(_relationship_stats, _x_metric, _y_metric))
+            return
+
+        _jump_anchor_suffix = "none"
+        if show_laps_view and len(selections) != 0:
+            _jump_anchor_suffix = "_".join(
+                [str(s).strip().replace(" ", "_").replace("'", "") for s in selections]
+            )[:120]
+        _jump_anchor_id = f"event-note-trends-{_jump_anchor_suffix}"
+        _jump_trend_state_key = f"jump_to_trends_click_{title_column}"
+        if _jump_trend_state_key not in st.session_state:
+            st.session_state[_jump_trend_state_key] = False
+
+        if show_laps_view and len(selections) != 0:
+            if st.button("Jump to Trend Lines", key=f"jump_to_trends_btn_{title_column}"):
+                st.session_state[_jump_trend_state_key] = True
+
+        if len(selections) != 0:
+            df_combine = pd.DataFrame()
+            _selected_efforts_meta = []
+            for selection in selections:
+                st.markdown("---")
+                _selection_text = str(selection).strip()
+
+                if show_summary_view:
+                    col_1, col_2 = st.columns(2)
+
+                # Resolve selected race rows by session title, then prefer filtering by Race ID.
+                df_temp, _selected_race_id = _get_master_rows_for_selection(selection)
+
+                _selected_efforts_meta.append(
+                    {
+                        "effort": _selection_text,
+                        "race_id": _selected_race_id,
+                        "rider_names": "",
+                    }
+                )
+
+                madison_summary = _build_unweighted_madison_summary(df_temp)
+                rider_map_str = madison_summary.attrs.get("rider_map", "") if madison_summary is not None else ""
+                if madison_summary is not None:
+                    _rider_map = dict(part.split(": ", 1) for part in rider_map_str.split(" | ") if ": " in part)
+                    _r1_name = str(_rider_map.get("Rider 1", "")).strip()
+                    _r2_name = str(_rider_map.get("Rider 2", "")).strip()
+                    _riders_joined = " / ".join([n for n in [_r1_name, _r2_name] if n])
+                    _selected_efforts_meta[-1]["rider_names"] = _riders_joined
+
+                if show_laps_view and not show_summary_view:
+                    st.subheader(f"{_selection_text}")
+                    st.dataframe(
+                        df_temp.drop(columns=drop_columns, errors="ignore"),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                if show_summary_view:
+                    with col_1:
+                        df_combine = pd.concat([df_combine, df_temp], axis=0)
+                        st.subheader(f"{_selection_text}")
+                        st.dataframe(
+                            df_temp.drop(columns=drop_columns, errors="ignore"),
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
+                        if {"Distance", "Avg_Speed"}.issubset(df_temp.columns):
+                            hover_columns = [column for column in ["Split", "Avg_Speed"] if column in df_temp.columns]
+                            fig = px.bar(df_temp, x="Distance", y="Avg_Speed", hover_data=hover_columns)
+                            fig.update_layout(
+                                title={
+                                    "text": str(df_temp[title_column].iloc[0]),
+                                    "y": 0.9,
+                                    "x": 0.5,
+                                    "xanchor": "center",
+                                    "yanchor": "top",
+                                }
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+
+                    with col_2:
+                        if madison_summary is not None:
+                            st.subheader("Watt and kJ (Unweighted)")
+                            st.caption(rider_map_str)
+                            st.dataframe(madison_summary, use_container_width=True)
+
+                        if Videos == "Yes" and "Video" in df_temp.columns:
+                            if pd.isnull(df_temp["Video"].iloc[0]):
+                                st.header("No video available")
+                            else:
+                                st.header(str(df_temp[title_column].iloc[0]))
+                                st.video(f"{df_temp['Video'].iloc[0]}")
+
+                # --- Filtered detail view (full width) ---
+                if show_laps_view and madison_summary is not None:
+                    st.subheader("Filtered Detail View")
+
+                    _rmap = dict(part.split(": ", 1) for part in rider_map_str.split(" | ") if ": " in part)
+                    _r1 = _rmap.get("Rider 1", "Rider 1")
+                    _r2 = _rmap.get("Rider 2", "Rider 2")
+
+                    _safe_sel = _selection_text.replace(" ", "_").replace("'", "")
+                    _fc1, _fc2, _fc3 = st.columns(3)
+                    with _fc1:
+                        _rider_filter = st.multiselect(
+                            "Filter by Rider:",
+                            options=[_r1, _r2],
+                            default=[],
+                            key=f"rider_filter_{_safe_sel}",
+                        )
+                    with _fc2:
+                        _event_filter = st.multiselect(
+                            "Filter by Event:",
+                            options=["Bunch", "Sprint", "Lap Take", "Change"],
+                            default=[],
+                            key=f"event_filter_{_safe_sel}",
+                        )
+                    with _fc3:
+                        _role_filter = st.multiselect(
+                            "Filter by Active/Inactive:",
+                            options=["Active", "Inactive"],
+                            default=[],
+                            key=f"role_filter_{_safe_sel}",
+                        )
+
+                    _detail_col = "Detail" if "Detail" in df_temp.columns else None
+                    _type_col = "Type" if "Type" in df_temp.columns else None
+                    _race_id_drop_candidates = ["Race ID", "RaceID", "Race_Id", "Race #", "Race#", "Race Number", "RaceNumber", "ID", "Race"]
+                    _race_id_drop_cols = [
+                        _find_best_column(df_temp.columns, [_c])
+                        for _c in _race_id_drop_candidates
+                    ]
+                    _race_id_drop_cols = [c for c in _race_id_drop_cols if c is not None]
+
+                    _exclude_cols = drop_columns + _race_id_drop_cols + [c for c in ["Start Time (s)", "End Time (s)", "Elapsed (s)"] if c in df_temp.columns]
+                    _df_filtered = df_temp.copy()
+
+                    if _type_col and _event_filter:
+                        _type_lower = _df_filtered[_type_col].astype(str).str.lower().str.replace("_", " ", regex=False).str.replace("-", " ", regex=False)
+                        _event_masks = []
+                        for _ev in _event_filter:
+                            if _ev == "Bunch":
+                                _event_masks.append(~(_type_lower.str.contains("sprint") | _type_lower.str.contains("lap") | _type_lower.str.contains("change")))
+                            elif _ev == "Sprint":
+                                _event_masks.append(_type_lower.str.contains("sprint"))
+                            elif _ev == "Lap Take":
+                                _event_masks.append(_type_lower.str.contains("lap"))
+                            elif _ev == "Change":
+                                _event_masks.append(_type_lower.str.contains("change"))
+                        if _event_masks:
+                            import functools, operator
+                            _combined_event_mask = functools.reduce(operator.or_, _event_masks)
+                            _df_filtered = _df_filtered[_combined_event_mask]
+
+                    # Active/inactive row filtering is only applied when exactly one rider and one role are selected.
+                    if _detail_col and len(_rider_filter) == 1 and len(_role_filter) == 1:
+                        _chosen_rider = _rider_filter[0]
+                        _detail_series = _df_filtered[_detail_col].astype(str).str.strip()
+                        if _role_filter[0] == "Active":
+                            _df_filtered = _df_filtered[_detail_series == _chosen_rider]
+                        elif _role_filter[0] == "Inactive":
+                            _df_filtered = _df_filtered[_detail_series != _chosen_rider]
+
+                    # Hide metric columns for the non-selected rider when exactly one rider is chosen.
+                    _metric_drop_cols = []
+
+                    def _find_rider_metric_cols(rider_aliases, metric_tokens):
+                        _aliases_l = [str(a).strip().lower() for a in rider_aliases if str(a).strip()]
+                        _matches = []
+                        for _col in _df_filtered.columns:
+                            _col_l = str(_col).strip().lower()
+                            if (
+                                _aliases_l
+                                and any(_alias in _col_l for _alias in _aliases_l)
+                                and any(_metric in _col_l for _metric in metric_tokens)
+                            ):
+                                _matches.append(_col)
+                        return list(dict.fromkeys(_matches))
+
+                    _r1_aliases = [_r1, "Rider 1", "Rider1"]
+                    _r2_aliases = [_r2, "Rider 2", "Rider2"]
+
+                    _watt_tokens = [" w", "w ", " watt", " power", "avg"]
+                    _kj_tokens = [" kj", "kj ", " energy"]
+
+                    _r1_w_cols = _find_rider_metric_cols(_r1_aliases, _watt_tokens)
+                    _r1_kj_cols = _find_rider_metric_cols(_r1_aliases, _kj_tokens)
+                    _r2_w_cols = _find_rider_metric_cols(_r2_aliases, _watt_tokens)
+                    _r2_kj_cols = _find_rider_metric_cols(_r2_aliases, _kj_tokens)
+
+                    _r1_metric_cols_all = list(dict.fromkeys(_r1_w_cols + _r1_kj_cols))
+                    _r2_metric_cols_all = list(dict.fromkeys(_r2_w_cols + _r2_kj_cols))
+
+                    if len(_rider_filter) == 1:
+                        if _rider_filter[0] == _r1:
+                            _metric_drop_cols.extend(_r2_metric_cols_all)
+                        elif _rider_filter[0] == _r2:
+                            _metric_drop_cols.extend(_r1_metric_cols_all)
+
+                    _final_drop_cols = _exclude_cols + _metric_drop_cols
+                    _df_display = _df_filtered.drop(columns=_final_drop_cols, errors="ignore").reset_index(drop=True)
+
+                    if _detail_col and len(_role_filter) == 1 and _detail_col in _df_display.columns:
+                        _selected_role = _role_filter[0].strip().lower()
+                        _detail_series_display = _df_display[_detail_col].astype(str).str.strip()
+                        _detail_series_display_l = _detail_series_display.str.lower()
+                        _r1_metric_cols_display = [c for c in _r1_metric_cols_all if c in _df_display.columns]
+                        _r2_metric_cols_display = [c for c in _r2_metric_cols_all if c in _df_display.columns]
+                        _r1_active_mask = _detail_series_display_l == str(_r1).strip().lower()
+                        _r2_active_mask = _detail_series_display_l == str(_r2).strip().lower()
+
+                        if _selected_role == "active":
+                            for _col in _r1_metric_cols_display:
+                                _df_display.loc[~_r1_active_mask, _col] = np.nan
+                            for _col in _r2_metric_cols_display:
+                                _df_display.loc[~_r2_active_mask, _col] = np.nan
+                        elif _selected_role == "inactive":
+                            for _col in _r1_metric_cols_display:
+                                _df_display.loc[_r1_active_mask, _col] = np.nan
+                            for _col in _r2_metric_cols_display:
+                                _df_display.loc[_r2_active_mask, _col] = np.nan
+
+                    if session_title_col in df_temp.columns and session_title_col not in _df_display.columns:
+                        _session_values = df_temp[session_title_col].dropna().astype(str).str.strip()
+                        _session_values = _session_values[_session_values != ""]
+                        _session_value = _session_values.iloc[0] if len(_session_values) > 0 else _selection_text
+                        _df_display.insert(0, "Session Title", _session_value)
+
+                    # Rename Rider 1/2 headers to actual rider names in the filtered detail table.
+                    _rename_map = {}
+                    for _col in _df_display.columns:
+                        _col_l = str(_col).lower()
+                        _new_col = str(_col)
+                        if "rider 1" in _col_l:
+                            _new_col = _new_col.replace("Rider 1", _r1).replace("rider 1", _r1)
+                        if "rider1" in _col_l:
+                            _new_col = _new_col.replace("Rider1", _r1).replace("rider1", _r1)
+                        if "rider 2" in _col_l:
+                            _new_col = _new_col.replace("Rider 2", _r2).replace("rider 2", _r2)
+                        if "rider2" in _col_l:
+                            _new_col = _new_col.replace("Rider2", _r2).replace("rider2", _r2)
+                        if _new_col != _col:
+                            _rename_map[_col] = _new_col
+                    if _rename_map:
+                        _df_display = _df_display.rename(columns=_rename_map)
+
+                    _ordered_metric_cols = [
+                        *_r1_w_cols,
+                        *_r1_kj_cols,
+                        *_r2_w_cols,
+                        *_r2_kj_cols,
+                    ]
+                    _ordered_metric_cols = [c for c in _ordered_metric_cols if c in _df_display.columns]
+                    _ordered_metric_cols = list(dict.fromkeys(_ordered_metric_cols))
+
+                    _front_cols = []
+                    if "Session Title" in _df_display.columns:
+                        _front_cols.append("Session Title")
+
+                    _remaining_cols = [c for c in _df_display.columns if c not in _front_cols and c not in _ordered_metric_cols]
+                    _df_display = _df_display.loc[:, _front_cols + _ordered_metric_cols + _remaining_cols]
+
+                    st.dataframe(_df_display, use_container_width=True)
+
+                    # Live summary from currently filtered metrics.
+                    _summary_frame = _df_filtered
+                    _watt_cols = _find_watt_columns(_summary_frame)
+                    if not _watt_cols:
+                        _watt_cols = _find_watt_columns(_df_display)
+                    _kj_cols = _find_columns_by_aliases(_summary_frame, ["kj", "energy"])
+                    if not _kj_cols:
+                        _kj_cols = _find_columns_by_aliases(_df_display, ["kj", "energy"])
+
+                    _avg_watts = np.nan
+                    _total_kj = np.nan
+
+                    if _watt_cols:
+                        _watt_values = _coerce_numeric_values(_summary_frame[_watt_cols].stack())
+                        if _watt_values.notna().any():
+                            _avg_watts = float(_watt_values.sum() / _watt_values.count())
+
+                    if _kj_cols:
+                        _kj_values = _coerce_numeric_values(_summary_frame[_kj_cols].stack())
+                        if _kj_values.notna().any():
+                            _total_kj = float(_kj_values.sum())
+
+                    st.subheader("Filtered Metrics Summary")
+                    _m1, _m2 = st.columns(2)
+                    with _m1:
+                        st.metric("Average Wattage", f"{_avg_watts:.2f}" if pd.notna(_avg_watts) else "N/A")
+                    with _m2:
+                        st.metric("Accumulated kJ", f"{_total_kj:.3f}" if pd.notna(_total_kj) else "N/A")
+
+                    _show_tags_state_key = f"show_event_tags_state_{_safe_sel}"
+                    if _show_tags_state_key not in st.session_state:
+                        st.session_state[_show_tags_state_key] = False
+
+                    _tags_btn_label = "Hide event tags" if st.session_state[_show_tags_state_key] else "Show event tags"
+                    if st.button(_tags_btn_label, key=f"show_event_tags_btn_{_safe_sel}"):
+                        st.session_state[_show_tags_state_key] = not st.session_state[_show_tags_state_key]
+                        if hasattr(st, "rerun"):
+                            st.rerun()
+                        else:
+                            st.experimental_rerun()
+
+                    if st.session_state[_show_tags_state_key]:
+                        _tags_lookup_key = _selected_race_id if pd.notna(_selected_race_id) else _selection_text
+                        _tags_df = _get_event_tags_for_selection(_tags_lookup_key)
+                        if _tags_df.empty:
+                            st.info("No event tags found for this selected race.")
+                        else:
+                            def _find_tag_col(df_tags, aliases):
+                                for _alias in aliases:
+                                    _found = _find_best_column(df_tags.columns, [_alias])
+                                    if _found is not None:
+                                        return _found
+                                for _col in df_tags.columns:
+                                    _col_l = str(_col).strip().lower()
+                                    if any(str(_a).strip().lower() in _col_l for _a in aliases):
+                                        return _col
+                                return None
+
+                            def _find_tag_cols(df_tags, aliases):
+                                _matches = []
+                                for _col in df_tags.columns:
+                                    _col_l = str(_col).strip().lower()
+                                    if "w" in _col_l:
+                                        _matches.append(_col)
+                                        continue
+                                    if any(str(_alias).strip().lower() in _col_l for _alias in aliases):
+                                        _matches.append(_col)
+                                return list(dict.fromkeys(_matches))
+
+                            _tags_drop_cols = []
+                            _tags_drop_tokens = [
+                                "race id",
+                                "raceid",
+                                "race #",
+                                "race number",
+                                "start",
+                                "end",
+                            ]
+                            for _col in _tags_df.columns:
+                                _col_l = str(_col).strip().lower()
+                                if any(_tok in _col_l for _tok in _tags_drop_tokens):
+                                    _tags_drop_cols.append(_col)
+                            _tags_df = _tags_df.drop(columns=_tags_drop_cols, errors="ignore")
+
+                            _block_notes_col = _find_tag_col(_tags_df, ["Block Note", "Block Notes", "Note", "Notes", "black"])
+                            if _block_notes_col is None:
+                                _tags_df["Block Notes"] = ""
+                                _block_notes_col = "Block Notes"
+
+                            _race_col = _find_tag_col(_tags_df, ["Race Name", "Race", "Session Title", "Session Title ", "Title"])
+
+                            _requested_tag_columns = []
+                            for _aliases in [
+                                ["Bunch Shape", "Bunch Shape 2", "Bunch"],
+                                ["Kiwi Position", "Kiwi Pos", "Kiwi"],
+                                ["Sprint"],
+                            ]:
+                                _found_col = None
+                                for _alias in _aliases:
+                                    _found_col = _find_best_column(_tags_df.columns, [_alias])
+                                    if _found_col is not None:
+                                        break
+                                if _found_col is not None and _found_col not in _requested_tag_columns:
+                                    _requested_tag_columns.append(_found_col)
+
+                            _priority_tag_columns = [c for c in [_race_col, _block_notes_col] if c is not None]
+                            _requested_tag_columns = _priority_tag_columns + [c for c in _requested_tag_columns if c not in _priority_tag_columns]
+
+                            _rider_like_tag_cols = [
+                                col for col in _tags_df.columns
+                                if "rider" in str(col).strip().lower()
+                            ]
+                            _tag_display_columns = [
+                                col for col in _requested_tag_columns + list(_tags_df.columns)
+                                if col not in _rider_like_tag_cols and col != _race_col
+                            ]
+                            _tag_display_columns = list(dict.fromkeys(_tag_display_columns))
+
+                            _bunch_col = _find_tag_col(_tags_df, ["Bunch Shape", "Bunch", "Shape"])
+                            _kiwi_col = _find_tag_col(_tags_df, ["Kiwi Position", "Kiwi Pos", "Position"])
+                            _sprint_col = _find_tag_col(_tags_df, ["Sprint"])
+
+                            _priority_display_cols = [
+                                c for c in [_block_notes_col, _bunch_col, _kiwi_col, _sprint_col]
+                                if c is not None
+                            ]
+                            _tag_display_columns = _priority_display_cols + [
+                                c for c in _tag_display_columns if c not in _priority_display_cols
+                            ]
+
+                            _bunch_options = ["Split", "Stretched", "Group", "Lap occurring", "Line"]
+                            _kiwi_options = ["Front", "Mid", "Back", "Mixed"]
+                            _sprint_options = ["5 Points", "3 Points", "2 Points", "1 Point", "Uncontested", "Contested didn't win", "Lap win", "Early split", "Close", "Led out", "Won from back"]
+
+                            _t1, _t2, _t3 = st.columns(3)
+                            with _t1:
+                                _bunch_filter = st.multiselect(
+                                    "Bunch Shape",
+                                    options=_bunch_options,
+                                    default=[],
+                                    key=f"tags_bunch_shape_{_safe_sel}",
+                                )
+                            with _t2:
+                                _kiwi_filter = st.multiselect(
+                                    "Kiwi Position",
+                                    options=_kiwi_options,
+                                    default=[],
+                                    key=f"tags_kiwi_position_{_safe_sel}",
+                                )
+                            with _t3:
+                                _sprint_filter = st.multiselect(
+                                    "Sprint",
+                                    options=_sprint_options,
+                                    default=[],
+                                    key=f"tags_sprint_{_safe_sel}",
+                                )
+
+                            _tags_filtered = _tags_df.copy()
+
+                            def _row_matches_tag_filter(cell_value, selected_values):
+                                if not selected_values:
+                                    return True
+                                _text = str(cell_value).strip().lower()
+                                if not _text or _text == "nan":
+                                    return False
+
+                                for _sep in [";", "/", "|", "\n"]:
+                                    _text = _text.replace(_sep, ",")
+                                _tokens = [t.strip() for t in _text.split(",") if t.strip()]
+                                if not _tokens:
+                                    _tokens = [_text]
+
+                                _selected = {str(v).strip().lower() for v in selected_values if str(v).strip()}
+                                if not _selected:
+                                    return True
+
+                                return all(_sel in _tokens for _sel in _selected)
+
+                            if _bunch_col and _bunch_filter:
+                                _tags_filtered = _tags_filtered[
+                                    _tags_filtered[_bunch_col].apply(lambda v: _row_matches_tag_filter(v, _bunch_filter))
+                                ]
+                            if _kiwi_col and _kiwi_filter:
+                                _tags_filtered = _tags_filtered[
+                                    _tags_filtered[_kiwi_col].apply(lambda v: _row_matches_tag_filter(v, _kiwi_filter))
+                                ]
+                            if _sprint_col and _sprint_filter:
+                                _tags_filtered = _tags_filtered[
+                                    _tags_filtered[_sprint_col].apply(lambda v: _row_matches_tag_filter(v, _sprint_filter))
+                                ]
+
+                            _tag_watt_cols = _find_tag_cols(
+                                _tags_filtered,
+                                ["Average Wattage", "Avg Watt", "Avg_W", "Average W", "Watts Avg", "Watts", "Watt", "Power", "Avg Power", "Mean Power"],
+                            )
+                            _tag_kj_cols = [c for c in _tags_filtered.columns if ("kj" in str(c).lower() or "energy" in str(c).lower())]
+                            _tag_avg_watts = np.nan
+                            _tag_total_kj = np.nan
+                            if _tag_watt_cols:
+                                _tag_watt_values = _coerce_numeric_values(_tags_filtered[_tag_watt_cols].stack())
+                                if _tag_watt_values.notna().any():
+                                    _tag_avg_watts = float(_tag_watt_values.sum() / _tag_watt_values.count())
+                            if _tag_kj_cols:
+                                _tag_kj_values = _coerce_numeric_values(_tags_filtered[_tag_kj_cols].stack())
+                                if _tag_kj_values.notna().any():
+                                    _tag_total_kj = float(_tag_kj_values.sum())
+
+                            if not _tag_watt_cols:
+                                _fallback_avg_col = _find_tag_col(_tags_filtered, ["Average Wattage", "Avg Watt", "Avg_W", "Average W", "Watts Avg", "Watts"])
+                                if _fallback_avg_col is not None:
+                                    _tag_watt_values = _coerce_numeric_values(_tags_filtered[_fallback_avg_col])
+                                    if _tag_watt_values.notna().any():
+                                        _tag_avg_watts = float(_tag_watt_values.sum() / _tag_watt_values.count())
+
+                            st.subheader("Event Tags")
+                            _tag_display_frame = _tags_filtered.reindex(columns=_tag_display_columns).reset_index(drop=True)
+                            _tag_num_cols = _tag_display_frame.select_dtypes(include=[np.number]).columns.tolist()
+                            _tag_display_show = _tag_display_frame.copy()
+                            if _tag_num_cols:
+                                _tag_display_show[_tag_num_cols] = _tag_display_show[_tag_num_cols].round(2)
+                            _tag_col_config = {}
+                            for _col in _tag_display_show.columns:
+                                if _col in _tag_num_cols:
+                                    _tag_col_config[_col] = st.column_config.NumberColumn(str(_col), format="%.2f", width="small")
+                                else:
+                                    _tag_col_config[_col] = st.column_config.TextColumn(str(_col), width="medium")
+                            st.dataframe(
+                                _tag_display_show,
+                                use_container_width=True,
+                                hide_index=True,
+                                column_config=_tag_col_config,
+                            )
+                            st.subheader("Filtered Event Tag Summary")
+                            _tag_m1, _tag_m2 = st.columns(2)
+                            with _tag_m1:
+                                st.metric("Average Wattage", f"{_tag_avg_watts:.2f}" if pd.notna(_tag_avg_watts) else "N/A")
+                            with _tag_m2:
+                                st.metric("Accumulated kJ", f"{_tag_total_kj:.3f}" if pd.notna(_tag_total_kj) else "N/A")
+
+                st.markdown("---")
+
+            if show_summary_view and {"Distance", "Avg_Speed"}.issubset(df_combine.columns):
+                fig_tt = px.line(df_combine, x="Distance", y="Avg_Speed", title="Comparison", color=title_column)
+                st.plotly_chart(fig_tt, use_container_width=True)
+
+            # --- Event-note trends across selected races ---
+            _trend_rows = []
+            _progress_rows = []
+            for _effort_idx, _effort_meta in enumerate(_selected_efforts_meta):
+                _effort_name = _effort_meta.get("effort", "")
+                _lookup_key = _effort_meta.get("race_id")
+                if pd.isna(_lookup_key):
+                    _lookup_key = _effort_name
+
+                _trend_tags_df = _get_event_tags_for_selection(_lookup_key)
+                if _trend_tags_df is None or _trend_tags_df.empty:
+                    continue
+
+                _trend_bunch_col = _find_best_column(_trend_tags_df.columns, ["Bunch Shape", "Bunch Shape 2", "Bunch"])
+                _trend_kiwi_col = _find_best_column(_trend_tags_df.columns, ["Kiwi Position", "Kiwi Pos", "Kiwi"])
+                _trend_sprint_col = _find_best_column(_trend_tags_df.columns, ["Sprint"])
+                _trend_block_col = _find_best_column(_trend_tags_df.columns, ["Block Note", "Block Notes", "Note", "Notes"])
+
+                _trend_w_cols = _find_watt_columns(_trend_tags_df)
+                _trend_kj_cols = _find_columns_by_aliases(_trend_tags_df, ["kj", "energy"])
+                if not _trend_w_cols and not _trend_kj_cols:
+                    continue
+
+                _w_row_values = pd.Series(np.nan, index=_trend_tags_df.index, dtype="float64")
+                _w_row_values_active = pd.Series(np.nan, index=_trend_tags_df.index, dtype="float64")
+                _w_row_values_inactive = pd.Series(np.nan, index=_trend_tags_df.index, dtype="float64")
+                _kj_row_values = pd.Series(np.nan, index=_trend_tags_df.index, dtype="float64")
+                if _trend_w_cols:
+                    _w_numeric = _trend_tags_df[_trend_w_cols].apply(_coerce_numeric_values)
+                    _w_row_values = _w_numeric.mean(axis=1, skipna=True)
+
+                    _active_w_cols = [c for c in _trend_w_cols if ("active" in str(c).strip().lower() and "inactive" not in str(c).strip().lower())]
+                    _inactive_w_cols = [c for c in _trend_w_cols if "inactive" in str(c).strip().lower()]
+                    if _active_w_cols:
+                        _w_numeric_active = _trend_tags_df[_active_w_cols].apply(_coerce_numeric_values)
+                        _w_row_values_active = _w_numeric_active.mean(axis=1, skipna=True)
+                    if _inactive_w_cols:
+                        _w_numeric_inactive = _trend_tags_df[_inactive_w_cols].apply(_coerce_numeric_values)
+                        _w_row_values_inactive = _w_numeric_inactive.mean(axis=1, skipna=True)
+                if _trend_kj_cols:
+                    _kj_numeric = _trend_tags_df[_trend_kj_cols].apply(_coerce_numeric_values)
+                    _kj_row_values = _kj_numeric.sum(axis=1, skipna=True)
+
+                _effort_work = _trend_tags_df.copy().reset_index(drop=True)
+                _effort_work["Avg Watts"] = _w_row_values.reset_index(drop=True)
+                _effort_work["Avg Watts Active"] = _w_row_values_active.reset_index(drop=True)
+                _effort_work["Avg Watts Inactive"] = _w_row_values_inactive.reset_index(drop=True)
+                _effort_work["kJ"] = _kj_row_values.reset_index(drop=True)
+                _effort_work["Event Index"] = np.arange(1, len(_effort_work) + 1)
+                _effort_work["Block Reminder"] = (
+                    _effort_work[_trend_block_col].apply(_first_tag_token)
+                    if _trend_block_col and _trend_block_col in _effort_work.columns
+                    else ""
+                )
+                _effort_work["Trend Bunch"] = (
+                    _effort_work[_trend_bunch_col].apply(_first_tag_token)
+                    if _trend_bunch_col and _trend_bunch_col in _effort_work.columns
+                    else ""
+                )
+                _effort_work["Trend Kiwi"] = (
+                    _effort_work[_trend_kiwi_col].apply(_first_tag_token)
+                    if _trend_kiwi_col and _trend_kiwi_col in _effort_work.columns
+                    else ""
+                )
+                _effort_work["Trend Sprint"] = (
+                    _effort_work[_trend_sprint_col].apply(_first_tag_token)
+                    if _trend_sprint_col and _trend_sprint_col in _effort_work.columns
+                    else ""
+                )
+
+                _effort_work["Note Group"] = _effort_work.apply(
+                    lambda row: _build_note_group(
+                        [
+                            ("Bunch", row[_trend_bunch_col] if _trend_bunch_col in _effort_work.columns else ""),
+                            ("Kiwi", row[_trend_kiwi_col] if _trend_kiwi_col in _effort_work.columns else ""),
+                            ("Sprint", row[_trend_sprint_col] if _trend_sprint_col in _effort_work.columns else ""),
+                        ]
+                    ),
+                    axis=1,
+                )
+
+                _valid_progress = _effort_work[["Event Index", "Note Group", "Avg Watts", "Avg Watts Active", "Avg Watts Inactive", "kJ", "Block Reminder", "Trend Bunch", "Trend Kiwi", "Trend Sprint"]].copy()
+                _valid_progress["Race"] = _effort_name
+                _valid_progress["Race Order"] = _effort_idx
+                _progress_rows.append(_valid_progress)
+
+                _agg = (
+                    _valid_progress.groupby("Note Group", dropna=False)
+                    .agg(
+                        Avg_Watts=("Avg Watts", "mean"),
+                        Total_kJ=("kJ", "sum"),
+                        Events=("Event Index", "count"),
+                        Block_Reminders=(
+                            "Block Reminder",
+                            lambda s: " | ".join(
+                                list(dict.fromkeys([
+                                    str(v).strip() for v in s.tolist()
+                                    if str(v).strip() and str(v).strip().lower() != "nan"
+                                ]))[:4]
+                            ),
+                        ),
+                    )
+                    .reset_index()
+                )
+                _agg["Race"] = _effort_name
+                _agg["Race Order"] = _effort_idx
+                _trend_rows.append(_agg)
+
+            if show_laps_view and _progress_rows:
+                st.markdown("---")
+                st.markdown(f'<div id="{_jump_anchor_id}"></div>', unsafe_allow_html=True)
+                if st.session_state.get(_jump_trend_state_key, False):
+                    components.html(
+                        f"""
+                        <script>
+                        setTimeout(() => {{
+                            const _jumpTarget = window.parent.document.getElementById('{_jump_anchor_id}');
+                            if (_jumpTarget) {{
+                                _jumpTarget.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+                            }}
+                        }}, 50);
+                        </script>
+                        """,
+                        height=0,
+                    )
+                    st.session_state[_jump_trend_state_key] = False
+                st.subheader("Event-Note Trends")
+                _trend_key_safe = header_text.replace(" ", "_").replace("'", "")
+                _progress_df = pd.concat(_progress_rows, ignore_index=True)
+
+                def _trend_note_options(series):
+                    _vals = [
+                        str(n).strip() for n in series.dropna().astype(str).tolist()
+                        if str(n).strip() and str(n).strip().lower() != "nan"
+                    ]
+                    return list(dict.fromkeys(sorted(_vals)))
+
+                _bunch_opts = _trend_note_options(_progress_df["Trend Bunch"])
+                _kiwi_opts = _trend_note_options(_progress_df["Trend Kiwi"])
+                _sprint_opts = _trend_note_options(_progress_df["Trend Sprint"])
+
+                _f1, _f2, _f3 = st.columns(3)
+                with _f1:
+                    _trend_bunch_filter = st.multiselect(
+                        "Trend Bunch Shape:",
+                        options=_bunch_opts,
+                        default=[],
+                        key=f"trend_bunch_notes_{_trend_key_safe}",
+                    )
+                with _f2:
+                    _trend_kiwi_filter = st.multiselect(
+                        "Trend Kiwi Notes:",
+                        options=_kiwi_opts,
+                        default=[],
+                        key=f"trend_kiwi_notes_{_trend_key_safe}",
+                    )
+                with _f3:
+                    _trend_sprint_filter = st.multiselect(
+                        "Trend Sprint Notes:",
+                        options=_sprint_opts,
+                        default=[],
+                        key=f"trend_sprint_notes_{_trend_key_safe}",
+                    )
+
+                _mt1, _mt2 = st.columns(2)
+                with _mt1:
+                    _show_avg_watts = st.checkbox(
+                        "Avg Watts",
+                        value=False,
+                        key=f"trend_show_avg_watts_{_trend_key_safe}",
+                    )
+                with _mt2:
+                    _show_total_kj = st.checkbox(
+                        "Total kJ",
+                        value=False,
+                        key=f"trend_show_total_kj_{_trend_key_safe}",
+                    )
+
+                _wr1, _wr2 = st.columns(2)
+                with _wr1:
+                    _show_active_rider_watts = st.checkbox(
+                        "Active Rider Watts",
+                        value=False,
+                        key=f"trend_show_active_watts_{_trend_key_safe}",
+                    )
+                with _wr2:
+                    _show_inactive_rider_watts = st.checkbox(
+                        "Inactive Rider Watts",
+                        value=False,
+                        key=f"trend_show_inactive_watts_{_trend_key_safe}",
+                    )
+
+                if _show_active_rider_watts and not _show_inactive_rider_watts:
+                    _watts_role_mode = "Active Rider"
+                elif _show_inactive_rider_watts and not _show_active_rider_watts:
+                    _watts_role_mode = "Inactive Rider"
+                else:
+                    _watts_role_mode = "Both Riders"
+
+                if not _show_avg_watts and not _show_total_kj:
+                    _active_metrics = ["Avg_Watts", "Total_kJ"]
+                else:
+                    _active_metrics = []
+                    if _show_avg_watts:
+                        _active_metrics.append("Avg_Watts")
+                    if _show_total_kj:
+                        _active_metrics.append("Total_kJ")
+
+                _progress_plot_df = _progress_df.copy()
+
+                if _watts_role_mode == "Active Rider":
+                    _progress_plot_df["Watts Selected"] = _progress_plot_df["Avg Watts Active"]
+                elif _watts_role_mode == "Inactive Rider":
+                    _progress_plot_df["Watts Selected"] = _progress_plot_df["Avg Watts Inactive"]
+                else:
+                    _progress_plot_df["Watts Selected"] = _progress_plot_df["Avg Watts"]
+
+                def _contains_any(text_value, selected_values):
+                    if not selected_values:
+                        return True
+                    _txt = str(text_value).strip().lower()
+                    return any(str(_sel).strip().lower() in _txt for _sel in selected_values if str(_sel).strip())
+
+                _progress_plot_df = _progress_plot_df[
+                    _progress_plot_df.apply(
+                        lambda row: (
+                            _contains_any(row.get("Trend Bunch", ""), _trend_bunch_filter)
+                            and _contains_any(row.get("Trend Kiwi", ""), _trend_kiwi_filter)
+                            and _contains_any(row.get("Trend Sprint", ""), _trend_sprint_filter)
+                        ),
+                        axis=1,
+                    )
+                ]
+
+                _trend_plot_df = (
+                    _progress_plot_df.groupby(["Race", "Race Order", "Note Group"], dropna=False)
+                    .agg(
+                        Avg_Watts=("Watts Selected", "mean"),
+                        Total_kJ=("kJ", "sum"),
+                        Events=("Event Index", "count"),
+                        Block_Reminders=(
+                            "Block Reminder",
+                            lambda s: " | ".join(
+                                list(dict.fromkeys([
+                                    str(v).strip() for v in s.tolist()
+                                    if str(v).strip() and str(v).strip().lower() != "nan"
+                                ]))[:4]
+                            ),
+                        ),
+                    )
+                    .reset_index()
+                )
+                _trend_plot_df["Race"] = pd.Categorical(
+                    _trend_plot_df["Race"],
+                    categories=[m["effort"] for m in _selected_efforts_meta],
+                    ordered=True,
+                )
+                _race_label_by_order = {}
+                for _idx, _meta in enumerate(_selected_efforts_meta):
+                    _race_name = str(_meta.get("effort", "")).strip()
+                    _rider_names = str(_meta.get("rider_names", "")).strip()
+                    _race_label_by_order[_idx] = f"{_race_name}<br><sup>{_rider_names}</sup>" if _rider_names else _race_name
+                _trend_plot_df["Race Label"] = _trend_plot_df["Race Order"].map(_race_label_by_order)
+                _trend_plot_df["Race Label"] = _trend_plot_df["Race Label"].fillna(_trend_plot_df["Race"].astype(str))
+                _trend_plot_df["Race Label"] = pd.Categorical(
+                    _trend_plot_df["Race Label"],
+                    categories=[_race_label_by_order.get(i, str(m.get("effort", "")).strip()) for i, m in enumerate(_selected_efforts_meta)],
+                    ordered=True,
+                )
+
+                _watts_title_suffix = "(Active)" if _watts_role_mode == "Active Rider" else ("(Inactive)" if _watts_role_mode == "Inactive Rider" else "")
+
+                if not _trend_plot_df.empty:
+                    if "Avg_Watts" in _active_metrics:
+                        _fig_trend_w = px.line(
+                            _trend_plot_df,
+                            x="Race Label",
+                            y="Avg_Watts",
+                            color="Note Group",
+                            markers=True,
+                            hover_data={"Events": True, "Block_Reminders": True},
+                            title=f"Race-to-Race Avg Watts {_watts_title_suffix} by Event Note".strip(),
+                        )
+                        st.plotly_chart(_fig_trend_w, use_container_width=True)
+
+                    if "Total_kJ" in _active_metrics:
+                        _fig_trend_kj = px.line(
+                            _trend_plot_df,
+                            x="Race Label",
+                            y="Total_kJ",
+                            color="Note Group",
+                            markers=True,
+                            hover_data={"Events": True, "Block_Reminders": True},
+                            title="Race-to-Race Total kJ by Event Note",
+                        )
+                        st.plotly_chart(_fig_trend_kj, use_container_width=True)
+                else:
+                    st.info("No race-to-race trend points for the current note filters.")
+
+                if not _progress_plot_df.empty:
+                    st.subheader("Within-Race Event Progression")
+                    _progress_sorted = _progress_plot_df.sort_values(["Race Order", "Event Index"]).copy()
+                    _progress_sorted["Race Line"] = _progress_sorted.apply(
+                        lambda r: f"{str(r.get('Race', '')).strip()} ({int(r.get('Race Order', 0)) + 1})",
+                        axis=1,
+                    )
+                    if "Avg_Watts" in _active_metrics:
+                        _fig_prog_w = px.line(
+                            _progress_sorted,
+                            x="Event Index",
+                            y="Watts Selected",
+                            color="Race Line",
+                            line_group="Race Line",
+                            markers=True,
+                            hover_data={"Note Group": True, "Block Reminder": True},
+                            title=f"Within-Race Watts {_watts_title_suffix} by Event Order".strip(),
+                        )
+                        _fig_prog_w.update_layout(xaxis_title="Race Blocks")
+                        st.plotly_chart(_fig_prog_w, use_container_width=True)
+
+                    if "Total_kJ" in _active_metrics:
+                        _fig_prog_kj = px.line(
+                            _progress_sorted,
+                            x="Event Index",
+                            y="kJ",
+                            color="Race Line",
+                            line_group="Race Line",
+                            markers=True,
+                            hover_data={"Note Group": True, "Block Reminder": True},
+                            title="Within-Race kJ by Event Order",
+                        )
+                        _fig_prog_kj.update_layout(xaxis_title="Race Blocks")
+                        st.plotly_chart(_fig_prog_kj, use_container_width=True)
+                else:
+                    st.info("No within-race trend points for the current note filters.")
+            elif show_laps_view and len(selections) > 0:
+                st.info("No event-tag trend data was found for the selected race(s).")
+        else:
+            if show_changes_view:
+                st.info("Select one or more races/sessions to view the changes data.")
+            else:
+                st.info("Select one or more races to view the Madison analysis.")
     
     
     if racetype == "Bunch":
@@ -186,7 +2195,6 @@ if authentication_status:
         with c3:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
-    
 
         # Ensure datetime columns are properly parsed
         df['Start'] = pd.to_datetime(df['Start'])
@@ -217,6 +2225,31 @@ if authentication_status:
         st.plotly_chart(fig, use_container_width=True)
     
     
+    ###################################################### Women's Madison #############################################
+
+    if racetype == "Women's Madison":
+        render_madison_analysis('pages/video_analysis/Womens_Madison.xlsx', "Women's Madison")
+
+    ###################################################### Men's Madison #############################################
+
+    if racetype == "Men's Madison":
+        _mens_madison_views = {
+            "Watts and kJ": "watts_kj",
+            "10 Laps": "ten_laps",
+            "Changes": "changes",
+        }
+        _mens_madison_view_label = st.radio(
+            "Men's Madison view",
+            options=list(_mens_madison_views.keys()),
+            horizontal=True,
+            key="mens_madison_view_selector",
+        )
+        render_madison_analysis(
+            'pages/video_analysis/Mens_Madison.xlsx',
+            "Men's Madison",
+            view_mode=_mens_madison_views[_mens_madison_view_label],
+        )
+
     ################################################ Women's Team Pursuit ###################################
     
     if racetype == "Women's TP":
