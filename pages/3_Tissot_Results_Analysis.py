@@ -10,6 +10,8 @@ import plotly.graph_objects as go
 from PIL import Image
 import io
 import datetime
+import os
+import inspect
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
@@ -45,6 +47,73 @@ authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expir
 
 name, authentication_status, username = authenticator.login("Login", "main")
 
+
+def get_latest_value(df, column):
+    if df is None or df.empty or column not in df.columns:
+        return None
+
+    if "Date" in df.columns:
+        # Prefer explicit ISO parsing (yyyy-mm-dd) for deterministic ordering.
+        dates = pd.to_datetime(df["Date"], format="%Y-%m-%d", errors="coerce")
+        if dates.isna().all():
+            dates = pd.to_datetime(df["Date"], errors="coerce")
+        mask = dates.notna() & df[column].notna()
+        if mask.any():
+            latest_date = dates[mask].max()
+            latest_rows = df[mask & (dates == latest_date)]
+            if not latest_rows.empty:
+                return latest_rows[column].iloc[-1]
+
+    series = df[column].dropna()
+    if series.empty:
+        return None
+    if pd.api.types.is_numeric_dtype(series):
+        return series.max()
+    return series.iloc[-1]
+
+
+def get_latest_multiselect_default(df, column):
+    latest = get_latest_value(df, column)
+    return [latest] if latest is not None else []
+
+
+def get_latest_selectbox_index(df, column, options):
+    options_list = list(options) if options is not None else []
+    if not options_list:
+        return 0
+
+    latest = get_latest_value(df, column)
+    if latest in options_list:
+        return options_list.index(latest)
+    return 0
+
+
+@st.cache_data
+def read_excel_cached(path, sheet_name, usecols=None, skiprows=0, nrows=None, file_mtime=None):
+    return pd.read_excel(
+        io=path,
+        engine='openpyxl',
+        sheet_name=sheet_name,
+        skiprows=skiprows,
+        usecols=usecols,
+        nrows=nrows
+    )
+
+
+def read_excel_auto_refresh(path, sheet_name, usecols=None, skiprows=0, nrows=None):
+    file_mtime = os.path.getmtime(path)
+    return read_excel_cached(path, sheet_name, usecols, skiprows, nrows, file_mtime)
+
+
+def get_excel_cache_signature(paths):
+    signature = []
+    for path in paths:
+        try:
+            signature.append(f"{path}:{os.path.getmtime(path)}")
+        except OSError:
+            signature.append(f"{path}:missing")
+    return "|".join(signature)
+
 if authentication_status == False:
     st.error("Username/password is incorrect")
 
@@ -54,13 +123,89 @@ if authentication_status == None:
 if authentication_status:
     race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Sprint","Women's Sprint","Men's Keirin","Women's Keirin","Men's Team Sprint","Women's Team Sprint","Men's Omnium","Women's Omnium","Men's Madison","Women's Madison","Men's 1k Time Trial","Women's 1k Time Trial","Men's Team Pursuit","Women's Team Pursuit","Men's Individual Pursuit","Women's Individual Pursuit","Women's 500m Time Trial"]
     race_type = st.selectbox("Select Event:", race_types, key="Event Selector")
+    race_type_key = race_type.lower().replace("'", "").replace(" ", "_")
+
+    excel_signature = get_excel_cache_signature([
+        "pages/MensRaceResults.xlsm",
+        "pages/WomensRaceResults.xlsm",
+        "pages/SprintPerformanceDatabase.xlsx"
+    ])
+    if st.session_state.get("excel_cache_signature") != excel_signature:
+        st.cache_data.clear()
+        filter_suffixes = (
+            "_year_filter",
+            "_location_filter",
+            "_event_filter",
+            "_analysis_year",
+            "_analysis_location",
+            "_analysis_event",
+            "_analysis_stage",
+        )
+        for session_key in list(st.session_state.keys()):
+            if any(session_key.endswith(suffix) for suffix in filter_suffixes):
+                st.session_state.pop(session_key, None)
+        st.session_state["excel_cache_signature"] = excel_signature
+
+    if not hasattr(st, "_cnz_base_multiselect"):
+        st._cnz_base_multiselect = st.multiselect
+    if not hasattr(st, "_cnz_base_selectbox"):
+        st._cnz_base_selectbox = st.selectbox
+
+    def _cnz_scoped_multiselect(label, *args, **kwargs):
+        suffix_map = {
+            "Select Year:": "year_filter",
+            "Select Location:": "location_filter",
+            "Select Event Type:": "event_filter",
+        }
+        column_map = {
+            "Select Year:": "Year",
+            "Select Location:": "Location",
+            "Select Event Type:": "Event",
+        }
+
+        suffix = suffix_map.get(label)
+        if suffix is not None and "key" not in kwargs:
+            kwargs["key"] = f"{race_type_key}_{suffix}"
+
+        column = column_map.get(label)
+        if column is not None:
+            caller_df = inspect.currentframe().f_back.f_locals.get("df")
+            if isinstance(caller_df, pd.DataFrame) and column in caller_df.columns:
+                kwargs["default"] = get_latest_multiselect_default(caller_df, column)
+
+        return st._cnz_base_multiselect(label, *args, **kwargs)
+
+    def _cnz_scoped_selectbox(label, *args, **kwargs):
+        if "key" not in kwargs:
+            suffix_map = {
+                "Select Year:": "analysis_year",
+                "Select Location:": "analysis_location",
+                "Select Event:": "analysis_event",
+                "Select Stage:": "analysis_stage",
+            }
+            suffix = suffix_map.get(label)
+            if suffix is not None:
+                kwargs["key"] = f"{race_type_key}_{suffix}"
+        return st._cnz_base_selectbox(label, *args, **kwargs)
+
+    st.multiselect = _cnz_scoped_multiselect
+    st.selectbox = _cnz_scoped_selectbox
+
+    # Reset stale Keirin widget state once so new latest-date defaults take effect.
+    if st.session_state.get("keirin_defaults_reset_v1") != True:
+        for key in [
+            "mens_keirin_year_filter", "mens_keirin_location_filter", "mens_keirin_event_filter",
+            "womens_keirin_year_filter", "womens_keirin_location_filter", "womens_keirin_event_filter"
+        ]:
+            st.session_state.pop(key, None)
+        st.session_state["keirin_defaults_reset_v1"] = True
+
     if race_type=="Men's Sprint Qualifying":
         st.header('Men\'s Sprint Qualifying')
         st.write("test")
 
 
 
-        @st.cache_data
         def get_data_from_excel():
             df = pd.read_excel(
                 io='pages/MensRaceResults.xlsm',
@@ -97,7 +242,7 @@ if authentication_status:
         with col1:
 
             Devs = ["No","Yes"]
-            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key="Dev_selector")
+            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key=f"{race_type_key}_dev_selector")
 
             if Dev == "Yes":
                 df = pd.concat([df,df_dev])
@@ -109,7 +254,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
             if year:
                 df = df.query(
@@ -122,7 +268,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[0]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
             if location:
@@ -137,7 +284,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
             if event:
@@ -282,7 +430,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear), key=f"{race_type_key}_analysis_year")
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -290,7 +438,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation), key=f"{race_type_key}_analysis_location")
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -298,7 +446,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent), key=f"{race_type_key}_analysis_event")
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -319,7 +467,6 @@ if authentication_status:
 
 
 
-        @st.cache_data
         def get_data_from_excel():
             df = pd.read_excel(
                 io='pages/WomensRaceResults.xlsm',
@@ -356,7 +503,7 @@ if authentication_status:
         with col1:
 
             Devs = ["No","Yes"]
-            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key="Dev_selector")
+            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key=f"{race_type_key}_dev_selector")
 
             if Dev == "Yes":
                 df = pd.concat([df,df_dev])
@@ -368,7 +515,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
             if year:
                 df = df.query(
@@ -381,7 +529,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[0]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
             if location:
@@ -396,7 +545,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
             if event:
@@ -536,7 +686,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear), key=f"{race_type_key}_analysis_year")
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -544,7 +694,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation), key=f"{race_type_key}_analysis_location")
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -552,7 +702,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent), key=f"{race_type_key}_analysis_event")
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
         )
@@ -613,7 +763,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
         if year:
             df = df.query(
@@ -896,7 +1047,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -1142,16 +1293,13 @@ if authentication_status:
         st.header('Men\'s Keirin')
         st.subheader('All results')
 
-        @st.cache_data
         def get_data_from_excel():
-            df = pd.read_excel(
-                io='pages/MensRaceResults.xlsm',
-                engine ='openpyxl',
+            df = read_excel_auto_refresh(
+                path='pages/MensRaceResults.xlsm',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:R',
-                nrows=6000
-                )
+                usecols='A:R'
+            )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
             #df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
@@ -1170,7 +1318,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -1183,7 +1331,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
         if location:
@@ -1196,7 +1345,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
         if event:
@@ -1405,16 +1555,13 @@ if authentication_status:
         st.header('Women\'s Keirin')
         st.subheader('All results')
 
-        @st.cache_data
         def get_data_from_excel():
-            df = pd.read_excel(
-                io='pages/WomensRaceResults.xlsm',
-                engine ='openpyxl',
+            df = read_excel_auto_refresh(
+                path='pages/WomensRaceResults.xlsm',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:S',
-                nrows=5000
-                )
+                usecols='A:S'
+            )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
             #df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
@@ -1433,7 +1580,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
         if year:
             df = df.query(
@@ -1446,7 +1594,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
         if location:
@@ -1459,7 +1608,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
         if event:
@@ -1695,7 +1845,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -1894,7 +2044,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -1902,7 +2052,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -1910,7 +2060,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -1918,7 +2068,7 @@ if authentication_status:
 
         uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -1982,7 +2132,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -2175,7 +2325,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -2183,7 +2333,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -2191,7 +2341,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -2199,7 +2349,7 @@ if authentication_status:
 
         uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -2661,7 +2811,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_points_orig, "Year", uniqueYear))
 
         df_an_year = df_points_orig.query(
             "Year == @an_year"
@@ -2669,7 +2819,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -2677,7 +2827,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -3333,7 +3483,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_points_orig, "Year", uniqueYear))
 
         df_an_year = df_points_orig.query(
             "Year == @an_year"
@@ -3341,7 +3491,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -3349,7 +3499,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -3621,7 +3771,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -3780,7 +3930,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -3788,7 +3938,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -3796,7 +3946,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -3979,7 +4129,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -4138,7 +4288,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -4146,7 +4296,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -4154,7 +4304,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -4286,7 +4436,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -4474,7 +4624,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -4482,7 +4632,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -4490,7 +4640,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -4500,7 +4650,7 @@ if authentication_status:
 
 
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -4566,7 +4716,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -4754,7 +4904,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -4762,7 +4912,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -4770,7 +4920,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -4780,7 +4930,7 @@ if authentication_status:
 
 
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -4847,7 +4997,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5035,7 +5185,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5043,7 +5193,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5051,7 +5201,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -5061,7 +5211,7 @@ if authentication_status:
 
 
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -5143,7 +5293,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5363,7 +5513,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,fourth_column = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5371,7 +5521,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5379,14 +5529,14 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
         )
         with fourth_column:
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
             df_an = df_an_year_location_event.query(
                 "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -5462,7 +5612,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5668,7 +5818,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,fourth_column = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5676,7 +5826,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5684,14 +5834,14 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
         )
         with fourth_column:
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
             df_an = df_an_year_location_event.query(
                 "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -5752,7 +5902,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5926,7 +6076,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,col4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5934,7 +6084,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5942,7 +6092,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -5952,7 +6102,7 @@ if authentication_status:
         with col4:
 
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -6026,7 +6176,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -6216,7 +6366,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,col4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -6224,7 +6374,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -6232,7 +6382,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -6242,7 +6392,7 @@ if authentication_status:
         with col4:
 
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
