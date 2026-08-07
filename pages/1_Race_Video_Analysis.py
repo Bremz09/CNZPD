@@ -2228,7 +2228,22 @@ if authentication_status:
     ###################################################### Women's Madison #############################################
 
     if racetype == "Women's Madison":
-        render_madison_analysis('pages/video_analysis/Womens_Madison.xlsx', "Women's Madison")
+        _womens_madison_views = {
+            "Watts and kJ": "watts_kj",
+            "10 Laps": "ten_laps",
+            "Changes": "changes",
+        }
+        _womens_madison_view_label = st.radio(
+            "Women's Madison view",
+            options=list(_womens_madison_views.keys()),
+            horizontal=True,
+            key="womens_madison_view_selector",
+        )
+        render_madison_analysis(
+            'pages/video_analysis/Womens_Madison.xlsx',
+            "Women's Madison",
+            view_mode=_womens_madison_views[_womens_madison_view_label],
+        )
 
     ###################################################### Men's Madison #############################################
 
