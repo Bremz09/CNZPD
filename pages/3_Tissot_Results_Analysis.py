@@ -2946,26 +2946,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_points_orig.loc[df_points_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-        
-        
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Lap +"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 10"][i]==10:
-                df_1["Wins"][i]+=1
-              
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,11):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 11)]
+        df_1["Wins"] = df_1.loc[:, "Sprint 1":"Lap +"].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 10"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         df_1=df_1.drop(columns=["index","Avg Speed","Time"])
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['Lap +'].mean()/20,2)} laps.")
@@ -3606,26 +3590,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_points_orig.loc[df_points_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-
-
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 7"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 8"][i]==10:
-                df_1["Wins"][i]+=1
-
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,9):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 9)]
+        df_1["Wins"] = df_1[sprint_columns].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 8"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         df_1=df_1.drop(columns=["Avg Speed","Time"])
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['Lap +'].mean()/20,2)} laps.")
@@ -4030,26 +3998,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_orig.loc[df_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-        
-        
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 20"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 20"][i]==10:
-                df_1["Wins"][i]+=1
-              
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,21):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 21)]
+        df_1["Wins"] = df_1[sprint_columns].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 20"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['P.Laps'].mean()/20,2)} laps.")
@@ -4386,26 +4338,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_orig.loc[df_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-        
-        
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 12"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 12"][i]==10:
-                df_1["Wins"][i]+=1
-              
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,13):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 13)]
+        df_1["Wins"] = df_1[sprint_columns].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 12"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['P.Laps'].mean()/20,2)} laps.")
         
@@ -6156,9 +6092,9 @@ if authentication_status:
             df = df.replace(',','', regex=True)
 
             df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
-            for i in range(len(df)):
-                if isinstance(df["Time"][i], datetime.time):
-                    df["Time"][i]=df['Time'][i].strftime("%M:%S.%f")[:len(df['Time'][i].strftime("%M:%S.%f"))-3]
+            df["Time"] = df["Time"].apply(
+                lambda value: value.strftime("%M:%S.%f")[:-3] if isinstance(value, datetime.time) else value
+            )
 
             return df
         df= get_data_from_excel()
@@ -6287,7 +6223,7 @@ if authentication_status:
 
         if len(athlete)>0:
             st.dataframe(df_athleteHistory,use_container_width=True)
-            df_athleteHistory['Time']= pd.to_datetime(df_athleteHistory['Time'])
+            df_athleteHistory.loc[:, 'Time'] = pd.to_datetime(df_athleteHistory['Time'])
 
             #DOWNLOAD BUTTONS
             csvah = convert_to_csv(df_athleteHistory)
