@@ -50,7 +50,10 @@ for uname,name,pwd in zip(usernames,names,hashed_passwords):
         
 authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
 
-authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
+try:
+    authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
+except TypeError:
+    authenticator.login("Login", "main")
 name = st.session_state.get("name")
 authentication_status = st.session_state.get("authentication_status")
 username = st.session_state.get("username")
@@ -3938,8 +3941,7 @@ if authentication_status:
             
     elif racetype == "WTS Starts":
         df_master = pd.read_excel(f'pages/video_analysis/WTS_starts.xlsx')
-        for i in range(len(df_master)):
-            df_master["Date"][i] = df_master["Date"][i].date()
+        df_master["Date"] = pd.to_datetime(df_master["Date"], errors="coerce").dt.date
         df_small = df_master.drop(columns=["Back","Forward","Green","PL",62.5,125,187.5,250,312.5,375,437.5,500])
         df_small
         c1,c2,c3=st.columns(3)
