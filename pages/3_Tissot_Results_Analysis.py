@@ -2582,10 +2582,10 @@ if authentication_status:
         ##Displaying all dataframes, some styled
         df_points_styled = (df_points
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_points_styled,use_container_width=True)
         ##Download buttons
@@ -2637,11 +2637,11 @@ if authentication_status:
         df_tempo_styled = (df_tempo
                            .style
                            .format(format_dict)
-                           .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
+                           .map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
                           )
-                           .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+                           .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
                           )
-                           .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
+                           .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
                           )
         st.dataframe(df_tempo_styled,use_container_width=True)
@@ -2708,11 +2708,11 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date",ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                          .style
-                                         .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
+                                         .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
                                          .format(format_dict)
-                                         .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
-                                         .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                                         .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                                         .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                                         .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                                         .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                              )
 
             st.dataframe(df_countryHistory_styled)
@@ -2780,8 +2780,8 @@ if authentication_status:
             ##Tempo distribution by date
             df_tempo_hist = df_tempo_hist[(df_tempo_hist.Rank != "DSQ") & (df_points_orig.Rank != "DNF")]
             df_tempo_hist = df_tempo_hist.sort_values("Date",ascending=False)
-            df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
-                          ).applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
+            df_tempo_hist_styled = df_tempo_hist.style.map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,38,29,30,31,32,33,34,35,36]])                   .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+                          ).map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
             st.dataframe(df_tempo_hist_styled)
 
@@ -2839,10 +2839,10 @@ if authentication_status:
 
         df_an_styled = (df_an
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_an_styled)
 
@@ -3253,10 +3253,10 @@ if authentication_status:
 #         df_points.dtypes
         df_points_styled = (df_points
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_points_styled,use_container_width=True)
 #         df_points_styled.dtpyes()
@@ -3309,11 +3309,11 @@ if authentication_status:
         df_tempo_styled = (df_tempo
                            .style
                            .format(format_dict)
-                           .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
+                           .map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
                           )
-                           .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]]
+                           .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]]
                           )
-                           .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]]
+                           .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]]
                           )
                           )
         st.dataframe(df_tempo_styled,use_container_width=True)
@@ -3380,11 +3380,11 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date",ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                          .style
-                                         .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                                         .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
                                          .format(format_dict)
-                                         .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
-                                         .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                                         .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                                         .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
+                                         .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                                         .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                              )
 
             st.dataframe(df_countryHistory_styled)
@@ -3452,8 +3452,8 @@ if authentication_status:
             ##Tempo distribution by date
             df_tempo_hist = df_tempo_hist[(df_tempo_hist.Rank != "DSQ") & (df_points_orig.Rank != "DNF")]
             df_tempo_hist = df_tempo_hist.sort_values("Date",ascending=False)
-            df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,38,29,30,31,32,33,34,35,36]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
-                          ).applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
+            df_tempo_hist_styled = df_tempo_hist.style.map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,38,29,30,31,32,33,34,35,36]])                   .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+                          ).map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
             
 
@@ -3511,10 +3511,10 @@ if authentication_status:
 
         df_an_styled = (df_an
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_an_styled)
 
@@ -3812,10 +3812,10 @@ if authentication_status:
 
         df_styled = (df
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                             .format(format_dict))
         st.dataframe(df_styled,use_container_width=True)
         ##Download buttons
@@ -3854,10 +3854,10 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date", ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                 .style
-                                .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
-                                .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
-                                .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                                .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                                .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
+                                .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
+                                .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                                .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                                 .format(format_dict))
             st.dataframe(df_countryHistory_styled,use_container_width=True)
             ##Download buttons
@@ -4170,10 +4170,10 @@ if authentication_status:
 
         df_styled = (df
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                             .format(format_dict))
         st.dataframe(df_styled,use_container_width=True)
         ##Download buttons
@@ -4212,10 +4212,10 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date", ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                 .style
-                                .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
-                                .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
-                                .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                                .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                                .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
+                                .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
+                                .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                                .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                                 .format(format_dict))
             st.dataframe(df_countryHistory_styled,use_container_width=True)
             ##Download buttons
@@ -5283,9 +5283,7 @@ if authentication_status:
             df.Age4=round(df.Age4,2)
             df["Avg Speed"]=round(df["Avg Speed"],3)
 
-
-            for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
 
             return df
         df= get_data_from_excel()
@@ -5602,9 +5600,7 @@ if authentication_status:
             df.Age4=round(df.Age4,2)
             df["Avg Speed"]=round(df["Avg Speed"],3)
 
-
-            for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
 
             return df
         df= get_data_from_excel()
@@ -5890,10 +5886,9 @@ if authentication_status:
                 nrows=2500
                 )
             df = df.replace(',','', regex=True)
-            for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
-                #if df["125m"][i] != "NULL":
-                    #df["125m"][i] = df["125m"][i].strftime("%M:%S.%f")
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
+            #if df["125m"][i] != "NULL":
+                #df["125m"][i] = df["125m"][i].strftime("%M:%S.%f")
             return df
         df= get_data_from_excel()
         @st.cache_data
@@ -6163,8 +6158,8 @@ if authentication_status:
                 )
             df = df.replace(',','', regex=True)
 
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
             for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
                 if isinstance(df["Time"][i], datetime.time):
                     df["Time"][i]=df['Time'][i].strftime("%M:%S.%f")[:len(df['Time'][i].strftime("%M:%S.%f"))-3]
 

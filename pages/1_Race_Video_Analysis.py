@@ -1004,7 +1004,7 @@ if authentication_status:
 
             _work = _work.loc[_work["_speed_retention_numeric"].notna()].copy()
             if _work.empty:
-                return pd.DataFrame(columns=["Throw direction", "Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"])
+                return pd.DataFrame(columns=["Throw direction", "Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"])
 
             if _outgoing_col is not None and _incoming_col is not None:
                 _work["_outgoing_rider"] = _work[_outgoing_col].astype(str).str.strip()
@@ -1025,7 +1025,7 @@ if authentication_status:
             )
             _work = _work.loc[_valid_pair_mask].copy()
             if _work.empty:
-                return pd.DataFrame(columns=["Throw direction", "Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"])
+                return pd.DataFrame(columns=["Throw direction", "Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"])
 
             _work["_bucket"] = np.where(
                 _work["_speed_retention_numeric"] < 100.0,
@@ -1052,7 +1052,15 @@ if authentication_status:
                 .reset_index()
             )
 
-            for _col in ["Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"]:
+            _summary = _summary.rename(
+                columns={
+                    "Changes (<100% retention)": "Changes with less than 100% retention",
+                    "Changes (100%-105%)": "Changes with 100%-105% retention",
+                    "Changes (>105%)": "Changes with more than 105% retention",
+                }
+            )
+
+            for _col in ["Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"]:
                 if _col not in _summary.columns:
                     _summary[_col] = 0
 
@@ -1061,11 +1069,11 @@ if authentication_status:
                 axis=1,
             )
             _summary = _summary.sort_values(
-                by=["Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)", "Throw direction"],
-                ascending=[False, False, False, True],
+                by=["Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"],
+                ascending=[False, False, False],
             )
             return _summary[
-                ["Throw direction", "Changes (<100% retention)", "Changes (100%-105%)", "Changes (>105%)"]
+                ["Throw direction", "Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"]
             ].reset_index(drop=True)
 
         st.markdown("---")
@@ -1182,6 +1190,8 @@ if authentication_status:
                             if _plot_df.empty:
                                 st.info("No changes rows remain after converting the selected axes to numeric values.")
                             else:
+                                _color_kwargs = {}
+                                _retention_col = _find_speed_retention_column(_plot_df)
                                 _scatter_race_col = _find_best_column(
                                     _plot_df.columns,
                                     ["Selected Race", session_title_col, "Session Title", "Race", "Title"]
@@ -1191,8 +1201,32 @@ if authentication_status:
                                     _col for _col in ["Selected Race", session_title_col, "Race", "Title", _scatter_thrower_col, _x_metric, _y_metric]
                                     if _col is not None and _col in _plot_df.columns
                                 ]
-                                _color_kwargs = {}
-                                if _scatter_thrower_col is not None and _scatter_thrower_col in _plot_df.columns:
+                                if _retention_col is not None and _retention_col in _plot_df.columns:
+                                    _retention_numeric = _coerce_numeric_values(_plot_df[_retention_col])
+                                    _plot_df["Change Quality Zone"] = np.where(
+                                        _retention_numeric > 105.0,
+                                        "Green",
+                                        np.where(
+                                            _retention_numeric >= 100.0,
+                                            "Light Green",
+                                            "Red",
+                                        ),
+                                    )
+                                    _zone_order = ["Green", "Light Green", "Red"]
+                                    _zone_colors = {
+                                        "Green": "#16a34a",
+                                        "Light Green": "#86efac",
+                                        "Red": "#dc2626",
+                                    }
+                                    _color_kwargs["color"] = "Change Quality Zone"
+                                    _color_kwargs["color_discrete_map"] = _zone_colors
+                                    _color_kwargs["category_orders"] = {"Change Quality Zone": _zone_order}
+                                    if "Change Quality Zone" not in _scatter_hover_cols:
+                                        _scatter_hover_cols.append("Change Quality Zone")
+                                    if _retention_col not in _scatter_hover_cols and _retention_col in _plot_df.columns:
+                                        _scatter_hover_cols.append(_retention_col)
+                                    st.caption("Green = >105% retention | Light Green = 100-105% retention | Red = <100% retention")
+                                elif _scatter_thrower_col is not None and _scatter_thrower_col in _plot_df.columns:
                                     _plot_df = _plot_df.copy()
                                     _outgoing_col, _incoming_col = _get_change_rider_pair_columns(_plot_df)
                                     if _outgoing_col is not None and _incoming_col is not None:
@@ -1255,8 +1289,9 @@ if authentication_status:
                                                 for _extra_thrower in _race_throwers[2:]:
                                                     _race_thrower_color_map[f"{_extra_thrower} | {_race}"] = _base_col
 
-                                        _color_kwargs["color"] = "Thrower (Race)"
-                                        if _race_thrower_color_map:
+                                        if "color" not in _color_kwargs:
+                                            _color_kwargs["color"] = "Thrower (Race)"
+                                        if _race_thrower_color_map and "color_discrete_map" not in _color_kwargs:
                                             _color_kwargs["color_discrete_map"] = _race_thrower_color_map
                                         if "Throwing Rider" not in _scatter_hover_cols:
                                             _scatter_hover_cols.append("Throwing Rider")
