@@ -1,5 +1,5 @@
 pandas
-streamlit
+streamlit==1.37.1
 plotly
 numpy
 Pillow
@@ -8,7 +8,8 @@ matplotlib
 scipy
 xlwings
 XlsxWriter
-streamlit-authenticator
+streamlit-authenticator==0.3.2
+extra-streamlit-components==0.1.71
 streamlit-image-comparison
 statsmodels
 scikit-learn
