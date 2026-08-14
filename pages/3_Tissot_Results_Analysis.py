@@ -10,6 +10,8 @@ import plotly.graph_objects as go
 from PIL import Image
 import io
 import datetime
+import os
+import inspect
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
@@ -43,10 +45,87 @@ for uname,name,pwd in zip(usernames,names,hashed_passwords):
         
 authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
 
-authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
-name = st.session_state.get("name")
-authentication_status = st.session_state.get("authentication_status")
-username = st.session_state.get("username")
+try:
+    login_result = authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
+except TypeError:
+    login_result = authenticator.login("Login", "main")
+
+if isinstance(login_result, tuple) and len(login_result) == 3:
+    name, authentication_status, username = login_result
+    st.session_state["name"] = name
+    st.session_state["authentication_status"] = authentication_status
+    st.session_state["username"] = username
+else:
+    name = st.session_state.get("name")
+    authentication_status = st.session_state.get("authentication_status")
+    username = st.session_state.get("username")
+
+
+def get_latest_value(df, column):
+    if df is None or df.empty or column not in df.columns:
+        return None
+
+    if "Date" in df.columns:
+        # Prefer explicit ISO parsing (yyyy-mm-dd) for deterministic ordering.
+        dates = pd.to_datetime(df["Date"], format="%Y-%m-%d", errors="coerce")
+        if dates.isna().all():
+            dates = pd.to_datetime(df["Date"], errors="coerce")
+        mask = dates.notna() & df[column].notna()
+        if mask.any():
+            latest_date = dates[mask].max()
+            latest_rows = df[mask & (dates == latest_date)]
+            if not latest_rows.empty:
+                return latest_rows[column].iloc[-1]
+
+    series = df[column].dropna()
+    if series.empty:
+        return None
+    if pd.api.types.is_numeric_dtype(series):
+        return series.max()
+    return series.iloc[-1]
+
+
+def get_latest_multiselect_default(df, column):
+    latest = get_latest_value(df, column)
+    return [latest] if latest is not None else []
+
+
+def get_latest_selectbox_index(df, column, options):
+    options_list = list(options) if options is not None else []
+    if not options_list:
+        return 0
+
+    latest = get_latest_value(df, column)
+    if latest in options_list:
+        return options_list.index(latest)
+    return 0
+
+
+@st.cache_data
+def read_excel_cached(path, sheet_name, usecols=None, skiprows=0, nrows=None, file_mtime=None):
+    return pd.read_excel(
+        io=path,
+        engine='openpyxl',
+        sheet_name=sheet_name,
+        skiprows=skiprows,
+        usecols=usecols,
+        nrows=nrows
+    )
+
+
+def read_excel_auto_refresh(path, sheet_name, usecols=None, skiprows=0, nrows=None):
+    file_mtime = os.path.getmtime(path)
+    return read_excel_cached(path, sheet_name, usecols, skiprows, nrows, file_mtime)
+
+
+def get_excel_cache_signature(paths):
+    signature = []
+    for path in paths:
+        try:
+            signature.append(f"{path}:{os.path.getmtime(path)}")
+        except OSError:
+            signature.append(f"{path}:missing")
+    return "|".join(signature)
 
 if authentication_status == False:
     st.error("Username/password is incorrect")
@@ -57,13 +136,89 @@ if authentication_status == None:
 if authentication_status:
     race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Sprint","Women's Sprint","Men's Keirin","Women's Keirin","Men's Team Sprint","Women's Team Sprint","Men's Omnium","Women's Omnium","Men's Madison","Women's Madison","Men's 1k Time Trial","Women's 1k Time Trial","Men's Team Pursuit","Women's Team Pursuit","Men's Individual Pursuit","Women's Individual Pursuit","Women's 500m Time Trial"]
     race_type = st.selectbox("Select Event:", race_types, key="Event Selector")
+    race_type_key = race_type.lower().replace("'", "").replace(" ", "_")
+
+    excel_signature = get_excel_cache_signature([
+        "pages/MensRaceResults.xlsm",
+        "pages/WomensRaceResults.xlsm",
+        "pages/SprintPerformanceDatabase.xlsx"
+    ])
+    if st.session_state.get("excel_cache_signature") != excel_signature:
+        st.cache_data.clear()
+        filter_suffixes = (
+            "_year_filter",
+            "_location_filter",
+            "_event_filter",
+            "_analysis_year",
+            "_analysis_location",
+            "_analysis_event",
+            "_analysis_stage",
+        )
+        for session_key in list(st.session_state.keys()):
+            if any(session_key.endswith(suffix) for suffix in filter_suffixes):
+                st.session_state.pop(session_key, None)
+        st.session_state["excel_cache_signature"] = excel_signature
+
+    if not hasattr(st, "_cnz_base_multiselect"):
+        st._cnz_base_multiselect = st.multiselect
+    if not hasattr(st, "_cnz_base_selectbox"):
+        st._cnz_base_selectbox = st.selectbox
+
+    def _cnz_scoped_multiselect(label, *args, **kwargs):
+        suffix_map = {
+            "Select Year:": "year_filter",
+            "Select Location:": "location_filter",
+            "Select Event Type:": "event_filter",
+        }
+        column_map = {
+            "Select Year:": "Year",
+            "Select Location:": "Location",
+            "Select Event Type:": "Event",
+        }
+
+        suffix = suffix_map.get(label)
+        if suffix is not None and "key" not in kwargs:
+            kwargs["key"] = f"{race_type_key}_{suffix}"
+
+        column = column_map.get(label)
+        if column is not None:
+            caller_df = inspect.currentframe().f_back.f_locals.get("df")
+            if isinstance(caller_df, pd.DataFrame) and column in caller_df.columns:
+                kwargs["default"] = get_latest_multiselect_default(caller_df, column)
+
+        return st._cnz_base_multiselect(label, *args, **kwargs)
+
+    def _cnz_scoped_selectbox(label, *args, **kwargs):
+        if "key" not in kwargs:
+            suffix_map = {
+                "Select Year:": "analysis_year",
+                "Select Location:": "analysis_location",
+                "Select Event:": "analysis_event",
+                "Select Stage:": "analysis_stage",
+            }
+            suffix = suffix_map.get(label)
+            if suffix is not None:
+                kwargs["key"] = f"{race_type_key}_{suffix}"
+        return st._cnz_base_selectbox(label, *args, **kwargs)
+
+    st.multiselect = _cnz_scoped_multiselect
+    st.selectbox = _cnz_scoped_selectbox
+
+    # Reset stale Keirin widget state once so new latest-date defaults take effect.
+    if st.session_state.get("keirin_defaults_reset_v1") != True:
+        for key in [
+            "mens_keirin_year_filter", "mens_keirin_location_filter", "mens_keirin_event_filter",
+            "womens_keirin_year_filter", "womens_keirin_location_filter", "womens_keirin_event_filter"
+        ]:
+            st.session_state.pop(key, None)
+        st.session_state["keirin_defaults_reset_v1"] = True
+
     if race_type=="Men's Sprint Qualifying":
         st.header('Men\'s Sprint Qualifying')
         st.write("test")
 
 
 
-        @st.cache_data
         def get_data_from_excel():
             df = pd.read_excel(
                 io='pages/MensRaceResults.xlsm',
@@ -100,7 +255,7 @@ if authentication_status:
         with col1:
 
             Devs = ["No","Yes"]
-            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key="Dev_selector")
+            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key=f"{race_type_key}_dev_selector")
 
             if Dev == "Yes":
                 df = pd.concat([df,df_dev])
@@ -112,7 +267,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
             if year:
                 df = df.query(
@@ -125,7 +281,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[0]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
             if location:
@@ -140,7 +297,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
             if event:
@@ -285,7 +443,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear), key=f"{race_type_key}_analysis_year")
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -293,7 +451,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation), key=f"{race_type_key}_analysis_location")
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -301,7 +459,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent), key=f"{race_type_key}_analysis_event")
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -322,7 +480,6 @@ if authentication_status:
 
 
 
-        @st.cache_data
         def get_data_from_excel():
             df = pd.read_excel(
                 io='pages/WomensRaceResults.xlsm',
@@ -359,7 +516,7 @@ if authentication_status:
         with col1:
 
             Devs = ["No","Yes"]
-            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key="Dev_selector")
+            Dev = st.selectbox("Include Age Grade Competitions?:", Devs, key=f"{race_type_key}_dev_selector")
 
             if Dev == "Yes":
                 df = pd.concat([df,df_dev])
@@ -371,7 +528,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
             if year:
                 df = df.query(
@@ -384,7 +542,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[0]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
             if location:
@@ -399,7 +558,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
             if event:
@@ -539,7 +699,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear), key=f"{race_type_key}_analysis_year")
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -547,7 +707,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation), key=f"{race_type_key}_analysis_location")
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -555,7 +715,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent), key=f"{race_type_key}_analysis_event")
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
         )
@@ -616,7 +776,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
         if year:
             df = df.query(
@@ -899,7 +1060,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -1145,16 +1306,13 @@ if authentication_status:
         st.header('Men\'s Keirin')
         st.subheader('All results')
 
-        @st.cache_data
         def get_data_from_excel():
-            df = pd.read_excel(
-                io='pages/MensRaceResults.xlsm',
-                engine ='openpyxl',
+            df = read_excel_auto_refresh(
+                path='pages/MensRaceResults.xlsm',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:R',
-                nrows=6000
-                )
+                usecols='A:R'
+            )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
             #df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
@@ -1173,7 +1331,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -1186,7 +1344,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
         if location:
@@ -1199,7 +1358,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[0]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
         if event:
@@ -1408,16 +1568,13 @@ if authentication_status:
         st.header('Women\'s Keirin')
         st.subheader('All results')
 
-        @st.cache_data
         def get_data_from_excel():
-            df = pd.read_excel(
-                io='pages/WomensRaceResults.xlsm',
-                engine ='openpyxl',
+            df = read_excel_auto_refresh(
+                path='pages/WomensRaceResults.xlsm',
                 sheet_name='Keirin_Trueskill',
                 skiprows=0,
-                usecols='A:S',
-                nrows=5000
-                )
+                usecols='A:S'
+            )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
             #df=df.drop(["UCI_ID","ExpectedRank","RatingChange"],axis=1)
@@ -1436,7 +1593,8 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Year"),
+                key=f"{race_type_key}_year_filter"
             )    
         if year:
             df = df.query(
@@ -1449,7 +1607,8 @@ if authentication_status:
             location = st.multiselect(
                 "Select Location:",
                 options=df["Location"].unique(),
-                default=df["Location"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Location"),
+                key=f"{race_type_key}_location_filter"
             )
 
         if location:
@@ -1462,7 +1621,8 @@ if authentication_status:
             event = st.multiselect(
                 "Select Event Type:",
                 options=df["Event"].unique(),
-                default=df["Event"].unique()[-1]
+                default=get_latest_multiselect_default(df, "Event"),
+                key=f"{race_type_key}_event_filter"
             )
 
         if event:
@@ -1698,7 +1858,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -1897,7 +2057,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -1905,7 +2065,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -1913,7 +2073,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -1921,7 +2081,7 @@ if authentication_status:
 
         uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -1985,7 +2145,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -2178,7 +2338,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -2186,7 +2346,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -2194,7 +2354,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -2202,7 +2362,7 @@ if authentication_status:
 
         uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -2432,10 +2592,10 @@ if authentication_status:
         ##Displaying all dataframes, some styled
         df_points_styled = (df_points
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_points_styled,use_container_width=True)
         ##Download buttons
@@ -2487,11 +2647,11 @@ if authentication_status:
         df_tempo_styled = (df_tempo
                            .style
                            .format(format_dict)
-                           .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
+                           .map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
                           )
-                           .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+                           .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
                           )
-                           .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
+                           .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
                           )
         st.dataframe(df_tempo_styled,use_container_width=True)
@@ -2558,11 +2718,11 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date",ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                          .style
-                                         .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
+                                         .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
                                          .format(format_dict)
-                                         .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
-                                         .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                                         .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                                         .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                                         .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                                         .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                              )
 
             st.dataframe(df_countryHistory_styled)
@@ -2630,8 +2790,8 @@ if authentication_status:
             ##Tempo distribution by date
             df_tempo_hist = df_tempo_hist[(df_tempo_hist.Rank != "DSQ") & (df_points_orig.Rank != "DNF")]
             df_tempo_hist = df_tempo_hist.sort_values("Date",ascending=False)
-            df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
-                          ).applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
+            df_tempo_hist_styled = df_tempo_hist.style.map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,38,29,30,31,32,33,34,35,36]])                   .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+                          ).map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
             st.dataframe(df_tempo_hist_styled)
 
@@ -2664,7 +2824,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_points_orig, "Year", uniqueYear))
 
         df_an_year = df_points_orig.query(
             "Year == @an_year"
@@ -2672,7 +2832,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -2680,7 +2840,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -2689,10 +2849,10 @@ if authentication_status:
 
         df_an_styled = (df_an
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 10"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_an_styled)
 
@@ -2799,26 +2959,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_points_orig.loc[df_points_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-        
-        
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Lap +"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 10"][i]==10:
-                df_1["Wins"][i]+=1
-              
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,11):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 11)]
+        df_1["Wins"] = df_1.loc[:, "Sprint 1":"Lap +"].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 10"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         df_1=df_1.drop(columns=["index","Avg Speed","Time"])
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['Lap +'].mean()/20,2)} laps.")
@@ -3103,10 +3247,10 @@ if authentication_status:
 #         df_points.dtypes
         df_points_styled = (df_points
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_points_styled,use_container_width=True)
 #         df_points_styled.dtpyes()
@@ -3159,11 +3303,11 @@ if authentication_status:
         df_tempo_styled = (df_tempo
                            .style
                            .format(format_dict)
-                           .applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
+                           .map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]]
                           )
-                           .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]]
+                           .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]]
                           )
-                           .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]]
+                           .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]]
                           )
                           )
         st.dataframe(df_tempo_styled,use_container_width=True)
@@ -3230,11 +3374,11 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date",ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                          .style
-                                         .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                                         .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
                                          .format(format_dict)
-                                         .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
-                                         .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                                         .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                                         .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
+                                         .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                                         .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                              )
 
             st.dataframe(df_countryHistory_styled)
@@ -3302,8 +3446,8 @@ if authentication_status:
             ##Tempo distribution by date
             df_tempo_hist = df_tempo_hist[(df_tempo_hist.Rank != "DSQ") & (df_points_orig.Rank != "DNF")]
             df_tempo_hist = df_tempo_hist.sort_values("Date",ascending=False)
-            df_tempo_hist_styled = df_tempo_hist.style.applymap(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,38,29,30,31,32,33,34,35,36]])                   .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
-                          ).applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
+            df_tempo_hist_styled = df_tempo_hist.style.map(tempo_color_wins, subset=pd.IndexSlice[:, [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,38,29,30,31,32,33,34,35,36]])                   .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]]
+                          ).map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]]
                           )
             
 
@@ -3336,7 +3480,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_points_orig, "Year", uniqueYear))
 
         df_an_year = df_points_orig.query(
             "Year == @an_year"
@@ -3344,7 +3488,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -3352,7 +3496,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -3361,10 +3505,10 @@ if authentication_status:
 
         df_an_styled = (df_an
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 8"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["Lap +"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["Lap -"]])
                             .format(format_dict))
         st.dataframe(df_an_styled)
 
@@ -3459,26 +3603,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_points_orig.loc[df_points_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-
-
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 7"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 8"][i]==10:
-                df_1["Wins"][i]+=1
-
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,9):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 9)]
+        df_1["Wins"] = df_1[sprint_columns].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 8"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         df_1=df_1.drop(columns=["Avg Speed","Time"])
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['Lap +'].mean()/20,2)} laps.")
@@ -3624,7 +3752,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -3662,10 +3790,10 @@ if authentication_status:
 
         df_styled = (df
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                             .format(format_dict))
         st.dataframe(df_styled,use_container_width=True)
         ##Download buttons
@@ -3704,10 +3832,10 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date", ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                 .style
-                                .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
-                                .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
-                                .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                                .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                                .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11","Sprint 12","Sprint 13","Sprint 14","Sprint 15","Sprint 16","Sprint 17","Sprint 18","Sprint 19"]])
+                                .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 20"]])
+                                .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                                .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                                 .format(format_dict))
             st.dataframe(df_countryHistory_styled,use_container_width=True)
             ##Download buttons
@@ -3783,7 +3911,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -3791,7 +3919,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -3799,7 +3927,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -3883,26 +4011,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_orig.loc[df_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-        
-        
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 20"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 20"][i]==10:
-                df_1["Wins"][i]+=1
-              
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,21):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 21)]
+        df_1["Wins"] = df_1[sprint_columns].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 20"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['P.Laps'].mean()/20,2)} laps.")
@@ -3982,7 +4094,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -4020,10 +4132,10 @@ if authentication_status:
 
         df_styled = (df
                             .style
-                            .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
-                            .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
-                            .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                            .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                            .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
+                            .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
+                            .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                            .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                             .format(format_dict))
         st.dataframe(df_styled,use_container_width=True)
         ##Download buttons
@@ -4062,10 +4174,10 @@ if authentication_status:
             df_countryHistory = df_countryHistory.sort_values("Date", ascending=False)
             df_countryHistory_styled = (df_countryHistory
                                 .style
-                                .applymap(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
-                                .applymap(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
-                                .applymap(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
-                                .applymap(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
+                                .map(color_points, subset=pd.IndexSlice[:, ["Sprint 1","Sprint 2","Sprint 3","Sprint 4","Sprint 5","Sprint 6","Sprint 7","Sprint 8","Sprint 9","Sprint 10","Sprint 11"]])
+                                .map(color_points_10, subset=pd.IndexSlice[:, ["Sprint 12"]])
+                                .map(color_plus_laps, subset=pd.IndexSlice[:, ["P.Laps"]])
+                                .map(color_minus_laps, subset=pd.IndexSlice[:, ["M.Laps"]])
                                 .format(format_dict))
             st.dataframe(df_countryHistory_styled,use_container_width=True)
             ##Download buttons
@@ -4141,7 +4253,7 @@ if authentication_status:
 
         left_column, middle_column, right_column = st.columns(3)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -4149,7 +4261,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -4157,7 +4269,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -4239,26 +4351,10 @@ if authentication_status:
         'Select ranking:',
     (1,2,3,4,5,6,7,8))
         df_1 = df_orig.loc[df_orig["Rank"]==rank].reset_index(drop=True)
-        df_1["Wins"]=0
-        
-        
-        for i in range(len(df_1)):
-            try:
-                df_1["Wins"][i]=df_1.loc[i]["Sprint 1":"Sprint 12"].value_counts()[5]
-            except:
-                df_1["Wins"][i]=0
-        for i in range(len(df_1)):
-            if df_1["Sprint 12"][i]==10:
-                df_1["Wins"][i]+=1
-              
-
-        df_1["Place"]=0
-        for i in range(len(df_1)):
-            place=0
-            for j in range(1,13):
-                if df_1.loc[i][f"Sprint {j}"] > 0:
-                    place+=1
-            df_1["Place"][i]=place
+        sprint_columns = [f"Sprint {i}" for i in range(1, 13)]
+        df_1["Wins"] = df_1[sprint_columns].eq(5).sum(axis=1)
+        df_1.loc[df_1["Sprint 12"] == 10, "Wins"] += 1
+        df_1["Place"] = df_1[sprint_columns].gt(0).sum(axis=1)
         df_1
         st.subheader(f"On average, rank {rank} wins {round(df_1['Wins'].mean(),2)} sprints, places in {round(df_1['Place'].mean(),2)} sprints, and takes {round(df_1['P.Laps'].mean()/20,2)} laps.")
         
@@ -4289,7 +4385,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -4477,7 +4573,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -4485,7 +4581,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -4493,7 +4589,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -4503,7 +4599,7 @@ if authentication_status:
 
 
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -4569,7 +4665,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -4757,7 +4853,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -4765,7 +4861,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -4773,7 +4869,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -4783,7 +4879,7 @@ if authentication_status:
 
 
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -4850,7 +4946,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5038,7 +5134,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,c4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5046,7 +5142,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5054,7 +5150,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -5064,7 +5160,7 @@ if authentication_status:
 
 
         with c4:
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -5133,9 +5229,7 @@ if authentication_status:
             df.Age4=round(df.Age4,2)
             df["Avg Speed"]=round(df["Avg Speed"],3)
 
-
-            for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
 
             return df
         df= get_data_from_excel()
@@ -5146,7 +5240,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5366,7 +5460,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,fourth_column = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5374,7 +5468,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5382,14 +5476,14 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
         )
         with fourth_column:
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
             df_an = df_an_year_location_event.query(
                 "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -5442,7 +5536,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Team Pursuit',
                 skiprows=0,
-                usecols='A:BC',
+                usecols='A:BD',
                 nrows=2000
                 )
             df = df.replace(',','', regex=True)
@@ -5452,9 +5546,7 @@ if authentication_status:
             df.Age4=round(df.Age4,2)
             df["Avg Speed"]=round(df["Avg Speed"],3)
 
-
-            for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
 
             return df
         df= get_data_from_excel()
@@ -5465,7 +5557,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5671,7 +5763,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,fourth_column = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5679,7 +5771,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5687,14 +5779,14 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
         )
         with fourth_column:
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
             df_an = df_an_year_location_event.query(
                 "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -5740,10 +5832,9 @@ if authentication_status:
                 nrows=2500
                 )
             df = df.replace(',','', regex=True)
-            for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
-                #if df["125m"][i] != "NULL":
-                    #df["125m"][i] = df["125m"][i].strftime("%M:%S.%f")
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
+            #if df["125m"][i] != "NULL":
+                #df["125m"][i] = df["125m"][i].strftime("%M:%S.%f")
             return df
         df= get_data_from_excel()
         @st.cache_data
@@ -5755,7 +5846,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -5929,7 +6020,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,col4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -5937,7 +6028,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -5945,7 +6036,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -5955,7 +6046,7 @@ if authentication_status:
         with col4:
 
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"
@@ -6013,10 +6104,10 @@ if authentication_status:
                 )
             df = df.replace(',','', regex=True)
 
-            for i in range(len(df)):
-                df["Date"][i] = df["Date"][i].date()
-                if isinstance(df["Time"][i], datetime.time):
-                    df["Time"][i]=df['Time'][i].strftime("%M:%S.%f")[:len(df['Time'][i].strftime("%M:%S.%f"))-3]
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
+            df["Time"] = df["Time"].apply(
+                lambda value: value.strftime("%M:%S.%f")[:-3] if isinstance(value, datetime.time) else value
+            )
 
             return df
         df= get_data_from_excel()
@@ -6029,7 +6120,7 @@ if authentication_status:
             year = st.multiselect(
                 "Select Year:",
                 options=df["Year"].unique(),
-                default=df["Year"].unique()[0]
+                default=get_latest_multiselect_default(df, "Year")
             )    
         if year:
             df = df.query(
@@ -6145,7 +6236,7 @@ if authentication_status:
 
         if len(athlete)>0:
             st.dataframe(df_athleteHistory,use_container_width=True)
-            df_athleteHistory['Time']= pd.to_datetime(df_athleteHistory['Time'])
+            df_athleteHistory.loc[:, 'Time'] = pd.to_datetime(df_athleteHistory['Time'])
 
             #DOWNLOAD BUTTONS
             csvah = convert_to_csv(df_athleteHistory)
@@ -6219,7 +6310,7 @@ if authentication_status:
 
         left_column, middle_column, right_column,col4 = st.columns(4)
         with left_column:
-            an_year = st.selectbox("Select Year:", uniqueYear)
+            an_year = st.selectbox("Select Year:", uniqueYear, index=get_latest_selectbox_index(df_orig, "Year", uniqueYear))
 
         df_an_year = df_orig.query(
             "Year == @an_year"
@@ -6227,7 +6318,7 @@ if authentication_status:
         uniqueLocation = df_an_year['Location'].drop_duplicates().sort_values()
 
         with middle_column:
-            an_location = st.selectbox("Select Location:", uniqueLocation)
+            an_location = st.selectbox("Select Location:", uniqueLocation, index=get_latest_selectbox_index(df_an_year, "Location", uniqueLocation))
 
         df_an_year_location = df_an_year.query(
             "Year == @an_year & Location == @an_location"
@@ -6235,7 +6326,7 @@ if authentication_status:
 
         uniqueEvent = df_an_year_location['Event'].drop_duplicates().sort_values()
         with right_column:
-            an_event = st.selectbox("Select Event:", uniqueEvent)
+            an_event = st.selectbox("Select Event:", uniqueEvent, index=get_latest_selectbox_index(df_an_year_location, "Event", uniqueEvent))
 
         df_an_year_location_event = df_an_year_location.query(
             "Year == @an_year & Location == @an_location & Event == @an_event"
@@ -6245,7 +6336,7 @@ if authentication_status:
         with col4:
 
             uniqueStage = df_an_year_location_event['Stage'].drop_duplicates().sort_values()
-            an_stage = st.selectbox("Select Stage:", uniqueStage)
+            an_stage = st.selectbox("Select Stage:", uniqueStage, index=get_latest_selectbox_index(df_an_year_location_event, "Stage", uniqueStage))
 
         df_an = df_an_year_location_event.query(
             "Year == @an_year & Location == @an_location & Event == @an_event & Stage == @an_stage"

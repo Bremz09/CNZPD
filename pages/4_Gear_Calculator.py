@@ -43,10 +43,20 @@ for uname,name,pwd in zip(usernames,names,hashed_passwords):
         
 authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
 
-authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
-name = st.session_state.get("name")
-authentication_status = st.session_state.get("authentication_status")
-username = st.session_state.get("username")
+try:
+    login_result = authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
+except TypeError:
+    login_result = authenticator.login("Login", "main")
+
+if isinstance(login_result, tuple) and len(login_result) == 3:
+    name, authentication_status, username = login_result
+    st.session_state["name"] = name
+    st.session_state["authentication_status"] = authentication_status
+    st.session_state["username"] = username
+else:
+    name = st.session_state.get("name")
+    authentication_status = st.session_state.get("authentication_status")
+    username = st.session_state.get("username")
 
 if authentication_status == False:
     st.error("Username/password is incorrect")
