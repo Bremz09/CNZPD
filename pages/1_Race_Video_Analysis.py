@@ -4715,19 +4715,38 @@ if authentication_status:
         df_master = pd.read_excel(f'pages/video_analysis/WTS_Master_Women.xlsx')
         #df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
         st.header("Race Viewer")
-        c1,c2=st.columns(2)
+        country_codes = sorted({
+            country_code
+            for title_codes in df_master["Title"].dropna().astype(str).str.findall(r"\b[A-Z]{3}\b")
+            for country_code in title_codes
+        })
+        c1,c2,c3=st.columns(3)
         
         with c1:
+            selected_countries = st.multiselect(
+                "Filter by country:",
+                options=country_codes,
+                key="wts_country_filter",
+            )
+        if selected_countries:
+            selected_country_pattern = r"\b(" + "|".join(selected_countries) + r")\b"
+            df_master = df_master[df_master["Title"].astype(str).str.contains(
+                selected_country_pattern,
+                regex=True,
+                na=False,
+            )]
+        with c2:
             selections = st.multiselect(
             "Select past effort(s):",
             options=df_master["Title"].sort_values(ascending=False).unique()
             ) 
-        with c2:
+        with c3:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
         if len(selections) !=0:
             st.markdown("[Jump to Full Summary](#summary)", unsafe_allow_html=True)
             df_combine = pd.DataFrame()
+            selected_wts_race_times = []
             for i in range(len(selections)):
                 checkboxid+=1
                 df_temp = df_master.loc[df_master['Title'] == selections[i]].reset_index(drop=True)
@@ -4743,6 +4762,11 @@ if authentication_status:
                 ind3=df_temp.index[df_temp['Row'] == "Rider 3 Forward"].tolist()[0]
                 indstart=df_temp.index[df_temp['Row'] == "Start"].tolist()[0]
                 start = df_temp["Start time"][indstart]
+                recorded_marker_times = pd.to_numeric(
+                    df_temp.loc[df_temp["Row"].eq("Marker"), "Start time"],
+                    errors="coerce",
+                ).dropna().tolist()
+                is_sparse_wts_timing = len(recorded_marker_times) <= 6
                 react1 = round(df_temp["Start time"][ind1]-start,2)
                 react2 = round(df_temp["Start time"][ind2]-start,2)
                 react3 = round(df_temp["Start time"][ind3]-start,2)
@@ -4782,6 +4806,29 @@ if authentication_status:
                 df_table["2"] = [0,df_table["Lap 2"][1]+df_table["Gap 1"][1],0]
                 df_table["3"] = [0,0,df_table["Lap 3"][2]+df_table["Gap 2"][2]]
                 df_table["Time"] = [0,0,df_temp["Start time"][27]-start]
+                if is_sparse_wts_timing:
+                    for distance, recorded_time in zip(
+                        ["125", "250", "375", "500", "625", "750"],
+                        recorded_marker_times,
+                    ):
+                        df_table[distance] = [0, 0, recorded_time]
+                    df_table["Time"] = [0, 0, df_table["750"][2]]
+                saved_dates = df_temp["Save_Date"].dropna()
+                if not saved_dates.empty:
+                    saved_date = saved_dates.iloc[0]
+                    if isinstance(saved_date, (int, float, np.number)):
+                        saved_date = pd.to_datetime(saved_date, unit="D", origin="1899-12-30")
+                    else:
+                        saved_date = pd.to_datetime(saved_date, errors="coerce")
+                else:
+                    saved_date = pd.to_datetime(str(selections[i])[:8], format="%y-%m-%d", errors="coerce")
+                final_750_time = df_table["Time"][2]
+                if not pd.isna(saved_date) and not pd.isna(final_750_time):
+                    selected_wts_race_times.append({
+                        "Race": selections[i],
+                        "Date": saved_date,
+                        "Total Time (s)": final_750_time,
+                    })
                 df_table_small = df_table[["Event", "Position", "Rider", "RT", "Lap 1", "Lap 2", "Lap 3", "Time"]].copy()
                 df_table_small = df_table_small.rename(columns={"Lap 1": "Lap1", "Lap 2": "Lap2", "Lap 3": "Lap3", "Time": "time"})
                 st.header(selections[i])
@@ -4913,6 +4960,21 @@ if authentication_status:
             "Marker":"Quarter"})
 
             st.plotly_chart(fig_comp_split, use_container_width=True)
+
+            if selected_wts_race_times:
+                st.subheader("Race Time History")
+                selected_wts_race_times_df = pd.DataFrame(selected_wts_race_times).sort_values("Date")
+                wts_time_fig = px.scatter(
+                    selected_wts_race_times_df,
+                    x="Date",
+                    y="Total Time (s)",
+                    hover_name="Race",
+                    hover_data={"Date": "|%d %b %Y", "Total Time (s)": ":.2f"},
+                    title="WTS Total Time by Date",
+                )
+                wts_time_fig.update_traces(mode="lines+markers")
+                wts_time_fig.update_layout(yaxis_title="Total Time (seconds)")
+                st.plotly_chart(wts_time_fig, use_container_width=True)
         st.markdown('---')
         st.header("Editor")
 
