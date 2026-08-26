@@ -50,20 +50,7 @@ for uname,name,pwd in zip(usernames,names,hashed_passwords):
         
 authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
 
-try:
-    login_result = authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
-except TypeError:
-    login_result = authenticator.login("Login", "main")
-
-if isinstance(login_result, tuple) and len(login_result) == 3:
-    name, authentication_status, username = login_result
-    st.session_state["name"] = name
-    st.session_state["authentication_status"] = authentication_status
-    st.session_state["username"] = username
-else:
-    name = st.session_state.get("name")
-    authentication_status = st.session_state.get("authentication_status")
-    username = st.session_state.get("username")
+name, authentication_status, username = authenticator.login("Login", "main")
 
 if authentication_status == False:
     st.error("Username/password is incorrect")
@@ -969,6 +956,12 @@ if authentication_status:
             if df_obj is None or df_obj.empty:
                 return None
 
+            _bucket_raw_cols = [
+                "Changes (<100% retention)",
+                "Changes (100%-105%)",
+                "Changes (>105%)",
+            ]
+
             _speed_col = _find_speed_retention_column(df_obj)
             _outgoing_col, _incoming_col = _get_change_rider_pair_columns(df_obj)
             _throw_col = _find_best_column(df_obj.columns, ["Rider detail", "Rider Detail"])
@@ -1012,6 +1005,41 @@ if authentication_status:
                 _left, _right = _split_change_rider_detail(_text)
                 return _normalize_rider_name(_left), _normalize_rider_name(_right)
 
+            _team_gain_col = _find_best_column(
+                _work.columns,
+                [
+                    "Team Speed Gain (km/h)",
+                    "Team Speed Gain",
+                    "Speed Gain (km/h)",
+                    "Speed Gain",
+                ],
+            )
+            if _team_gain_col is not None and _team_gain_col in _work.columns:
+                _work["_team_speed_gain_numeric"] = _coerce_numeric_values(_work[_team_gain_col])
+            else:
+                _before_col = _find_best_column(
+                    _work.columns,
+                    [
+                        "Before Change Speed (km/h)",
+                        "Before Change Speed",
+                        "Before Speed (km/h)",
+                        "Before Speed",
+                    ],
+                )
+                _after_col = _find_best_column(
+                    _work.columns,
+                    [
+                        "After Change Speed (km/h)",
+                        "After Change Speed",
+                        "After Speed (km/h)",
+                        "After Speed",
+                    ],
+                )
+                if _before_col is not None and _after_col is not None:
+                    _work["_team_speed_gain_numeric"] = _coerce_numeric_values(_work[_after_col]) - _coerce_numeric_values(_work[_before_col])
+                else:
+                    _work["_team_speed_gain_numeric"] = np.nan
+
             _work = _work.loc[_work["_speed_retention_numeric"].notna()].copy()
             if _work.empty:
                 return pd.DataFrame(columns=["Throw direction", "Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"])
@@ -1039,11 +1067,11 @@ if authentication_status:
 
             _work["_bucket"] = np.where(
                 _work["_speed_retention_numeric"] < 100.0,
-                "Changes (<100% retention)",
+                _bucket_raw_cols[0],
                 np.where(
                     _work["_speed_retention_numeric"] <= 105.0,
-                    "Changes (100%-105%)",
-                    "Changes (>105%)",
+                    _bucket_raw_cols[1],
+                    _bucket_raw_cols[2],
                 ),
             )
 
@@ -1062,28 +1090,53 @@ if authentication_status:
                 .reset_index()
             )
 
-            _summary = _summary.rename(
-                columns={
-                    "Changes (<100% retention)": "Changes with less than 100% retention",
-                    "Changes (100%-105%)": "Changes with 100%-105% retention",
-                    "Changes (>105%)": "Changes with more than 105% retention",
-                }
-            )
-
-            for _col in ["Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"]:
+            for _col in _bucket_raw_cols:
                 if _col not in _summary.columns:
                     _summary[_col] = 0
+
+            def _format_kmh(_value):
+                return f"{float(_value):.1f} km/h"
+
+            def _build_bucket_label(_bucket_name):
+                _bucket_gains = _work.loc[_work["_bucket"] == _bucket_name, "_team_speed_gain_numeric"]
+                _bucket_gains = pd.to_numeric(_bucket_gains, errors="coerce").dropna()
+
+                if _bucket_name == _bucket_raw_cols[0]:
+                    if _bucket_gains.empty:
+                        return "Losing speed (no data)"
+                    _max_loss = abs(float(_bucket_gains.min()))
+                    return f"Losing up to {_format_kmh(_max_loss)}"
+
+                if _bucket_name == _bucket_raw_cols[1]:
+                    if _bucket_gains.empty:
+                        return "Holding speed (no data)"
+                    _min_gain = float(_bucket_gains.min())
+                    _max_gain = float(_bucket_gains.max())
+                    if _min_gain >= 0:
+                        return f"Gaining up to {_format_kmh(_max_gain)}"
+                    if _max_gain <= 0:
+                        return f"Losing up to {_format_kmh(abs(_min_gain))}"
+                    return f"{_format_kmh(_min_gain)} to +{_format_kmh(_max_gain)}"
+
+                if _bucket_gains.empty:
+                    return "Gaining speed (no data)"
+                _min_gain = float(_bucket_gains.min())
+                _max_gain = float(_bucket_gains.max())
+                return f"Gaining between {_format_kmh(_min_gain)} and {_format_kmh(_max_gain)}"
+
+            _bucket_display_cols = [_build_bucket_label(_col) for _col in _bucket_raw_cols]
+            _summary = _summary.rename(columns={_raw: _disp for _raw, _disp in zip(_bucket_raw_cols, _bucket_display_cols)})
 
             _summary["Throw direction"] = _summary.apply(
                 lambda _r: f"{str(_r['_outgoing_rider']).strip()} throwing {str(_r['_incoming_rider']).strip()}",
                 axis=1,
             )
             _summary = _summary.sort_values(
-                by=["Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"],
+                by=_bucket_display_cols,
                 ascending=[False, False, False],
             )
             return _summary[
-                ["Throw direction", "Changes with less than 100% retention", "Changes with 100%-105% retention", "Changes with more than 105% retention"]
+                ["Throw direction"] + _bucket_display_cols
             ].reset_index(drop=True)
 
         st.markdown("---")
@@ -1165,21 +1218,39 @@ if authentication_status:
                         else:
                             st.table(_bucket_table)
 
-                    with st.expander("Detailed changes table and chart controls", expanded=False):
-                        st.subheader("Changes Data")
-                        st.dataframe(_changes_display, use_container_width=True, hide_index=True)
+                    with st.expander("Changes Scatter Plot and Insights", expanded=True):
+                        st.subheader("Changes Scatter Plot")
 
                         _metric_options = _get_change_metric_columns(_changes_display)
                         if len(_metric_options) < 2:
                             st.warning("The changes tab does not contain at least two numeric metric columns for a scatter plot.")
                         else:
-                            _default_y_index = 1 if len(_metric_options) > 1 else 0
+                            _default_x_col = _find_best_column(
+                                _metric_options,
+                                [
+                                    "Before Change Speed (km/h)",
+                                    "Before Change Speed",
+                                    "Before Speed (km/h)",
+                                    "Before Speed",
+                                ],
+                            )
+                            _default_y_col = _find_best_column(
+                                _metric_options,
+                                [
+                                    "After Change Speed (km/h)",
+                                    "After Change Speed",
+                                    "After Speed (km/h)",
+                                    "After Speed",
+                                ],
+                            )
+                            _default_x_index = _metric_options.index(_default_x_col) if _default_x_col in _metric_options else 0
+                            _default_y_index = _metric_options.index(_default_y_col) if _default_y_col in _metric_options else (1 if len(_metric_options) > 1 else 0)
                             _cx1, _cx2 = st.columns(2)
                             with _cx1:
                                 _x_metric = st.selectbox(
                                     "Scatter X-axis",
                                     options=_metric_options,
-                                    index=0,
+                                    index=_default_x_index,
                                     key=f"changes_x_metric_{_header_key}",
                                 )
                                 st.caption(_describe_change_metric(_x_metric))
@@ -1200,6 +1271,23 @@ if authentication_status:
                             if _plot_df.empty:
                                 st.info("No changes rows remain after converting the selected axes to numeric values.")
                             else:
+                                _plot_df_for_axis_scale = _plot_df.copy()
+
+                                def _build_fixed_axis_range(_series):
+                                    _values = pd.to_numeric(_series, errors="coerce").dropna()
+                                    if _values.empty:
+                                        return None
+                                    _min_v = float(_values.min())
+                                    _max_v = float(_values.max())
+                                    if _min_v == _max_v:
+                                        _pad = max(abs(_min_v) * 0.05, 1.0)
+                                    else:
+                                        _pad = (_max_v - _min_v) * 0.08
+                                    return [_min_v - _pad, _max_v + _pad]
+
+                                _fixed_x_range = _build_fixed_axis_range(_plot_df_for_axis_scale[_x_metric])
+                                _fixed_y_range = _build_fixed_axis_range(_plot_df_for_axis_scale[_y_metric])
+
                                 _color_kwargs = {}
                                 _retention_col = _find_speed_retention_column(_plot_df)
                                 _scatter_race_col = _find_best_column(
@@ -1211,32 +1299,8 @@ if authentication_status:
                                     _col for _col in ["Selected Race", session_title_col, "Race", "Title", _scatter_thrower_col, _x_metric, _y_metric]
                                     if _col is not None and _col in _plot_df.columns
                                 ]
-                                if _retention_col is not None and _retention_col in _plot_df.columns:
-                                    _retention_numeric = _coerce_numeric_values(_plot_df[_retention_col])
-                                    _plot_df["Change Quality Zone"] = np.where(
-                                        _retention_numeric > 105.0,
-                                        "Green",
-                                        np.where(
-                                            _retention_numeric >= 100.0,
-                                            "Light Green",
-                                            "Red",
-                                        ),
-                                    )
-                                    _zone_order = ["Green", "Light Green", "Red"]
-                                    _zone_colors = {
-                                        "Green": "#16a34a",
-                                        "Light Green": "#86efac",
-                                        "Red": "#dc2626",
-                                    }
-                                    _color_kwargs["color"] = "Change Quality Zone"
-                                    _color_kwargs["color_discrete_map"] = _zone_colors
-                                    _color_kwargs["category_orders"] = {"Change Quality Zone": _zone_order}
-                                    if "Change Quality Zone" not in _scatter_hover_cols:
-                                        _scatter_hover_cols.append("Change Quality Zone")
-                                    if _retention_col not in _scatter_hover_cols and _retention_col in _plot_df.columns:
-                                        _scatter_hover_cols.append(_retention_col)
-                                    st.caption("Green = >105% retention | Light Green = 100-105% retention | Red = <100% retention")
-                                elif _scatter_thrower_col is not None and _scatter_thrower_col in _plot_df.columns:
+                                _thrower_toggle_labels = []
+                                if _scatter_thrower_col is not None and _scatter_thrower_col in _plot_df.columns:
                                     _plot_df = _plot_df.copy()
                                     _outgoing_col, _incoming_col = _get_change_rider_pair_columns(_plot_df)
                                     if _outgoing_col is not None and _incoming_col is not None:
@@ -1250,25 +1314,88 @@ if authentication_status:
                                         _pair_split = _plot_df[_scatter_thrower_col].apply(_split_change_rider_detail)
                                         _plot_df["Outgoing Rider"] = _pair_split.apply(lambda x: x[0])
                                         _plot_df["Incoming Rider"] = _pair_split.apply(lambda x: x[1])
-                                    _thrower_values = [
-                                        str(_value).strip() for _value in _plot_df["Throwing Rider"].dropna().astype(str).tolist()
-                                        if str(_value).strip()
+
+                                    _race_color_col = _scatter_race_col if _scatter_race_col is not None and _scatter_race_col in _plot_df.columns else "Selected Race"
+                                    if _race_color_col not in _plot_df.columns:
+                                        _plot_df[_race_color_col] = "Race"
+
+                                    _plot_df["Thrower (Race)"] = _plot_df.apply(
+                                        lambda _r: f"{str(_r.get('Throwing Rider', '')).strip()} | {str(_r.get(_race_color_col, '')).strip()}",
+                                        axis=1,
+                                    )
+                                    _thrower_toggle_labels = [
+                                        _label for _label in _plot_df["Thrower (Race)"].dropna().astype(str).tolist()
+                                        if _label.strip() and not _label.strip().lower().startswith("|")
                                     ]
-                                    _thrower_values = list(dict.fromkeys(_thrower_values))
-                                    if _thrower_values:
-                                        _race_color_col = _scatter_race_col if _scatter_race_col is not None and _scatter_race_col in _plot_df.columns else "Selected Race"
-                                        if _race_color_col not in _plot_df.columns:
-                                            _plot_df[_race_color_col] = "Race"
+                                    _thrower_toggle_labels = list(dict.fromkeys(_thrower_toggle_labels))
 
-                                        _plot_df["Thrower (Race)"] = _plot_df.apply(
-                                            lambda _r: f"{str(_r.get('Throwing Rider', '')).strip()} | {str(_r.get(_race_color_col, '')).strip()}",
-                                            axis=1,
+                                    if "Throwing Rider" not in _scatter_hover_cols:
+                                        _scatter_hover_cols.append("Throwing Rider")
+                                    if "Incoming Rider" not in _scatter_hover_cols and "Incoming Rider" in _plot_df.columns:
+                                        _scatter_hover_cols.append("Incoming Rider")
+                                    if _race_color_col not in _scatter_hover_cols and _race_color_col in _plot_df.columns:
+                                        _scatter_hover_cols.append(_race_color_col)
+
+                                if _thrower_toggle_labels:
+                                    st.markdown("### Filter by thrower")
+                                    _race_to_throwers = {}
+                                    for _label in _thrower_toggle_labels:
+                                        _thrower_text, _race_text = _label.split(" | ", 1) if " | " in _label else (_label, "Race")
+                                        _race_text = str(_race_text).strip() or "Race"
+                                        _thrower_text = str(_thrower_text).strip() or "Unknown"
+                                        if _race_text not in _race_to_throwers:
+                                            _race_to_throwers[_race_text] = []
+                                        if _thrower_text not in _race_to_throwers[_race_text]:
+                                            _race_to_throwers[_race_text].append(_thrower_text)
+
+                                    _toggle_cols = st.columns(5)
+                                    _visible_throwers = []
+                                    for _race_idx, (_race_name, _race_throwers) in enumerate(_race_to_throwers.items()):
+                                        _toggle_col = _toggle_cols[_race_idx % 5]
+                                        with _toggle_col:
+                                            st.markdown(f"**{_race_name}**")
+                                            for _thrower_name in _race_throwers:
+                                                _toggle_label = f"{_thrower_name} | {_race_name}"
+                                                _toggle_key = f"changes_thrower_toggle_{_header_key}_{_race_idx}_{abs(hash(_toggle_label))}"
+                                                _is_visible = st.checkbox(_thrower_name, value=True, key=_toggle_key)
+                                                if _is_visible:
+                                                    _visible_throwers.append(_toggle_label)
+
+                                    _plot_df = _plot_df[_plot_df["Thrower (Race)"].isin(_visible_throwers)].copy()
+
+                                if _plot_df.empty:
+                                    st.info("No points are visible for the current thrower toggle selection.")
+                                else:
+                                    if _retention_col is not None and _retention_col in _plot_df.columns:
+                                        _retention_numeric = _coerce_numeric_values(_plot_df[_retention_col])
+                                        _plot_df["Change Quality Zone"] = np.where(
+                                            _retention_numeric > 105.0,
+                                            "More than 105% retention",
+                                            np.where(
+                                                _retention_numeric >= 100.0,
+                                                "100% - 105% retention",
+                                                "Less than 100% retention",
+                                            ),
                                         )
-
+                                        _zone_order = ["More than 105% retention", "100% - 105% retention", "Less than 100% retention"]
+                                        _zone_colors = {
+                                            "More than 105% retention": "#16a34a",
+                                            "100% - 105% retention": "#86efac",
+                                            "Less than 100% retention": "#dc2626",
+                                        }
+                                        _color_kwargs["color"] = "Change Quality Zone"
+                                        _color_kwargs["color_discrete_map"] = _zone_colors
+                                        _color_kwargs["category_orders"] = {"Change Quality Zone": _zone_order}
+                                        if "Change Quality Zone" not in _scatter_hover_cols:
+                                            _scatter_hover_cols.append("Change Quality Zone")
+                                        if _retention_col not in _scatter_hover_cols and _retention_col in _plot_df.columns:
+                                            _scatter_hover_cols.append(_retention_col)
+                                    elif "Thrower (Race)" in _plot_df.columns:
                                         _base_palette = [
                                             "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#17becf",
                                             "#bcbd22", "#8c564b", "#9467bd", "#e377c2", "#7f7f7f",
                                         ]
+                                        _race_color_col = _scatter_race_col if _scatter_race_col is not None and _scatter_race_col in _plot_df.columns else "Selected Race"
                                         _race_values = [
                                             str(_r).strip() for _r in _plot_df[_race_color_col].dropna().astype(str).tolist()
                                             if str(_r).strip()
@@ -1299,57 +1426,61 @@ if authentication_status:
                                                 for _extra_thrower in _race_throwers[2:]:
                                                     _race_thrower_color_map[f"{_extra_thrower} | {_race}"] = _base_col
 
-                                        if "color" not in _color_kwargs:
-                                            _color_kwargs["color"] = "Thrower (Race)"
-                                        if _race_thrower_color_map and "color_discrete_map" not in _color_kwargs:
+                                        _color_kwargs["color"] = "Thrower (Race)"
+                                        if _race_thrower_color_map:
                                             _color_kwargs["color_discrete_map"] = _race_thrower_color_map
-                                        if "Throwing Rider" not in _scatter_hover_cols:
-                                            _scatter_hover_cols.append("Throwing Rider")
-                                        if "Incoming Rider" not in _scatter_hover_cols and "Incoming Rider" in _plot_df.columns:
-                                            _scatter_hover_cols.append("Incoming Rider")
-                                        if _race_color_col not in _scatter_hover_cols and _race_color_col in _plot_df.columns:
-                                            _scatter_hover_cols.append(_race_color_col)
                                         st.caption("Each race keeps one base colour, and riders in that race are shown as darker/lighter shades of that race colour.")
-                                elif _scatter_race_col is not None and _scatter_race_col in _plot_df.columns:
-                                    _color_kwargs["color"] = _scatter_race_col
+                                    elif _scatter_race_col is not None and _scatter_race_col in _plot_df.columns:
+                                        _color_kwargs["color"] = _scatter_race_col
 
-                                _scatter_fig = px.scatter(
-                                    _plot_df,
-                                    x=_x_metric,
-                                    y=_y_metric,
-                                    hover_data=_scatter_hover_cols,
-                                    title=f"{_y_metric} vs {_x_metric}",
-                                    **_color_kwargs,
-                                )
-                                st.plotly_chart(_scatter_fig, use_container_width=True)
+                                    _scatter_fig = px.scatter(
+                                        _plot_df,
+                                        x=_x_metric,
+                                        y=_y_metric,
+                                        hover_data=_scatter_hover_cols,
+                                        title=f"{_y_metric} vs {_x_metric}",
+                                        **_color_kwargs,
+                                    )
+                                    _layout_updates = {}
+                                    if _fixed_x_range is not None:
+                                        _layout_updates["xaxis"] = {"range": _fixed_x_range, "autorange": False}
+                                    if _fixed_y_range is not None:
+                                        _layout_updates["yaxis"] = {"range": _fixed_y_range, "autorange": False}
+                                    if _layout_updates:
+                                        _scatter_fig.update_layout(**_layout_updates)
+                                    st.plotly_chart(_scatter_fig, use_container_width=True)
 
-                                _relationship_stats = _build_change_relationship_stats(_plot_df, _x_metric, _y_metric)
-                                st.caption("Relationship summary for the currently filtered rows and selected axes.")
-                                _rs1, _rs2, _rs3, _rs4 = st.columns(4)
-                                with _rs1:
-                                    st.metric("Points", str(_relationship_stats.get("count", 0)))
-                                with _rs2:
-                                    _pearson_r = _relationship_stats.get("pearson_r")
-                                    st.metric("Pearson r", f"{_pearson_r:.3f}" if _pearson_r is not None and pd.notna(_pearson_r) else "N/A")
-                                with _rs3:
-                                    _r_squared = _relationship_stats.get("r_squared")
-                                    st.metric("R²", f"{_r_squared:.3f}" if _r_squared is not None and pd.notna(_r_squared) else "N/A")
-                                with _rs4:
-                                    _slope = _relationship_stats.get("slope")
-                                    st.metric("Slope", f"{_slope:.3f}" if _slope is not None and pd.notna(_slope) else "N/A")
+                                    _relationship_stats = _build_change_relationship_stats(_plot_df, _x_metric, _y_metric)
+                                    st.caption("Relationship summary for the currently filtered rows and selected axes.")
+                                    _rs1, _rs2, _rs3, _rs4 = st.columns(4)
+                                    with _rs1:
+                                        st.metric("Points", str(_relationship_stats.get("count", 0)))
+                                    with _rs2:
+                                        _pearson_r = _relationship_stats.get("pearson_r")
+                                        st.metric("Pearson r", f"{_pearson_r:.3f}" if _pearson_r is not None and pd.notna(_pearson_r) else "N/A")
+                                    with _rs3:
+                                        _r_squared = _relationship_stats.get("r_squared")
+                                        st.metric("R²", f"{_r_squared:.3f}" if _r_squared is not None and pd.notna(_r_squared) else "N/A")
+                                    with _rs4:
+                                        _slope = _relationship_stats.get("slope")
+                                        st.metric("Slope", f"{_slope:.3f}" if _slope is not None and pd.notna(_slope) else "N/A")
 
-                                _spearman_r = _relationship_stats.get("spearman_r")
-                                _intercept = _relationship_stats.get("intercept")
-                                if _spearman_r is not None or _intercept is not None:
-                                    _extra_parts = []
-                                    if _spearman_r is not None and pd.notna(_spearman_r):
-                                        _extra_parts.append(f"Spearman rank correlation: {_spearman_r:.3f}")
-                                    if _intercept is not None and pd.notna(_intercept):
-                                        _extra_parts.append(f"Linear intercept: {_intercept:.3f}")
-                                    if _extra_parts:
-                                        st.caption(" | ".join(_extra_parts))
+                                    _spearman_r = _relationship_stats.get("spearman_r")
+                                    _intercept = _relationship_stats.get("intercept")
+                                    if _spearman_r is not None or _intercept is not None:
+                                        _extra_parts = []
+                                        if _spearman_r is not None and pd.notna(_spearman_r):
+                                            _extra_parts.append(f"Spearman rank correlation: {_spearman_r:.3f}")
+                                        if _intercept is not None and pd.notna(_intercept):
+                                            _extra_parts.append(f"Linear intercept: {_intercept:.3f}")
+                                        if _extra_parts:
+                                            st.caption(" | ".join(_extra_parts))
 
-                                st.caption(_describe_relationship_summary(_relationship_stats, _x_metric, _y_metric))
+                                    st.caption(_describe_relationship_summary(_relationship_stats, _x_metric, _y_metric))
+
+                        with st.container():
+                            st.subheader("Detailed changes table")
+                            st.dataframe(_changes_display, use_container_width=True, hide_index=True)
             return
 
         _jump_anchor_suffix = "none"
@@ -3948,7 +4079,8 @@ if authentication_status:
             
     elif racetype == "WTS Starts":
         df_master = pd.read_excel(f'pages/video_analysis/WTS_starts.xlsx')
-        df_master["Date"] = pd.to_datetime(df_master["Date"], errors="coerce").dt.date
+        for i in range(len(df_master)):
+            df_master["Date"][i] = df_master["Date"][i].date()
         df_small = df_master.drop(columns=["Back","Forward","Green","PL",62.5,125,187.5,250,312.5,375,437.5,500])
         df_small
         c1,c2,c3=st.columns(3)
@@ -4583,19 +4715,38 @@ if authentication_status:
         df_master = pd.read_excel(f'pages/video_analysis/WTS_Master_Women.xlsx')
         #df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
         st.header("Race Viewer")
-        c1,c2=st.columns(2)
+        country_codes = sorted({
+            country_code
+            for title_codes in df_master["Title"].dropna().astype(str).str.findall(r"\b[A-Z]{3}\b")
+            for country_code in title_codes
+        })
+        c1,c2,c3=st.columns(3)
         
         with c1:
+            selected_countries = st.multiselect(
+                "Filter by country:",
+                options=country_codes,
+                key="wts_country_filter",
+            )
+        if selected_countries:
+            selected_country_pattern = r"\b(" + "|".join(selected_countries) + r")\b"
+            df_master = df_master[df_master["Title"].astype(str).str.contains(
+                selected_country_pattern,
+                regex=True,
+                na=False,
+            )]
+        with c2:
             selections = st.multiselect(
             "Select past effort(s):",
             options=df_master["Title"].sort_values(ascending=False).unique()
             ) 
-        with c2:
+        with c3:
             show_vids = ["No","Yes"]
             Videos = st.selectbox("Show Race Videos?", show_vids, key="Show_Vids")
         if len(selections) !=0:
             st.markdown("[Jump to Full Summary](#summary)", unsafe_allow_html=True)
             df_combine = pd.DataFrame()
+            selected_wts_race_times = []
             for i in range(len(selections)):
                 checkboxid+=1
                 df_temp = df_master.loc[df_master['Title'] == selections[i]].reset_index(drop=True)
@@ -4611,6 +4762,11 @@ if authentication_status:
                 ind3=df_temp.index[df_temp['Row'] == "Rider 3 Forward"].tolist()[0]
                 indstart=df_temp.index[df_temp['Row'] == "Start"].tolist()[0]
                 start = df_temp["Start time"][indstart]
+                recorded_marker_times = pd.to_numeric(
+                    df_temp.loc[df_temp["Row"].eq("Marker"), "Start time"],
+                    errors="coerce",
+                ).dropna().tolist()
+                is_sparse_wts_timing = len(recorded_marker_times) <= 6
                 react1 = round(df_temp["Start time"][ind1]-start,2)
                 react2 = round(df_temp["Start time"][ind2]-start,2)
                 react3 = round(df_temp["Start time"][ind3]-start,2)
@@ -4650,6 +4806,29 @@ if authentication_status:
                 df_table["2"] = [0,df_table["Lap 2"][1]+df_table["Gap 1"][1],0]
                 df_table["3"] = [0,0,df_table["Lap 3"][2]+df_table["Gap 2"][2]]
                 df_table["Time"] = [0,0,df_temp["Start time"][27]-start]
+                if is_sparse_wts_timing:
+                    for distance, recorded_time in zip(
+                        ["125", "250", "375", "500", "625", "750"],
+                        recorded_marker_times,
+                    ):
+                        df_table[distance] = [0, 0, recorded_time]
+                    df_table["Time"] = [0, 0, df_table["750"][2]]
+                saved_dates = df_temp["Save_Date"].dropna()
+                if not saved_dates.empty:
+                    saved_date = saved_dates.iloc[0]
+                    if isinstance(saved_date, (int, float, np.number)):
+                        saved_date = pd.to_datetime(saved_date, unit="D", origin="1899-12-30")
+                    else:
+                        saved_date = pd.to_datetime(saved_date, errors="coerce")
+                else:
+                    saved_date = pd.to_datetime(str(selections[i])[:8], format="%y-%m-%d", errors="coerce")
+                final_750_time = df_table["Time"][2]
+                if not pd.isna(saved_date) and not pd.isna(final_750_time):
+                    selected_wts_race_times.append({
+                        "Race": selections[i],
+                        "Date": saved_date,
+                        "Total Time (s)": final_750_time,
+                    })
                 df_table_small = df_table[["Event", "Position", "Rider", "RT", "Lap 1", "Lap 2", "Lap 3", "Time"]].copy()
                 df_table_small = df_table_small.rename(columns={"Lap 1": "Lap1", "Lap 2": "Lap2", "Lap 3": "Lap3", "Time": "time"})
                 st.header(selections[i])
@@ -4781,6 +4960,21 @@ if authentication_status:
             "Marker":"Quarter"})
 
             st.plotly_chart(fig_comp_split, use_container_width=True)
+
+            if selected_wts_race_times:
+                st.subheader("Race Time History")
+                selected_wts_race_times_df = pd.DataFrame(selected_wts_race_times).sort_values("Date")
+                wts_time_fig = px.scatter(
+                    selected_wts_race_times_df,
+                    x="Date",
+                    y="Total Time (s)",
+                    hover_name="Race",
+                    hover_data={"Date": "|%d %b %Y", "Total Time (s)": ":.2f"},
+                    title="WTS Total Time by Date",
+                )
+                wts_time_fig.update_traces(mode="lines+markers")
+                wts_time_fig.update_layout(yaxis_title="Total Time (seconds)")
+                st.plotly_chart(wts_time_fig, use_container_width=True)
         st.markdown('---')
         st.header("Editor")
 
