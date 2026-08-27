@@ -78,24 +78,241 @@ if authentication_status == None:
 if authentication_status:
     race_types=["Men's Sprint Qualifying","Women's Sprint Qualifying","Men's Team Sprint",
                 "Women's Team Sprint","Men's Team Pursuit","Women's Team Pursuit",
-                "Men's Individual Pursuit","Women's Individual Pursuit",
+                "Men's Individual Pursuit","Women's Individual Pursuit","Women's 3km Individual Pursuit",
                 "Men's Madison","Women's Madison","Men's Omnium","Women's Omnium",
                 "Junior Men's Sprint Qualifying","Junior Women's Sprint Qualifying",
                 "Junior Men's Team Sprint","Junior Women's Team Sprint","Junior Men's Team Pursuit",
                 "Junior Women's Team Pursuit","Junior Men's Individual Pursuit",
                 "Junior Women's Individual Pursuit","Junior Men's Kilo","Junior Women's 500TT"]
     race_type = st.selectbox("Select Event:", race_types, key="Event Selector")
+
+    event_filter_options = ["OLY, WCH, and NC", "OLY and WCH", "Just OLY", "Just WCH", "Just NC"]
+
+    def filter_progression_events(df, selection):
+        event_groups = {
+            "OLY, WCH, and NC": ["OLY", "WCH", "NC"],
+            "OLY and WCH": ["OLY", "WCH"],
+            "Just OLY": ["OLY"],
+            "OLY only": ["OLY"],
+            "Just WCH": ["WCH"],
+            "WCH only": ["WCH"],
+            "Just NC": ["NC"],
+            "NC only": ["NC"],
+        }
+        selected_events = event_groups.get(selection)
+        if selected_events is None or "Event" not in df.columns:
+            return df
+        return df[df["Event"].isin(selected_events)]
+
+    def date_to_decimal_year(selected_date):
+        year_start = date(selected_date.year, 1, 1)
+        next_year_start = date(selected_date.year + 1, 1, 1)
+        return selected_date.year + (selected_date - year_start).days / (next_year_start - year_start).days
+
+    def render_available_seconds_progression(df, title, key_prefix, allowed_columns=None):
+        seconds_labels = {
+            "1st_seconds": "1st",
+            "2nd_seconds": "2nd",
+            "3rd_seconds": "3rd",
+            "8th_seconds": "8th",
+            "16th_seconds": "16th",
+            "Q1_seconds": "Qualifying 1st",
+            "Q2_seconds": "Qualifying 2nd",
+            "Q3_seconds": "Qualifying 3rd",
+            "Q8_seconds": "Qualifying 8th",
+            "Fastest_seconds": "Fastest",
+            "Fastest_Seconds": "Fastest",
+        }
+        raw_labels = {
+            "1st": "1st",
+            "2nd": "2nd",
+            "3rd": "3rd",
+            "8th": "8th",
+            "16th": "16th",
+        }
+        placing_labels = seconds_labels if any(column in df.columns for column in seconds_labels) else raw_labels
+        available_columns = []
+        df = df.copy()
+        for column in placing_labels:
+            if allowed_columns is not None and column not in allowed_columns:
+                continue
+            if column in df.columns:
+                df[column] = pd.to_numeric(df[column], errors="coerce")
+                if df[column].notna().any():
+                    available_columns.append(column)
+
+        df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+        if not available_columns or df["Year"].dropna().empty:
+            st.info("No numeric placing data is available for this event selection.")
+            return
+
+        valid_years = df["Year"].dropna().astype(int)
+        min_year, max_year = int(valid_years.min()), int(valid_years.max())
+        year_range = (min_year, max_year)
+        if min_year < max_year:
+            year_range = st.slider(
+                "Restrict date range?",
+                min_year,
+                max_year,
+                (min_year, max_year),
+                key=f"{key_prefix}_years",
+            )
+
+        all_times = df[available_columns].stack().dropna()
+        min_time, max_time = float(all_times.min()), float(all_times.max())
+        time_range = (min_time, max_time)
+        if min_time < max_time:
+            time_range = st.slider(
+                "Restrict time range?",
+                min_time,
+                max_time,
+                (min_time, max_time),
+                key=f"{key_prefix}_times",
+            )
+
+        df_plot = df[df["Year"].between(*year_range)].copy()
+        plotted_columns = []
+        for column in available_columns:
+            df_plot[column] = df_plot[column].where(df_plot[column].between(*time_range))
+            if df_plot[column].notna().sum() >= 2:
+                plotted_columns.append(column)
+
+        if not plotted_columns:
+            st.info("Not enough numeric data remains to plot a progression.")
+            return
+
+        fig = px.scatter(
+            df_plot,
+            x="Year",
+            y=plotted_columns,
+            title=title,
+            labels={"value": "Seconds", "variable": "Placing"},
+            trendline="ols",
+            color_discrete_sequence=["gold", "silver", "darkorange", "lightpink", "teal"],
+            hover_data=["Event"] if "Event" in df_plot.columns else None,
+        )
+        fig.for_each_trace(lambda trace: trace.update(name=placing_labels.get(trace.name, trace.name)))
+        st.plotly_chart(fig, use_container_width=True)
+
+        trend_results = px.get_trendline_results(fig)
+        if trend_results.empty or "px_fit_results" not in trend_results.columns:
+            st.info("Not enough numeric data to calculate trendlines.")
+            return
+
+        fitted_placings = []
+        for column, fit_result in zip(plotted_columns, trend_results["px_fit_results"]):
+            label = placing_labels[column]
+            intercept, slope = fit_result.params[0], fit_result.params[1]
+            fitted_placings.append((label, intercept, slope, fit_result.rsquared))
+
+        equations_column, predictions_column = st.columns(2)
+        with equations_column:
+            for label, intercept, slope, r_squared in fitted_placings:
+                st.write(f"{label} = {round(slope, 6)}(Year) + {round(intercept, 3)}")
+                st.write(f"R-squared = {round(r_squared, 3)}")
+
+        with predictions_column:
+            prediction_date = st.date_input(
+                "Select date for placing predictions:",
+                date(2028, 7, 14),
+                format="DD/MM/YYYY",
+                key=f"{key_prefix}_prediction_year",
+            )
+            prediction_year = date_to_decimal_year(prediction_date)
+            prediction_date_label = prediction_date.strftime("%d/%m/%Y")
+            for label, intercept, slope, _ in fitted_placings:
+                minutes, seconds = divmod(slope * prediction_year + intercept, 60)
+                st.write(f"This trend predicts a {label} placing time of {int(minutes)}:{seconds:06.3f} on {prediction_date_label}.")
+
+    def render_available_percentage_progression(df, title, key_prefix):
+        df = df.copy()
+        raw_columns = [column for column in ["1st", "2nd", "3rd", "8th", "16th"] if column in df.columns]
+        for column in raw_columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+        if "1st" not in raw_columns:
+            st.info("No winning-time column is available for percentage progression.")
+            return
+
+        percentage_columns = []
+        for column in raw_columns:
+            if column == "1st":
+                continue
+            percentage_column = f"{column} %"
+            df[percentage_column] = df[column] / df["1st"]
+            if df[percentage_column].notna().sum() >= 2:
+                percentage_columns.append(percentage_column)
+
+        if not percentage_columns:
+            st.info("Not enough minor-placing data is available for percentage progression.")
+            return
+
+        fig = px.scatter(
+            df,
+            x="Year",
+            y=percentage_columns,
+            title=title,
+            labels={"value": "% of win time", "variable": "Placing"},
+            trendline="ols",
+            color_discrete_sequence=["silver", "darkorange", "lightpink", "teal"],
+            hover_data=["Event"] if "Event" in df.columns else None,
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        trend_results = px.get_trendline_results(fig)
+        if trend_results.empty or "px_fit_results" not in trend_results.columns:
+            st.info("Not enough numeric data to calculate percentage trendlines.")
+            return
+
+        fitted_percentages = []
+        for column, fit_result in zip(percentage_columns, trend_results["px_fit_results"]):
+            fitted_percentages.append((column, fit_result.params[0], fit_result.params[1], fit_result.rsquared))
+
+        equations_column, predictions_column = st.columns(2)
+        with equations_column:
+            for column, intercept, slope, r_squared in fitted_percentages:
+                st.write(f"{column} = {round(slope, 6)}(Year) + {round(intercept, 3)}")
+                st.write(f"R-squared = {round(r_squared, 3)}")
+
+        with predictions_column:
+            prediction_date = st.date_input(
+                "Select date for percentage predictions:",
+                date(2028, 7, 14),
+                format="DD/MM/YYYY",
+                key=f"{key_prefix}_prediction_year",
+            )
+            prediction_year = date_to_decimal_year(prediction_date)
+            prediction_date_label = prediction_date.strftime("%d/%m/%Y")
+            for column, intercept, slope, _ in fitted_percentages:
+                predicted_percentage = 100 * (slope * prediction_year + intercept)
+                st.write(f"This trend predicts {column} at {predicted_percentage:.2f}% of the winning time on {prediction_date_label}.")
+
+    def render_progression_table_downloads(df, label, file_stem, key_prefix):
+        st.dataframe(df, use_container_width=True)
+        st.download_button(
+            label=f"Download {label} as CSV",
+            data=df.to_csv(index=False).encode("utf-8"),
+            file_name=f"{file_stem}.csv",
+            mime="text/csv",
+            key=f"{key_prefix}_csv",
+        )
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+            df.to_excel(writer, sheet_name="Data", index=False)
+        st.download_button(
+            label=f"Download {label} as Excel",
+            data=excel_buffer.getvalue(),
+            file_name=f"{file_stem}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key=f"{key_prefix}_excel",
+        )
+
     if race_type=="Men's Sprint Qualifying":
         
         @st.cache_data
         def get_wr_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Men_F200.xlsx',
+                io='pages/WR_progressions/Mens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
-                skiprows=0,
-                usecols='A:D',
-                nrows=30
+                sheet_name='WR_F200'
                 )
             #df = df.replace(',','')
 
@@ -106,12 +323,9 @@ if authentication_status:
 
         def get_placing_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Medals_Men_F200.xlsx',
+                io='pages/WR_progressions/Mens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
-                skiprows=0,
-                usecols='A:G',
-                nrows=40
+                sheet_name='Medals_F200'
                 )
             #df = df.replace(',','')
 
@@ -203,18 +417,17 @@ if authentication_status:
                 df = get_placing_data_from_excel()
                 df_master=df
                 df_show=df
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
-                df=df_show
-                df_show
-                
-                ##Download buttons
-                def convert_to_csv(df_show):
-                    return df.to_csv(index=False,sep = ",").encode('utf-32')
-                csv = convert_to_csv(df_show)
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
+                render_progression_table_downloads(df_show, "Men Sprint placing data", "Men_F200_Data", "men_sprint_placing")
+                with c2:
+                    render_available_seconds_progression(
+                        df_show,
+                        "Men's Sprint Olympic and World Champs Placings Time Progression",
+                        "men_sprint_placing",
+                    )
+                st.stop()
+                csv = df_show.to_csv(index=False, sep=",").encode("utf-32")
                 download1 = st.download_button(
                     label="Download Men F200 Placing data as CSV",
                     data=csv,
@@ -261,10 +474,10 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
 
                     fig = px.scatter(df_mask, x="Year", y = ["1st","2nd","3rd","8th","16th"], title="Men's Sprint Olympic and World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
-                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' + '16th: %{customdata[4]}<br>' +
                 'Year: %{customdata[5]}<br>' +
-                'Competition: %{customdata[6]}<br>'
+                'Event: %{customdata[6]}<br>'
                 '<extra></extra>')
                     fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                     
@@ -358,17 +571,25 @@ if authentication_status:
             elif trend=="Placing progression - % of win time":
                 df = get_placing_data_from_excel()
                 df_master=df
+                df_show=df
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
+                render_progression_table_downloads(df_show, "Men Sprint placing data", "Men_F200_Percentage_Data", "men_sprint_percentage")
+                with c2:
+                    render_available_percentage_progression(
+                        df_show,
+                        "Men's Sprint % of Winning Time Progression",
+                        "men_sprint_percentage",
+                    )
+                st.stop()
                 
                 df["2nd %"]=df["2nd"]/df["1st"]
                 df["3rd %"]=df["3rd"]/df["1st"]
                 df["8th %"]=df["8th"]/df["1st"]
                 df["16th %"]=df["16th"]/df["1st"]
                 df_show=df
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
                 df=df_show
                 df_show
                 
@@ -422,10 +643,10 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
 
                     fig = px.scatter(df_mask, x="Year", y = ["1st","2nd","3rd","8th","16th"], title="Men's Sprint Olympic and World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
-                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' + '16th: %{customdata[4]}<br>' +
                 'Year: %{customdata[5]}<br>' +
-                'Competition: %{customdata[6]}<br>'
+                'Event: %{customdata[6]}<br>'
                 '<extra></extra>')
                     fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                     
@@ -433,10 +654,10 @@ if authentication_status:
                     
                     
                     fig_diffs = px.scatter(df_mask, x="Year", y = ["2nd %","3rd %","8th %","16th %"], title="% of winning time for minor placings",labels={"value":"% of win time"},trendline="ols", color_discrete_sequence=["silver","darkorange","lightpink","teal"])
-                    customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3), round(df_mask['8th %'],3),round(df_mask['16th %'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3), round(df_mask['8th %'],3),round(df_mask['16th %'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('Silver %: %{customdata[0]}<br>' + 'Bronze %: %{customdata[1]}<br>' + '8th %: %{customdata[2]}<br>' + '16th %: %{customdata[3]}<br>' +
                 'Year: %{customdata[4]}<br>' +
-                'Competition: %{customdata[5]}<br>'
+                'Event: %{customdata[5]}<br>'
                 '<extra></extra>')
                     fig_diffs.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                     
@@ -529,12 +750,9 @@ if authentication_status:
             elif trend=="LA prediction":
                 df = get_placing_data_from_excel()
                 df_master=df
-                df_show=df[["Year","Competition","1st"]]
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"].reset_index(drop=True)
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"].reset_index(drop=True)
+                df_show=df[["Year","Event","1st"]]
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp).reset_index(drop=True)
                 df=df_show
                 
                 # Initialize the LFF column with NaN values
@@ -701,12 +919,9 @@ if authentication_status:
         @st.cache_data
         def get_wr_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Women_F200.xlsx',
+                io='pages/WR_progressions/Womens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
-                skiprows=0,
-                usecols='A:D',
-                nrows=30
+                sheet_name='WR_F200'
                 )
             #df = df.replace(',','')
 
@@ -717,12 +932,9 @@ if authentication_status:
 
         def get_placing_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Medals_Women_F200.xlsx',
+                io='pages/WR_progressions/Womens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
-                skiprows=0,
-                usecols='A:G',
-                nrows=40
+                sheet_name='Medals_F200'
                 )
             #df = df.replace(',','')
 
@@ -815,11 +1027,16 @@ if authentication_status:
                 df = get_placing_data_from_excel()
                 df_master=df
                 df_show=df
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
+                render_progression_table_downloads(df_show, "Women Sprint placing data", "Women_F200_Data", "women_sprint_placing")
+                with c2:
+                    render_available_seconds_progression(
+                        df_show,
+                        "Women's Sprint Olympic and World Champs Placings Time Progression",
+                        "women_sprint_placing",
+                    )
+                st.stop()
                 df=df_show
                 df_show
                 
@@ -872,10 +1089,10 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["8th"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
                     fig = px.scatter(df_mask, x="Year", y = ["1st","2nd","3rd","8th","16th"], title="Women's Sprint Olympic and World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
-                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' + '16th: %{customdata[4]}<br>' +
                 'Year: %{customdata[5]}<br>' +
-                'Competition: %{customdata[6]}<br>'
+                'Event: %{customdata[6]}<br>'
                 '<extra></extra>')
                     fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                     
@@ -973,16 +1190,24 @@ if authentication_status:
             elif trend=="Placing progression - % of win time":
                 df = get_placing_data_from_excel()
                 df_master=df
+                df_show=df
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
+                render_progression_table_downloads(df_show, "Women Sprint placing data", "Women_F200_Percentage_Data", "women_sprint_percentage")
+                with c2:
+                    render_available_percentage_progression(
+                        df_show,
+                        "Women's Sprint % of Winning Time Progression",
+                        "women_sprint_percentage",
+                    )
+                st.stop()
                 df["2nd %"]=df["2nd"]/df["1st"]
                 df["3rd %"]=df["3rd"]/df["1st"]
                 df["8th %"]=df["8th"]/df["1st"]
                 df["16th %"]=df["16th"]/df["1st"]
                 df_show=df
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
                 df=df_show
                 df_show
                 
@@ -1035,10 +1260,10 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["8th"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
                     fig = px.scatter(df_mask, x="Year", y = ["1st","2nd","3rd","8th","16th"], title="Women's Sprint Olympic and World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
-                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3), round(df_mask['8th'],3),round(df_mask['16th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' + '16th: %{customdata[4]}<br>' +
                 'Year: %{customdata[5]}<br>' +
-                'Competition: %{customdata[6]}<br>'
+                'Event: %{customdata[6]}<br>'
                 '<extra></extra>')
                     fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                     
@@ -1046,10 +1271,10 @@ if authentication_status:
                     
                     
                     fig_diffs = px.scatter(df_mask, x="Year", y = ["2nd %","3rd %","8th %","16th %"], title="% of winning time for minor placings",labels={"value":"% of win time"},trendline="ols", color_discrete_sequence=["silver","darkorange","lightpink","teal"])
-                    customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3), round(df_mask['8th %'],3),round(df_mask['16th %'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3), round(df_mask['8th %'],3),round(df_mask['16th %'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('Silver %: %{customdata[0]}<br>' + 'Bronze %: %{customdata[1]}<br>' + '8th %: %{customdata[2]}<br>' + '16th %: %{customdata[3]}<br>' +
                 'Year: %{customdata[4]}<br>' +
-                'Competition: %{customdata[5]}<br>'
+                'Event: %{customdata[5]}<br>'
                 '<extra></extra>')
                     fig_diffs.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                     
@@ -1143,12 +1368,9 @@ if authentication_status:
             elif trend=="LA prediction":
                 df = get_placing_data_from_excel()
                 df_master=df
-                df_show=df[["Year","Competition","1st"]]
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"].reset_index(drop=True)
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"].reset_index(drop=True)
+                df_show=df[["Year","Event","1st"]]
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp).reset_index(drop=True)
                 df=df_show
                 
                 # Initialize the LFF column with NaN values
@@ -1300,12 +1522,10 @@ if authentication_status:
         @st.cache_data
         def get_wr_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Men_TS.xlsx',
+                io='pages/WR_progressions/Mens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
+                sheet_name='WR_TS',
                 skiprows=0,
-                usecols='A:D',
-                nrows=30
                 )
             #df = df.replace(',','')
             
@@ -1315,12 +1535,10 @@ if authentication_status:
 
         def get_medal_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Medals_Men_TS.xlsx',
+                io='pages/WR_progressions/Mens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
+                sheet_name='Medals_TS',
                 skiprows=0,
-                usecols='A:F',
-                nrows=30
                 )
             #df = df.replace(',','')
        
@@ -1408,11 +1626,16 @@ if authentication_status:
                 df= get_medal_data_from_excel()
                 df_master=df
                 df_show = df
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
+                render_progression_table_downloads(df_show, "Men Team Sprint data", "Men_TS_Data", "men_ts_placing")
+                with c2:
+                    render_available_seconds_progression(
+                        df_show,
+                        "Men's Team Sprint Olympic and World Champs Qualifying Time Progression",
+                        "men_ts_placing",
+                    )
+                st.stop()
                 df=df_show
                 df_show
     
@@ -1465,7 +1688,7 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["8th"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
                     fig = px.scatter(df_mask, x="Year", y = ["1st","2nd","3rd","8th"], title="Men's Team Sprint Olympic and World Champs Qualifying Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightgreen"])
-                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' + '3rd: %{customdata[2]}<br>' + '4th: %{customdata[3]}<br>'+
                 'Year: %{customdata[4]}<br>' +
                 'Comp: %{customdata[5]}<br>'
@@ -1541,15 +1764,23 @@ if authentication_status:
             elif trend=="Medal progression - % of win time":
                 df= get_medal_data_from_excel()
                 df_master=df
+                df_show=df
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
+                render_progression_table_downloads(df_show, "Men Team Sprint data", "Men_TS_Percentage_Data", "men_ts_percentage")
+                with c2:
+                    render_available_percentage_progression(
+                        df_show,
+                        "Men's Team Sprint % of Winning Time Progression",
+                        "men_ts_percentage",
+                    )
+                st.stop()
                 df["2nd %"]=df["2nd"]/df["1st"]
                 df["3rd %"]=df["3rd"]/df["1st"]
                 df["8th %"]=df["8th"]/df["1st"]
                 df_show = df
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
                 df=df_show
                 df_show
     
@@ -1602,7 +1833,7 @@ if authentication_status:
                     df_mask = df_mask.mask(df_mask["8th"] < time_range[0])
                     df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
                     fig = px.scatter(df_mask, x="Year", y = ["1st","2nd","3rd","8th"], title="Men's Team Sprint Olympic and World Champs Qualifying Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightgreen"])
-                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' + '3rd: %{customdata[2]}<br>' + '4th: %{customdata[3]}<br>'+
                 'Year: %{customdata[4]}<br>' +
                 'Comp: %{customdata[5]}<br>'
@@ -1612,7 +1843,7 @@ if authentication_status:
                     st.plotly_chart(fig, use_container_width=True)
                     
                     fig_diffs = px.scatter(df_mask, x="Year", y = ["2nd %","3rd %","8th %"], title="% of winning time",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=["silver","darkorange","lightgreen"])
-                    customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3),round(df_mask['8th %'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                    customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3),round(df_mask['8th %'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                     hovertemplate = ('2nd %: %{customdata[0]}<br>' + '3rd %: %{customdata[1]}<br>' + '8th %: %{customdata[2]}<br>'+
                 'Year: %{customdata[3]}<br>' +
                 'Comp: %{customdata[4]}<br>'
@@ -1686,12 +1917,9 @@ if authentication_status:
             elif trend=="LA prediction":
                 df = get_medal_data_from_excel()
                 df_master=df
-                df_show=df[["Year","Competition","1st"]]
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MTS comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"].reset_index(drop=True)
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"].reset_index(drop=True)
+                df_show=df[["Year","Event","1st"]]
+                comp = st.selectbox("Which events?", event_filter_options, key="MTS comp type Selector")
+                df_show = filter_progression_events(df_show, comp).reset_index(drop=True)
                 df=df_show
                 
                 # Initialize the LFF column with NaN values
@@ -1838,12 +2066,10 @@ if authentication_status:
             @st.cache_data
             def get_wr_data_from_excel():
                 df = pd.read_excel(
-                    io='pages/WR_progressions/Women_TS.xlsx',
+                    io='pages/WR_progressions/Womens_Progression.xlsx',
                     engine ='openpyxl',
-                    sheet_name='Sheet1',
+                    sheet_name='WR_TS',
                     skiprows=0,
-                    usecols='A:D',
-                    nrows=30
                     )
                 #df = df.replace(',','')
 
@@ -1853,12 +2079,10 @@ if authentication_status:
 
             def get_medal_data_from_excel():
                 df = pd.read_excel(
-                    io='pages/WR_progressions/Medals_Women_TS.xlsx',
+                    io='pages/WR_progressions/Womens_Progression.xlsx',
                     engine ='openpyxl',
-                    sheet_name='Sheet1',
+                    sheet_name='Medals_TS',
                     skiprows=0,
-                    usecols='A:H',
-                    nrows=30
                     )
                 #df = df.replace(',','')
 
@@ -1947,11 +2171,16 @@ if authentication_status:
                     
                     df_master=df
                     df_show = df
-                    comp = st.selectbox("Which competitions?", ["All","Just OLY & WCH", "Just WCH"], key="MSP comp type Selector")
-                    if comp == "Just OLY & WCH":
-                            df_show=df_show.loc[(df_show["Competition"]=="OLY") | (df_show["Competition"]=="WCH")]
-                    elif comp == "Just WCH":
-                            df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                    comp = st.selectbox("Which events?", ["All"] + event_filter_options, key="MSP comp type Selector")
+                    df_show = filter_progression_events(df_show, comp)
+                    render_progression_table_downloads(df_show, "Women Team Sprint data", "Women_TS_Data", "women_ts_placing")
+                    with c2:
+                        render_available_seconds_progression(
+                            df_show,
+                            "Women's Team Sprint Olympic and World Champs Qualifying Time Progression",
+                            "women_ts_placing",
+                        )
+                    st.stop()
                     df=df_show
                     df_show
 
@@ -2004,7 +2233,7 @@ if authentication_status:
                         df_mask = df_mask.mask(df_mask["8th"] < time_range[0])
                         df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
                         fig = px.scatter(df_mask, x="DateSerial", y = ["1st","2nd","3rd","8th"], title="Women's Team Sprint Olympic and World Champs Qualifying Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightgreen"])
-                        customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                        customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                         hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' + '3rd: %{customdata[2]}<br>' + '4th: %{customdata[3]}<br>'+
                     'Year: %{customdata[4]}<br>' +
                     'Comp: %{customdata[5]}<br>'
@@ -2086,15 +2315,23 @@ if authentication_status:
                 elif trend=="Medal progression - % of win time":
                     df= get_medal_data_from_excel()
                     df_master=df
+                    df_show=df
+                    comp = st.selectbox("Which events?", ["All"] + event_filter_options, key="MSP comp type Selector")
+                    df_show = filter_progression_events(df_show, comp)
+                    render_progression_table_downloads(df_show, "Women Team Sprint data", "Women_TS_Percentage_Data", "women_ts_percentage")
+                    with c2:
+                        render_available_percentage_progression(
+                            df_show,
+                            "Women's Team Sprint % of Winning Time Progression",
+                            "women_ts_percentage",
+                        )
+                    st.stop()
                     df["2nd %"]=df["2nd"]/df["1st"]
                     df["3rd %"]=df["3rd"]/df["1st"]
                     df["8th %"]=df["8th"]/df["1st"]
                     df_show = df
-                    comp = st.selectbox("Which competitions?", ["All","OLY and WCH", "Just WCH"], key="MSP comp type Selector")
-                    if comp == "OLY and WCH":
-                            df_show=df_show.loc[(df_show["Competition"]=="OLY") | (df_show["Competition"]=="WCH")]
-                    elif comp == "Just WCH":
-                            df_show=df_show.loc[df_show["Competition"]=="WCH"]
+                    comp = st.selectbox("Which events?", ["All"] + event_filter_options, key="MSP comp type Selector")
+                    df_show = filter_progression_events(df_show, comp)
                     df=df_show
                     df_show
 
@@ -2147,7 +2384,7 @@ if authentication_status:
                         df_mask = df_mask.mask(df_mask["8th"] < time_range[0])
                         df_mask = df_mask.mask(df_mask["8th"] > time_range[1])
                         fig = px.scatter(df_mask, x="DateSerial", y = ["1st","2nd","3rd","8th"], title="Women's Team Sprint Olympic and World Champs Qualifying Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightgreen"])
-                        customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                        customdata = np.stack((round(df_mask['1st'],3), round(df_mask['2nd'],3),round(df_mask['3rd'],3),round(df_mask['8th'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                         hovertemplate = ('1st: %{customdata[0]}<br>' + '2nd: %{customdata[1]}<br>' + '3rd: %{customdata[2]}<br>' + '4th: %{customdata[3]}<br>'+
                     'Year: %{customdata[4]}<br>' +
                     'Comp: %{customdata[5]}<br>'
@@ -2158,7 +2395,7 @@ if authentication_status:
                         
                         
                         fig_diffs = px.scatter(df_mask, x="DateSerial", y = ["2nd %","3rd %","8th %"], title="% of winning time",labels={"value":"% of win time"},trendline="ols", color_discrete_sequence=["silver","darkorange","lightgreen"])
-                        customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3),round(df_mask['8th %'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                        customdata = np.stack((round(df_mask['2nd %'],3),round(df_mask['3rd %'],3),round(df_mask['8th %'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                         hovertemplate = ('2nd %: %{customdata[0]}<br>' + '3rd %: %{customdata[1]}<br>' + '8th %: %{customdata[2]}<br>'+
                     'Year: %{customdata[3]}<br>' +
                     'Comp: %{customdata[4]}<br>'
@@ -2238,12 +2475,9 @@ if authentication_status:
                 elif trend=="LA prediction":
                     df = get_medal_data_from_excel()
                     df_master=df
-                    df_show=df[["Year","DateSerial","Competition","1st"]]
-                    comp = st.selectbox("Which competitions?", ["All","OLY and WCH", "Just WCH"], key="MTS comp type Selector")
-                    if comp == "OLY and WCH":
-                            df_show=df_show.loc[(df_show["Competition"]=="OLY") | (df_show["Competition"]=="WCH")].reset_index(drop=True)
-                    elif comp == "Just WCH":
-                            df_show=df_show.loc[df_show["Competition"]=="WCH"].reset_index(drop=True)
+                    df_show=df[["Year","DateSerial","Event","1st"]]
+                    comp = st.selectbox("Which events?", ["All"] + event_filter_options, key="MTS comp type Selector")
+                    df_show = filter_progression_events(df_show, comp).reset_index(drop=True)
                     df=df_show
                     
                     # Initialize the LFF column with NaN values
@@ -2397,12 +2631,10 @@ if authentication_status:
         @st.cache_data
         def get_wr_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Men_TP.xlsx',
+                io='pages/WR_progressions/Mens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
+                sheet_name='WR_TP',
                 skiprows=0,
-                usecols='A:D',
-                nrows=100
                 )
             #df = df.replace(',','')
             df["Time"]=((pd.to_datetime(df["Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
@@ -2415,22 +2647,12 @@ if authentication_status:
 
         def get_medal_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Medals_Men_TP.xlsx',
+                io='pages/WR_progressions/Mens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
+                sheet_name='Medals_TP',
                 skiprows=0,
-                usecols='A:R',
-                nrows=100
                 )
             #df = df.replace(',','')
-       
-            df["Bronze_Time"]=((pd.to_datetime(df["Bronze_Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
-            df["Silver_Time"]=((pd.to_datetime(df["Silver_Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
-            df["Gold_Time"]=((pd.to_datetime(df["Gold_Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
-            # df["Time"]=df["Time"].astype(str)
-            # df["Time"]=df["Time"].str[1:9]
-            # df["Datetime"]=df["Date"]
-            # df["Date"]=df["Date"].dt.strftime("%d/%m/%Y")
             return df
     
         c1,c2=st.columns([1,3])
@@ -2522,13 +2744,10 @@ if authentication_status:
             
             elif trend == "Medal progression":
                 medal_or_qual = st.selectbox("Medal or Qual times:", ["Qual times","Medal times","Fastest time"], key="medal_or_qual_MTP")
-                oly_or_wch = st.selectbox("Select competitions:", ["OLY and WCH","OLY only","WCH only"], key="mtp_comps")
+                oly_or_wch = st.selectbox("Select events:", event_filter_options, key="mtp_comps")
                 df=get_medal_data_from_excel()
                 df_master=df
-                if oly_or_wch == "OLY only":
-                    df = df.loc[df["Event"]=="OLY"]
-                elif oly_or_wch == "WCH only":
-                    df = df.loc[df["Event"]=="WCH"]
+                df = filter_progression_events(df, oly_or_wch)
 
                 df_show=df
                 # df_show = df.drop(columns=["DateSerial","Datetime"])
@@ -2576,14 +2795,14 @@ if authentication_status:
 
                         df_mask = df.mask(df["Year"] < date_range[0])
                         df_mask = df_mask.mask(df_mask["Year"] > date_range[1])
-                        df_mask = df_mask.mask(df_mask["Bronze_Seconds"] < time_range[0])
-                        df_mask = df_mask.mask(df_mask["Bronze_Seconds"] > time_range[1])
-                        df_mask = df_mask.mask(df_mask["Silver_Seconds"] < time_range[0])
-                        df_mask = df_mask.mask(df_mask["Silver_Seconds"] > time_range[1])
-                        df_mask = df_mask.mask(df_mask["Gold_Seconds"] < time_range[0])
-                        df_mask = df_mask.mask(df_mask["Gold_Seconds"] > time_range[1])
-                        fig = px.scatter(df_mask, x="Year", y = ["Bronze_Seconds","Silver_Seconds","Gold_Seconds"], title="Men's Team Pursuit  Medal Winning Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
-                        customdata = np.stack((round(df_mask['Bronze_Seconds'],3), round(df_mask['Silver_Seconds'],3),round(df_mask['Gold_Seconds'],3),df_mask['Year']), axis=-1)
+                        df_mask = df_mask.mask(df_mask["3rd_seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["3rd_seconds"] > time_range[1])
+                        df_mask = df_mask.mask(df_mask["2nd_seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["2nd_seconds"] > time_range[1])
+                        df_mask = df_mask.mask(df_mask["1st_seconds"] < time_range[0])
+                        df_mask = df_mask.mask(df_mask["1st_seconds"] > time_range[1])
+                        fig = px.scatter(df_mask, x="Year", y = ["3rd_seconds","2nd_seconds","1st_seconds"], title="Men's Team Pursuit  Medal Winning Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['darkorange',"silver","gold"])
+                        customdata = np.stack((round(df_mask['3rd_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['1st_seconds'],3),df_mask['Year']), axis=-1)
                         hovertemplate = ('Bronze: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Gold: %{customdata[2]}<br>' +
                     'Year: %{customdata[3]}<br>' 
                     '<extra></extra>')
@@ -2603,9 +2822,9 @@ if authentication_status:
                             gold_x1=px.get_trendline_results(fig).px_fit_results.iloc[2].params[1]
                             
                             #ERRORS
-                            df_mask["Gold_Error"]=abs(df_mask["Gold_Seconds"]-((df_mask["Year"]*gold_x1) +gold_const))
-                            df_mask["Silver_Error"]=abs(df_mask["Silver_Seconds"]-((df_mask["Year"]*silver_x1) +silver_const))
-                            df_mask["Bronze_Error"]=abs(df_mask["Bronze_Seconds"]-((df_mask["Year"]*bronze_x1) +bronze_const))
+                            df_mask["Gold_Error"]=abs(df_mask["1st_seconds"]-((df_mask["Year"]*gold_x1) +gold_const))
+                            df_mask["Silver_Error"]=abs(df_mask["2nd_seconds"]-((df_mask["Year"]*silver_x1) +silver_const))
+                            df_mask["Bronze_Error"]=abs(df_mask["3rd_seconds"]-((df_mask["Year"]*bronze_x1) +bronze_const))
 
                             gold_std=round(df_mask['Gold_Error'].std(),2)
                             silver_std=round(df_mask['Silver_Error'].std(),2)
@@ -2621,7 +2840,7 @@ if authentication_status:
                             st.write(f"One standard deviation of the absolute errors is {bronze_std} seconds")
                             st.write(f"R-squared = {round(bronze_a,3)}")
                         with col2:
-                            if oly_or_wch == "OLY only":
+                            if oly_or_wch == "Just OLY":
                                 predict_year = st.selectbox("Select year for fastest time prediction:", [2024,2028,2032,2036,2040,2044,2048])
                                 
                             else:
@@ -2766,7 +2985,7 @@ if authentication_status:
                             st.write(f"One standard deviation of the absolute errors is {q3_std} seconds")
                             st.write(f"R-squared = {round(bronze_a,3)}")
                         with col2:
-                            if oly_or_wch == "OLY only":
+                            if oly_or_wch == "Just OLY":
                                 predict_year = st.selectbox("Select year for fastest time prediction:", [2024,2028,2032,2036,2040,2044,2048])
                                 
                             else:
@@ -2871,7 +3090,7 @@ if authentication_status:
                         df_mask = df_mask.mask(df_mask["Fastest_seconds"] <= time_range[0])
                         df_mask = df_mask.mask(df_mask["Fastest_seconds"] >= time_range[1])
 
-                        fig = px.scatter(df_mask, x="Year", y = ["Fastest_seconds"], title="Men's Team Pursuit Competition Fastest Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=["gold"])
+                        fig = px.scatter(df_mask, x="Year", y = ["Fastest_seconds"], title="Men's Team Pursuit Event Fastest Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=["gold"])
                         customdata = np.stack((round(df_mask['Fastest_seconds'],3),df_mask['Year']), axis=-1)
                         hovertemplate = ('Fastest: %{customdata[0]}<br>' +
                     'Year: %{customdata[1]}<br>' 
@@ -2897,7 +3116,7 @@ if authentication_status:
                             st.write(f"R-squared = {round(fastest_a,3)}")
 
                         with col2:
-                            if oly_or_wch == "OLY only":
+                            if oly_or_wch == "Just OLY":
                                 predict_year = st.selectbox("Select year for fastest time prediction:", [2024,2028,2032,2036,2040,2044,2048])
                                 
                             else:
@@ -2944,17 +3163,14 @@ if authentication_status:
                             df_show=df[["Year","DateSerial","Event","Q1_seconds"]]
                             df_show = df_show.rename(columns={'Q1_seconds': 'Time'})
                     elif time_type == "Gold Medal time":
-                            df_show=df[["Year","DateSerial","Event","Gold_Seconds"]]
-                            df_show = df_show.rename(columns={'Gold_Seconds': 'Time'})
+                            df_show=df[["Year","DateSerial","Event","1st_seconds"]]
+                            df_show = df_show.rename(columns={'1st_seconds': 'Time'})
                     elif time_type == "Fastest time":
                         df_show=df[["Year","DateSerial","Event","Fastest_seconds"]]
                         df_show = df_show.rename(columns={'Fastest_seconds': 'Time'})
 
-                    comp = st.selectbox("Which competitions?", ["All","Just OLY", "Just WCH"], key="MTP comp type Selector")
-                    if comp == "Just OLY":
-                            df_show=df_show.loc[(df_show["Event"]=="OLY")].reset_index(drop=True)
-                    elif comp == "Just WCH":
-                            df_show=df_show.loc[df_show["Event"]=="WCH"].reset_index(drop=True)
+                    comp = st.selectbox("Which events?", ["All"] + event_filter_options, key="MTP comp type Selector")
+                    df_show = filter_progression_events(df_show, comp).reset_index(drop=True)
                         
                     
 
@@ -3110,15 +3326,15 @@ if authentication_status:
 
     if race_type=="Women's Team Pursuit":
 
+        medal_file = Path('pages/WR_progressions/Womens_Progression.xlsx')
+
         @st.cache_data
-        def get_medal_data_from_excel():
+        def get_medal_data_from_excel(workbook_modified_time):
             df = pd.read_excel(
-                io='pages/WR_progressions/Medals_Women_TP.xlsx',
+                io=medal_file,
                 engine ='openpyxl',
-                sheet_name='Sheet1',
+                sheet_name='Medals_TP',
                 skiprows=0,
-                usecols='A:N',
-                nrows=40
                 )
             #df = df.replace(',','')
 
@@ -3129,12 +3345,10 @@ if authentication_status:
         @st.cache_data
         def get_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Women_TP.xlsx',
+                io='pages/WR_progressions/Womens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
+                sheet_name='WR_TP',
                 skiprows=0,
-                usecols='A:D',
-                nrows=30
                 )
             #df = df.replace(',','')
             df["Time"]=((pd.to_datetime(df["Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
@@ -3242,20 +3456,30 @@ if authentication_status:
 
                 #if trend=="World Record progression":
 
-                df = get_medal_data_from_excel()
+                df = get_medal_data_from_excel(medal_file.stat().st_mtime_ns)
                 df_master=df
                 df_show=df
-                comp = st.selectbox("Which competitions?", ["OLY and WCH","Just OLY", "Just WCH"], key="MSP comp type Selector")
-                if comp == "Just OLY":
-                        df_show=df_show.loc[df_show["Competition"]=="OLY"]
-                elif comp == "Just WCH":
-                        df_show=df_show.loc[df_show["Competition"]=="WCH"]
-                df=df_show
-                df_show
-
-                ##Download buttons
-                def convert_to_csv(df_show):
-                    return df.to_csv(index=False,sep = ",").encode('utf-32')
+                metric_group = st.selectbox(
+                    "Medal or Qual times:",
+                    ["Medal times", "Qualifying times", "Fastest time"],
+                    key="medal_or_qual_WTP",
+                )
+                comp = st.selectbox("Which events?", event_filter_options, key="MSP comp type Selector")
+                df_show = filter_progression_events(df_show, comp)
+                render_progression_table_downloads(df_show, "Women Team Pursuit data", "Women_TP_Data", "women_tp_placing")
+                with c2:
+                    metric_columns = {
+                        "Medal times": ["1st_seconds", "2nd_seconds", "3rd_seconds", "8th_seconds"],
+                        "Qualifying times": ["Q1_seconds", "Q2_seconds", "Q3_seconds", "Q8_seconds"],
+                        "Fastest time": ["Fastest_seconds", "Fastest_Seconds"],
+                    }
+                    render_available_seconds_progression(
+                        df_show,
+                        f"Women's Team Pursuit {metric_group} Progression",
+                        "women_tp_placing",
+                        metric_columns[metric_group],
+                    )
+                st.stop()
                 csv = convert_to_csv(df_show)
                 download1 = st.download_button(
                     label="Download Women IP Placing data as CSV",
@@ -3301,10 +3525,10 @@ if authentication_status:
                 df_mask = df_mask.mask(df_mask["8th_seconds"] < time_range[0])
                 df_mask = df_mask.mask(df_mask["8th_seconds"] > time_range[1])
                 fig = px.scatter(df_mask, x="Year", y = ["1st_seconds","2nd_seconds","3rd_seconds","8th_seconds"], title="Women's TP World Champs & Olympics Qualifying Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
-                customdata = np.stack((round(df_mask['1st_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['3rd_seconds'],3), round(df_mask['8th_seconds'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                customdata = np.stack((round(df_mask['1st_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['3rd_seconds'],3), round(df_mask['8th_seconds'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                 hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' +
             'Year: %{customdata[4]}<br>' +
-            'Competition: %{customdata[5]}<br>'
+            'Event: %{customdata[5]}<br>'
             '<extra></extra>')
                 fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
 
@@ -3384,28 +3608,25 @@ if authentication_status:
 
 
         elif trend=="LA prediction":
-            df = get_medal_data_from_excel()
+            df = get_medal_data_from_excel(medal_file.stat().st_mtime_ns)
             df_master=df
             
             with c1:
                 time_type = st.selectbox("Medal or qual times?", ["Qual times", "Fastest time"], key="WTP time type Selector")
             
             if time_type == "Qual times":
-                    df_show=df[["Year","DateSerial","Competition","1st_seconds"]]
+                    df_show=df[["Year","DateSerial","Event","1st_seconds"]]
                     df_show = df_show.rename(columns={'1st_seconds': 'Time'})
             # elif time_type == "Gold Medal time":
             #         df_show=df[["Year","DateSerial","Event","Gold_Seconds"]]
             #         df_show = df_show.rename(columns={'Gold_Seconds': 'Time'})
             elif time_type == "Fastest time":
-                df_show=df[["Year","DateSerial","Competition","Fastest_seconds"]]
+                df_show=df[["Year","DateSerial","Event","Fastest_seconds"]]
                 df_show = df_show.rename(columns={'Fastest_seconds': 'Time'})
             
             with c1:
-                comp = st.selectbox("Which competitions?", ["All","Just OLY", "Just WCH"], key="WTP comp type Selector")
-            if comp == "Just OLY":
-                    df_show=df_show.loc[(df_show["Competition"]=="OLY")].reset_index(drop=True)
-            elif comp == "Just WCH":
-                    df_show=df_show.loc[df_show["Competition"]=="WCH"].reset_index(drop=True)
+                comp = st.selectbox("Which events?", ["All"] + event_filter_options, key="WTP comp type Selector")
+            df_show = filter_progression_events(df_show, comp).reset_index(drop=True)
                 
             
 
@@ -3575,7 +3796,188 @@ if authentication_status:
 
 
 
-    
+    def render_ip_placing_progression(file_path, category, key_prefix, sheet_name="Medals_IP"):
+        df = pd.read_excel(file_path, engine="openpyxl", sheet_name=sheet_name)
+        selected_events = st.selectbox(
+            "Which events?",
+            event_filter_options,
+            key=f"{key_prefix}_events",
+        )
+        df = filter_progression_events(df, selected_events)
+        placing_labels = {
+            "1st_seconds": "1st",
+            "2nd_seconds": "2nd",
+            "3rd_seconds": "3rd",
+            "8th_seconds": "8th",
+            "16th_seconds": "16th",
+        }
+        time_columns = []
+        for column in placing_labels:
+            if column in df.columns:
+                df[column] = pd.to_numeric(df[column], errors="coerce")
+                if df[column].notna().any():
+                    time_columns.append(column)
+        df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+
+        if not time_columns or df["Year"].dropna().empty:
+            st.warning(f"No valid placing data is available for {category} IP.")
+            return
+
+        left_column, chart_column = st.columns([1, 3])
+        with left_column:
+            st.dataframe(df, use_container_width=True)
+            st.download_button(
+                f"Download {category} IP placing data as CSV",
+                df.to_csv(index=False).encode("utf-8"),
+                f"{category}_IP_Data.csv",
+                "text/csv",
+                key=f"{key_prefix}_csv",
+            )
+
+        with chart_column:
+            valid_years = df["Year"].dropna().astype(int)
+            min_year, max_year = int(valid_years.min()), int(valid_years.max())
+            date_range = (min_year, max_year)
+            if min_year < max_year:
+                date_range = st.slider(
+                    "Restrict date range?",
+                    min_year,
+                    max_year,
+                    (min_year, max_year),
+                    key=f"{key_prefix}_years",
+                )
+
+            all_times = df[time_columns].stack().dropna()
+            min_time, max_time = float(all_times.min()), float(all_times.max())
+            time_range = (min_time, max_time)
+            if min_time < max_time:
+                time_range = st.slider(
+                    "Restrict time range?",
+                    min_time,
+                    max_time,
+                    (min_time, max_time),
+                    key=f"{key_prefix}_times",
+                )
+
+            df_mask = df[df["Year"].between(*date_range)].copy()
+            for column in time_columns:
+                df_mask[column] = df_mask[column].where(df_mask[column].between(*time_range))
+
+            fig = px.scatter(
+                df_mask,
+                x="Year",
+                y=time_columns,
+                title=f"{category} IP World Champs Placings Time Progression",
+                labels={"value": "Seconds", "variable": "Placing"},
+                trendline="ols",
+                color_discrete_sequence=["gold", "silver", "darkorange", "lightpink", "teal"],
+                hover_data=["Event"] if "Event" in df_mask.columns else None,
+            )
+            fig.for_each_trace(lambda trace: trace.update(name=placing_labels.get(trace.name, trace.name)))
+            st.plotly_chart(fig, use_container_width=True)
+
+            trend_results = px.get_trendline_results(fig)
+            if trend_results.empty or "px_fit_results" not in trend_results.columns:
+                st.info("Not enough numeric data to calculate placing trendlines.")
+                return
+
+            predictions = []
+            for column, fit_result in zip(time_columns, trend_results["px_fit_results"]):
+                placing = placing_labels[column]
+                intercept, slope = fit_result.params[0], fit_result.params[1]
+                predictions.append((placing, intercept, slope, fit_result.rsquared))
+
+            equations_column, predictions_column = st.columns(2)
+            with equations_column:
+                for placing, intercept, slope, r_squared in predictions:
+                    st.write(f"{placing} = {round(slope, 6)}(Year) + {round(intercept, 3)}")
+                    st.write(f"R-squared = {round(r_squared, 3)}")
+
+            with predictions_column:
+                prediction_date = st.date_input(
+                    "Select date for placing predictions:",
+                    date(2028, 7, 14),
+                    format="DD/MM/YYYY",
+                    key=f"{key_prefix}_prediction_year",
+                )
+                prediction_year = date_to_decimal_year(prediction_date)
+                prediction_date_label = prediction_date.strftime("%d/%m/%Y")
+                for placing, intercept, slope, _ in predictions:
+                    minutes, seconds = divmod(slope * prediction_year + intercept, 60)
+                    st.write(f"This trend predicts a {placing} placing time of {int(minutes)}:{seconds:06.3f} on {prediction_date_label}.")
+
+
+    if race_type == "Women's 3km Individual Pursuit":
+        trend = st.selectbox(
+            "WR or Placings trend?:",
+            ["World Record progression", "Placing progression"],
+            key="W3KIP_trend_type_selector",
+        )
+        if trend == "World Record progression":
+            wr_file = Path("pages/WR_progressions/Womens_Progression.xlsx")
+            df = pd.read_excel(wr_file, engine="openpyxl", sheet_name="WR_3kIP")
+            df["Datetime"] = pd.to_datetime(df["Date"])
+            df["Date"] = df["Datetime"].dt.strftime("%d/%m/%Y")
+
+            left_column, chart_column = st.columns([1, 3])
+            with left_column:
+                df_download = df.drop(columns=["Datetime"])
+                st.dataframe(df_download, use_container_width=True)
+                st.download_button(
+                    "Download Women 3km IP WR data as CSV",
+                    df_download.to_csv(index=False).encode("utf-8"),
+                    "Women_3km_IP_WR_Data.csv",
+                    "text/csv",
+                    key="W3KIP_wr_csv",
+                )
+
+            with chart_column:
+                min_date = df["Datetime"].min().to_pydatetime()
+                max_date = df["Datetime"].max().to_pydatetime()
+                date_range = st.slider(
+                    "Restrict date range?",
+                    min_value=min_date,
+                    max_value=max_date,
+                    value=(min_date, max_date),
+                    format="DD/MM/YY",
+                    key="W3KIP_wr_dates",
+                )
+                time_range = st.slider(
+                    "Restrict time range?",
+                    min_value=float(df["Seconds"].min()),
+                    max_value=float(df["Seconds"].max()),
+                    value=(float(df["Seconds"].min()), float(df["Seconds"].max())),
+                    key="W3KIP_wr_times",
+                )
+                df_mask = df[
+                    df["Datetime"].between(*date_range)
+                    & df["Seconds"].between(*time_range)
+                ]
+                fig = px.scatter(
+                    df_mask,
+                    x="DateSerial",
+                    y="Seconds",
+                    title="Women's 3km Individual Pursuit World Record Progression",
+                    labels={"Seconds": "Seconds"},
+                    trendline="ols",
+                    trendline_color_override="red",
+                )
+                fig.update_traces(
+                    customdata=np.stack((df_mask["Seconds"], df_mask["Date"]), axis=-1),
+                    hovertemplate="Time: %{customdata[0]}<br>Date: %{customdata[1]}<extra></extra>",
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            st.stop()
+
+        render_ip_placing_progression(
+            "pages/WR_progressions/Womens_Progression.xlsx",
+            "Women's 3km",
+            "women_3km_ip_placing",
+            sheet_name="Medals_3kIP",
+        )
+        st.stop()
+
+
     if race_type=="Men's Individual Pursuit":
         
         c1,c2=st.columns([1,3])
@@ -3586,12 +3988,10 @@ if authentication_status:
             @st.cache_data
             def get_data_from_excel():
                 df = pd.read_excel(
-                    io='pages/WR_progressions/Men_IP.xlsx',
+                    io='pages/WR_progressions/Mens_Progression.xlsx',
                     engine ='openpyxl',
-                    sheet_name='Sheet1',
+                    sheet_name='WR_IP',
                     skiprows=0,
-                    usecols='A:D',
-                    nrows=30
                     )
                 #df = df.replace(',','')
                 df["Time"]=((pd.to_datetime(df["Time"], format="%H:%M:%S.%f").dt.strftime("%M:%S.%f")).astype(str)).str[1:9]
@@ -3680,16 +4080,21 @@ if authentication_status:
                     st.write(f"If a world record was achieved on {date_formatted}, this trend predicts it would be a time of {m}:{s}.")
 
 
-        else:    
+        else:
+            render_ip_placing_progression(
+                "pages/WR_progressions/Mens_Progression.xlsx",
+                "Men's",
+                "men_ip_placing",
+            )
+            st.stop()
+
             @st.cache_data
             def get_placing_data_from_excel():
                 df = pd.read_excel(
-                    io='pages/WR_progressions/Medals_Men_IP.xlsx',
+                    io='pages/WR_progressions/Mens_Progression.xlsx',
                     engine ='openpyxl',
-                    sheet_name='Sheet1',
+                    sheet_name='Medals_IP',
                     skiprows=0,
-                    usecols='A:L',
-                    nrows=40
                     )
                 #df = df.replace(',','')
 
@@ -3755,10 +4160,10 @@ if authentication_status:
                 df_mask = df_mask.mask(df_mask["8th_seconds"] < time_range[0])
                 df_mask = df_mask.mask(df_mask["8th_seconds"] > time_range[1])
                 fig = px.scatter(df_mask, x="Year", y = ["1st_seconds","2nd_seconds","3rd_seconds","8th_seconds","16th_seconds"], title="Men's IP World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
-                customdata = np.stack((round(df_mask['1st_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['3rd_seconds'],3), round(df_mask['8th_seconds'],3),round(df_mask['16th_seconds'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+                customdata = np.stack((round(df_mask['1st_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['3rd_seconds'],3), round(df_mask['8th_seconds'],3),round(df_mask['16th_seconds'],3),df_mask['Year'], df_mask['Event']),axis=-1)
                 hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' + '16th: %{customdata[4]}<br>' +
             'Year: %{customdata[5]}<br>' +
-            'Competition: %{customdata[6]}<br>'
+            'Event: %{customdata[6]}<br>'
             '<extra></extra>')
                 fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
 
@@ -3854,17 +4259,127 @@ if authentication_status:
 
 
     if race_type=="Women's Individual Pursuit":
-        
+        c1,c2=st.columns([1,3])
+        with c1:
+            trend = st.selectbox(
+                "WR or Placings trend?:",
+                ["World Record progression", "Placing progression"],
+                key="WIP trend type Selector"
+            )
+
+        if trend == "World Record progression":
+            @st.cache_data
+            def get_wr_data_from_excel():
+                df = pd.read_excel(
+                    io='pages/WR_progressions/Womens_Progression.xlsx',
+                    engine='openpyxl',
+                    sheet_name='WR_IP',
+                    skiprows=0,
+                )
+                df["Datetime"] = pd.to_datetime(df["Date"])
+                df["Date"] = df["Datetime"].dt.strftime("%d/%m/%Y")
+                return df
+
+            df = get_wr_data_from_excel()
+            df_master = df
+            with c1:
+                df_download = df.drop(columns=["Datetime"])
+                st.dataframe(df.drop(columns=["Datetime"]))
+                csv = df_download.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="Download Women IP WR data as CSV",
+                    data=csv,
+                    file_name="Women_IP_WR_Data.csv",
+                    mime="text/csv",
+                    key="WIP_wr_csv"
+                )
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                    df_download.to_excel(writer, sheet_name="WR_IP", index=False)
+                st.download_button(
+                    label="Download Women IP WR data as Excel",
+                    data=buffer.getvalue(),
+                    file_name="Women_IP_WR_Data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key="WIP_wr_excel"
+                )
+
+            with c2:
+                min_date = df_master["Datetime"].min().to_pydatetime()
+                max_date = df_master["Datetime"].max().to_pydatetime()
+                date_range = st.slider(
+                    "Restrict date range?",
+                    value=(min_date, max_date),
+                    min_value=min_date,
+                    max_value=max_date,
+                    format="DD/MM/YY"
+                )
+                time_range = st.slider(
+                    "Restrict time range?",
+                    value=(df_master["Seconds"].min(), df_master["Seconds"].max()),
+                    min_value=df_master["Seconds"].min(),
+                    max_value=df_master["Seconds"].max()
+                )
+                df_mask = df[
+                    (df["Datetime"] >= date_range[0]) &
+                    (df["Datetime"] <= date_range[1]) &
+                    (df["Seconds"] >= time_range[0]) &
+                    (df["Seconds"] <= time_range[1])
+                ]
+                fig = px.scatter(
+                    df_mask,
+                    x="DateSerial",
+                    y="Seconds",
+                    title="Women's Individual Pursuit World Record Progression",
+                    labels={"Seconds": "Seconds"},
+                    trendline="ols",
+                    trendline_color_override="red"
+                )
+                fig.update_traces(
+                    customdata=np.stack((df_mask["Seconds"], df_mask["Date"]), axis=-1),
+                    hovertemplate="Time: %{customdata[0]}<br>Date: %{customdata[1]}<extra></extra>"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                fit_results = px.get_trendline_results(fig).px_fit_results
+                if not fit_results.empty:
+                    intercept = fit_results.iloc[0].params[0]
+                    slope = fit_results.iloc[0].params[1]
+                    st.write(f"Time = {round(slope, 6)}(DateSerial) + {round(intercept, 3)}")
+                    st.write(f"R-squared = {round(fit_results.iloc[0].rsquared, 3)}")
+
+                    prediction_date = st.date_input(
+                        "Select date for WR prediction:",
+                        date.today(),
+                        format="DD/MM/YYYY",
+                        key="WIP_wr_prediction_date"
+                    )
+                    prediction_serial = (
+                        prediction_date - datetime(1899, 12, 30).date()
+                    ).days
+                    predicted_seconds = slope * prediction_serial + intercept
+                    st.write(
+                        f"If a world record was achieved on "
+                        f"{prediction_date.strftime('%d/%m/%Y')}, this trend predicts "
+                        f"a time of {round(predicted_seconds, 3)} seconds."
+                    )
+
+            st.stop()
+
+        render_ip_placing_progression(
+            "pages/WR_progressions/Womens_Progression.xlsx",
+            "Women's",
+            "women_ip_placing",
+        )
+        st.stop()
         
         @st.cache_data
         def get_placing_data_from_excel():
             df = pd.read_excel(
-                io='pages/WR_progressions/Medals_Women_IP.xlsx',
+                io='pages/WR_progressions/Womens_Progression.xlsx',
                 engine ='openpyxl',
-                sheet_name='Sheet1',
+                sheet_name='Medals_IP',
                 skiprows=0,
-                usecols='A:L',
-                nrows=40
                 )
             #df = df.replace(',','')
 
@@ -3932,10 +4447,10 @@ if authentication_status:
             df_mask = df_mask.mask(df_mask["8th_seconds"] < time_range[0])
             df_mask = df_mask.mask(df_mask["8th_seconds"] > time_range[1])
             fig = px.scatter(df_mask, x="Year", y = ["1st_seconds","2nd_seconds","3rd_seconds","8th_seconds","16th_seconds"], title="Women's IP World Champs Placings Time Progression",labels={"value":"Seconds"},trendline="ols", color_discrete_sequence=['gold',"silver","darkorange","lightpink","teal"])
-            customdata = np.stack((round(df_mask['1st_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['3rd_seconds'],3), round(df_mask['8th_seconds'],3),round(df_mask['16th_seconds'],3),df_mask['Year'], df_mask['Competition']),axis=-1)
+            customdata = np.stack((round(df_mask['1st_seconds'],3), round(df_mask['2nd_seconds'],3),round(df_mask['3rd_seconds'],3), round(df_mask['8th_seconds'],3),round(df_mask['16th_seconds'],3),df_mask['Year'], df_mask['Event']),axis=-1)
             hovertemplate = ('Gold: %{customdata[0]}<br>' + 'Silver: %{customdata[1]}<br>' + 'Bronze: %{customdata[2]}<br>' + '8th: %{customdata[3]}<br>' + '16th: %{customdata[4]}<br>' +
         'Year: %{customdata[5]}<br>' +
-        'Competition: %{customdata[6]}<br>'
+        'Event: %{customdata[6]}<br>'
         '<extra></extra>')
             fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
 
@@ -4027,7 +4542,7 @@ if authentication_status:
 
     if race_type in ["Men's Madison", "Women's Madison"]:
         category = "Men's" if race_type == "Men's Madison" else "Women's"
-        madison_file = "pages/WR_progressions/Mens_Madison.xlsx" if category == "Men's" else "pages/WR_progressions/Womens_Madison.xlsx"
+        madison_file = "pages/WR_progressions/Mens_Progression.xlsx" if category == "Men's" else "pages/WR_progressions/Womens_Progression.xlsx"
 
         if not Path(madison_file).exists():
             st.warning(f"Data file not found for {category} Madison: {madison_file}")
@@ -4037,10 +4552,8 @@ if authentication_status:
                 return pd.read_excel(
                     io=file_path,
                     engine='openpyxl',
-                    sheet_name='Sheet1',
+                    sheet_name='Medals_Madison',
                     skiprows=0,
-                    usecols='A:O',
-                    nrows=100
                 )
 
             def madison_plot_and_predict(df_filtered, y_column, y_label, prediction_label):
@@ -4103,10 +4616,11 @@ if authentication_status:
                 fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                 st.plotly_chart(fig, use_container_width=True)
 
-                fit_results = px.get_trendline_results(fig).px_fit_results
-                if len(fit_results) < 3:
+                trend_results = px.get_trendline_results(fig)
+                if "px_fit_results" not in trend_results.columns or len(trend_results) < 3:
                     st.info("Not enough points to compute all trendlines.")
                     return
+                fit_results = trend_results.px_fit_results
 
                 first_const, first_x1 = fit_results.iloc[0].params[0], fit_results.iloc[0].params[1]
                 second_const, second_x1 = fit_results.iloc[1].params[0], fit_results.iloc[1].params[1]
@@ -4124,20 +4638,12 @@ if authentication_status:
 
             events = st.selectbox(
                 "Include which events:",
-                ["All", "Just NC", "Just WCH", "Just OLY & WCH"],
+                ["All"] + event_filter_options,
                 key=f"{category}_madison_event_selector"
             )
 
             df = load_madison_data(madison_file)
-
-            if events == "Just NC":
-                df_mask = df[df["Event"] == "NC"]
-            elif events == "Just WCH":
-                df_mask = df[df["Event"] == "WCH"]
-            elif events == "Just OLY & WCH":
-                df_mask = df[(df["Event"] == "WCH") | (df["Event"] == "OLY")]
-            else:
-                df_mask = df
+            df_mask = filter_progression_events(df, events)
 
             date_range = st.slider(
                 "Restrict date range?",
@@ -4161,41 +4667,33 @@ if authentication_status:
 
     if race_type in ["Men's Omnium", "Women's Omnium"]:
         category = "Men's" if race_type == "Men's Omnium" else "Women's"
-        omnium_file = "pages/WR_progressions/Mens_Omnium.xlsx" if category == "Men's" else "pages/WR_progressions/Womens_Omnium.xlsx"
+        omnium_file = "pages/WR_progressions/Mens_Progression.xlsx" if category == "Men's" else "pages/WR_progressions/Womens_Progression.xlsx"
 
         if not Path(omnium_file).exists():
             st.warning(f"Data file not found for {category} Omnium: {omnium_file}")
         else:
             @st.cache_data
-            def load_omnium_sheet(file_path, sheet_name, use_cols, rows):
+            def load_omnium_data(file_path, sheet_name):
                 return pd.read_excel(
                     io=file_path,
                     engine='openpyxl',
                     sheet_name=sheet_name,
                     skiprows=0,
-                    usecols=use_cols,
-                    nrows=rows
                 )
 
-            df_points = load_omnium_sheet(omnium_file, 'Points', 'A:R', 150)
-            df_elimination = load_omnium_sheet(omnium_file, 'Elim', 'A:H', 60)
-            df_tempo = load_omnium_sheet(omnium_file, 'Tempo', 'A:L', 150)
-            df_scratch = load_omnium_sheet(omnium_file, 'Scratch', 'A:H', 60)
+            df_scratch = load_omnium_data(omnium_file, 'Medals_Om_Scratch')
+            df_tempo = load_omnium_data(omnium_file, 'Medals_Om_Tempo')
+            df_elimination = load_omnium_data(omnium_file, 'Medals_Om_Elim')
+            df_points = load_omnium_data(omnium_file, 'Medals_Om_Points')
 
             events = st.selectbox(
                 "Include which events:",
-                ["All", "Just NC", "Just WCH", "Just OLY & WCH"],
+                ["All"] + event_filter_options,
                 key=f"{category}_omnium_event_selector"
             )
 
             def event_filter(df_in):
-                if events == "Just NC":
-                    return df_in[df_in["Event"] == "NC"]
-                if events == "Just WCH":
-                    return df_in[df_in["Event"] == "WCH"]
-                if events == "Just OLY & WCH":
-                    return df_in[(df_in["Event"] == "WCH") | (df_in["Event"] == "OLY")]
-                return df_in
+                return filter_progression_events(df_in, events)
 
             df_scratch_mask = event_filter(df_scratch).reset_index(drop=True)
             df_tempo_mask = event_filter(df_tempo).reset_index(drop=True)
@@ -4247,10 +4745,11 @@ if authentication_status:
                 fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                 st.plotly_chart(fig, use_container_width=True)
 
-                fit_results = px.get_trendline_results(fig).px_fit_results
-                if fit_results.empty:
+                trend_results = px.get_trendline_results(fig)
+                if "px_fit_results" not in trend_results.columns or trend_results.empty:
                     st.info("Not enough points to compute trendline.")
                     return
+                fit_results = trend_results.px_fit_results
 
                 first_const = fit_results.iloc[0].params[0]
                 first_x1 = fit_results.iloc[0].params[1]
@@ -4269,6 +4768,9 @@ if authentication_status:
                 )
 
             def metric_plot_and_predict(df_in, race, metric):
+                if "Rank" not in df_in.columns or metric not in df_in.columns:
+                    return
+
                 df_first = df_in.loc[df_in["Rank"] == 1].reset_index(drop=True)
                 df_second = df_in.loc[df_in["Rank"] == 2].reset_index(drop=True)
                 df_third = df_in.loc[df_in["Rank"] == 3].reset_index(drop=True)
@@ -4316,10 +4818,11 @@ if authentication_status:
                 fig.update_traces(customdata=customdata, hovertemplate=hovertemplate)
                 st.plotly_chart(fig, use_container_width=True)
 
-                fit_results = px.get_trendline_results(fig).px_fit_results
-                if len(fit_results) < 3:
+                trend_results = px.get_trendline_results(fig)
+                if "px_fit_results" not in trend_results.columns or len(trend_results) < 3:
                     st.info("Not enough points to compute all trendlines.")
                     return
+                fit_results = trend_results.px_fit_results
 
                 first_const, first_x1 = fit_results.iloc[0].params[0], fit_results.iloc[0].params[1]
                 second_const, second_x1 = fit_results.iloc[1].params[0], fit_results.iloc[1].params[1]
@@ -4382,8 +4885,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='M SP Q',
                 skiprows=0,
-                usecols='A:F',
-                nrows=300
                 )
             #df = df.replace(',','')
 
@@ -4591,8 +5092,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='W SP Q',
                 skiprows=0,
-                usecols='A:F',
-                nrows=300
                 )
             #df = df.replace(',','')
 
@@ -4797,8 +5296,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='M TS',
                 skiprows=0,
-                usecols='A:F',
-                nrows=150
                 )
             #df = df.replace(',','')
 
@@ -4986,8 +5483,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='W TS',
                 skiprows=0,
-                usecols='A:F',
-                nrows=150
                 )
             #df = df.replace(',','')
 
@@ -5168,8 +5663,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='M TP',
                 skiprows=0,
-                usecols='A:G',
-                nrows=300
                 )
             #df = df.replace(',','')
 
@@ -5376,8 +5869,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='W TP',
                 skiprows=0,
-                usecols='A:G',
-                nrows=300
                 )
             #df = df.replace(',','')
 
@@ -5573,8 +6064,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='M IP',
                 skiprows=0,
-                usecols='A:G',
-                nrows=500
                 )
             #df = df.replace(',','')
 
@@ -5783,8 +6272,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='W IP',
                 skiprows=0,
-                usecols='A:G',
-                nrows=400
                 )
             #df = df.replace(',','')
 
@@ -5991,8 +6478,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='M Kilo',
                 skiprows=0,
-                usecols='A:G',
-                nrows=700
                 )
             #df = df.replace(',','')
 
@@ -6199,8 +6684,6 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='W 500TT',
                 skiprows=0,
-                usecols='A:F',
-                nrows=500
                 )
             #df = df.replace(',','')
 
