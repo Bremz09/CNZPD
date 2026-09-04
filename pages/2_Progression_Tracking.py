@@ -4718,6 +4718,15 @@ if authentication_status:
             df_elimination_mask = date_filter(df_elimination_mask)
             df_points_mask = date_filter(df_points_mask)
 
+            def points_to_placing(p):
+                numeric_p = pd.to_numeric(p, errors="coerce")
+                placing = (42 - numeric_p) / 2
+                return placing.clip(lower=1)
+
+            df_points_mask["Scratch Placing"] = points_to_placing(df_points_mask["Scratch"])
+            df_points_mask["Tempo Placing"] = points_to_placing(df_points_mask["Tempo"])
+            df_points_mask["Elimination Placing"] = points_to_placing(df_points_mask["Elimination"])
+
             def avg_speed_plot_predict(df_in, race):
                 df_plot = df_in.copy()
                 if df_plot.empty:
@@ -4767,7 +4776,7 @@ if authentication_status:
                     f"This trend predicts a winning avg speed of {round(first_x1 * predict_serial + first_const, 1)} kph in the {race} race in {predict_year}."
                 )
 
-            def metric_plot_and_predict(df_in, race, metric):
+            def metric_plot_and_predict(df_in, race, metric, custom_title=None, value_label=None, key_suffix=None):
                 if "Rank" not in df_in.columns or metric not in df_in.columns:
                     return
 
@@ -4788,28 +4797,39 @@ if authentication_status:
                 df_plot = pd.DataFrame({
                     "Date": df_first["Date"].values,
                     "DateSerial": df_first_dates.apply(lambda d: d.toordinal()).values,
-                    "Gold": df_first[metric].values,
-                    "Silver": df_second[metric].values,
-                    "Bronze": df_third[metric].values,
+                    "Gold": pd.to_numeric(df_first[metric], errors="coerce").values,
+                    "Silver": pd.to_numeric(df_second[metric], errors="coerce").values,
+                    "Bronze": pd.to_numeric(df_third[metric], errors="coerce").values,
                     "Year": df_first["Year"].values,
                     "Location": df_first["Location"].values,
                     "Event": df_first["Event"].values
                 })
 
+                gold_names = df_first["Name"].values if "Name" in df_first.columns else [""] * min_len
+                silver_names = df_second["Name"].values if "Name" in df_second.columns else [""] * min_len
+                bronze_names = df_third["Name"].values if "Name" in df_third.columns else [""] * min_len
+
+                y_title = value_label if value_label else metric
+                chart_title = custom_title if custom_title else f"{category} Omnium {race} race {metric} progression"
+
                 fig = px.scatter(
                     df_plot,
                     x="DateSerial",
                     y=["Gold", "Silver", "Bronze"],
-                    title=f"{category} Omnium {race} race {metric} progression",
-                    labels={"value": metric, "DateSerial": "Date (serial)"},
+                    title=chart_title,
+                    labels={"value": y_title, "DateSerial": "Date (serial)"},
                     trendline="ols",
                     color_discrete_sequence=['#FFD700', '#C0C0C0', '#CD7F32']
                 )
-                customdata = np.stack((df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'], df_plot['Year'], df_plot['Location'], df_plot['Event']), axis=-1)
+                customdata = np.stack((
+                    df_plot['Gold'], df_plot['Silver'], df_plot['Bronze'],
+                    df_plot['Year'], df_plot['Location'], df_plot['Event'],
+                    gold_names, silver_names, bronze_names
+                ), axis=-1)
                 hovertemplate = (
-                    'Gold: %{customdata[0]}<br>'
-                    'Silver: %{customdata[1]}<br>'
-                    'Bronze: %{customdata[2]}<br>'
+                    'Gold: %{customdata[0]} (%{customdata[6]})<br>'
+                    'Silver: %{customdata[1]} (%{customdata[7]})<br>'
+                    'Bronze: %{customdata[2]} (%{customdata[8]})<br>'
                     'Year: %{customdata[3]}<br>'
                     'Location: %{customdata[4]}<br>'
                     'Event: %{customdata[5]}<br>'
@@ -4828,22 +4848,47 @@ if authentication_status:
                 second_const, second_x1 = fit_results.iloc[1].params[0], fit_results.iloc[1].params[1]
                 third_const, third_x1 = fit_results.iloc[2].params[0], fit_results.iloc[2].params[1]
 
+                cleaned_key = f"{category}_{race}_{metric}".replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
+                if key_suffix:
+                    cleaned_key += f"_{key_suffix}"
+                widget_key = f"{cleaned_key}_predict_year"
+
                 predict_year = st.number_input(
-                    f"Select year for {metric} prediction:",
+                    f"Select year for {y_title} prediction:",
                     min_value=2025,
                     max_value=2048,
                     value=2025,
                     step=1,
-                    key=f"{category}_{race}_{metric}_predict_year"
+                    key=widget_key
                 )
 
                 predict_serial = datetime(predict_year, 1, 1).toordinal()
-                st.write(f"This trend predicts a winning {metric} of {round(first_x1 * predict_serial + first_const, 1)} in the {race} race in {predict_year}.")
-                st.write(f"This trend predicts a second {metric} of {round(second_x1 * predict_serial + second_const, 1)} in the {race} race in {predict_year}.")
-                st.write(f"This trend predicts a third {metric} of {round(third_x1 * predict_serial + third_const, 1)} in the {race} race in {predict_year}.")
+                pred_1 = round(first_x1 * predict_serial + first_const, 1)
+                pred_2 = round(second_x1 * predict_serial + second_const, 1)
+                pred_3 = round(third_x1 * predict_serial + third_const, 1)
+
+                st.write(f"This trend predicts a 1st place {y_title.lower()} of {pred_1} in {race} in {predict_year}.")
+                st.write(f"This trend predicts a 2nd place {y_title.lower()} of {pred_2} in {race} in {predict_year}.")
+                st.write(f"This trend predicts a 3rd place {y_title.lower()} of {pred_3} in {race} in {predict_year}.")
 
             st.header("Scratch")
             st.dataframe(df_scratch_mask)
+            metric_plot_and_predict(
+                df_points_mask,
+                "Scratch (Overall Medalists)",
+                "Scratch",
+                custom_title=f"{category} Omnium Overall Medalists Scratch Points progression",
+                value_label="Scratch Points",
+                key_suffix="scratch_sec",
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Scratch (Overall Medalists)",
+                "Scratch Placing",
+                custom_title=f"{category} Omnium Overall Medalists Scratch Placing progression",
+                value_label="Scratch Placing",
+                key_suffix="scratch_sec",
+            )
             avg_speed_plot_predict(df_scratch_mask, "Scratch")
             st.markdown("---")
 
@@ -4852,16 +4897,72 @@ if authentication_status:
             metric_plot_and_predict(df_tempo_mask, "Tempo", "Total")
             metric_plot_and_predict(df_tempo_mask, "Tempo", "Sprints Won")
             metric_plot_and_predict(df_tempo_mask, "Tempo", "P.Laps")
+            metric_plot_and_predict(
+                df_points_mask,
+                "Tempo (Overall Medalists)",
+                "Tempo",
+                custom_title=f"{category} Omnium Overall Medalists Tempo Points progression",
+                value_label="Tempo Points",
+                key_suffix="tempo_sec",
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Tempo (Overall Medalists)",
+                "Tempo Placing",
+                custom_title=f"{category} Omnium Overall Medalists Tempo Placing progression",
+                value_label="Tempo Placing",
+                key_suffix="tempo_sec",
+            )
             avg_speed_plot_predict(df_tempo_mask, "Tempo")
             st.markdown("---")
 
             st.header("Elimination")
             st.dataframe(df_elimination_mask)
+            metric_plot_and_predict(
+                df_points_mask,
+                "Elimination (Overall Medalists)",
+                "Elimination",
+                custom_title=f"{category} Omnium Overall Medalists Elimination Points progression",
+                value_label="Elimination Points",
+                key_suffix="elim_sec",
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Elimination (Overall Medalists)",
+                "Elimination Placing",
+                custom_title=f"{category} Omnium Overall Medalists Elimination Placing progression",
+                value_label="Elimination Placing",
+                key_suffix="elim_sec",
+            )
             avg_speed_plot_predict(df_elimination_mask, "Elimination")
             st.markdown("---")
 
-            st.header("Points")
+            st.header("Points & Overall Medalists")
             st.dataframe(df_points_mask)
+            metric_plot_and_predict(
+                df_points_mask,
+                "Overall",
+                "Scratch",
+                custom_title=f"{category} Omnium Overall Medalists Scratch Points progression",
+                value_label="Scratch Points",
+                key_suffix="points_sec",
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Overall",
+                "Tempo",
+                custom_title=f"{category} Omnium Overall Medalists Tempo Points progression",
+                value_label="Tempo Points",
+                key_suffix="points_sec",
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Overall",
+                "Elimination",
+                custom_title=f"{category} Omnium Overall Medalists Elimination Points progression",
+                value_label="Elimination Points",
+                key_suffix="points_sec",
+            )
             metric_plot_and_predict(df_points_mask, "Points", "Final")
             metric_plot_and_predict(df_points_mask, "Points", "Sub Total")
             metric_plot_and_predict(df_points_mask, "Points", "Points Total")
