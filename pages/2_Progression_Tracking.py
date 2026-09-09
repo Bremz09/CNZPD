@@ -3503,9 +3503,9 @@ if authentication_status:
             with c2:
                 date_range = st.slider(
         "Restrict date range?",
-                value = (2000,2025),
+                value = (2000,2026),
                     min_value = 2000,
-                    max_value = 2025)
+                    max_value = 2026)
 
                 time_range = st.slider(
         "Restrict time range?",
@@ -4767,7 +4767,7 @@ if authentication_status:
                     "Select year for avg speed prediction:",
                     min_value=2024,
                     max_value=2048,
-                    value=2025,
+                    value=2026,
                     step=1,
                     key=f"{category}_{race}_avg_speed_predict_year"
                 )
@@ -4776,7 +4776,7 @@ if authentication_status:
                     f"This trend predicts a winning avg speed of {round(first_x1 * predict_serial + first_const, 1)} kph in the {race} race in {predict_year}."
                 )
 
-            def metric_plot_and_predict(df_in, race, metric, custom_title=None, value_label=None, key_suffix=None):
+            def metric_plot_and_predict(df_in, race, metric, custom_title=None, value_label=None, key_suffix=None, show_points_in_brackets=False):
                 if "Rank" not in df_in.columns or metric not in df_in.columns:
                     return
 
@@ -4855,9 +4855,9 @@ if authentication_status:
 
                 predict_year = st.number_input(
                     f"Select year for {y_title} prediction:",
-                    min_value=2025,
+                    min_value=2026,
                     max_value=2048,
-                    value=2025,
+                    value=2026,
                     step=1,
                     key=widget_key
                 )
@@ -4867,28 +4867,20 @@ if authentication_status:
                 pred_2 = round(second_x1 * predict_serial + second_const, 1)
                 pred_3 = round(third_x1 * predict_serial + third_const, 1)
 
-                st.write(f"This trend predicts a 1st place {y_title.lower()} of {pred_1} in {race} in {predict_year}.")
-                st.write(f"This trend predicts a 2nd place {y_title.lower()} of {pred_2} in {race} in {predict_year}.")
-                st.write(f"This trend predicts a 3rd place {y_title.lower()} of {pred_3} in {race} in {predict_year}.")
+                if show_points_in_brackets:
+                    pts_1 = round(42 - 2 * pred_1, 1)
+                    pts_2 = round(42 - 2 * pred_2, 1)
+                    pts_3 = round(42 - 2 * pred_3, 1)
+                    st.write(f"This trend predicts a 1st place {y_title.lower()} of {pred_1} ({pts_1} points) in {race} in {predict_year}.")
+                    st.write(f"This trend predicts a 2nd place {y_title.lower()} of {pred_2} ({pts_2} points) in {race} in {predict_year}.")
+                    st.write(f"This trend predicts a 3rd place {y_title.lower()} of {pred_3} ({pts_3} points) in {race} in {predict_year}.")
+                else:
+                    st.write(f"This trend predicts a 1st place {y_title.lower()} of {pred_1} in {race} in {predict_year}.")
+                    st.write(f"This trend predicts a 2nd place {y_title.lower()} of {pred_2} in {race} in {predict_year}.")
+                    st.write(f"This trend predicts a 3rd place {y_title.lower()} of {pred_3} in {race} in {predict_year}.")
 
             st.header("Scratch")
             st.dataframe(df_scratch_mask)
-            metric_plot_and_predict(
-                df_points_mask,
-                "Scratch (Overall Medalists)",
-                "Scratch",
-                custom_title=f"{category} Omnium Overall Medalists Scratch Points progression",
-                value_label="Scratch Points",
-                key_suffix="scratch_sec",
-            )
-            metric_plot_and_predict(
-                df_points_mask,
-                "Scratch (Overall Medalists)",
-                "Scratch Placing",
-                custom_title=f"{category} Omnium Overall Medalists Scratch Placing progression",
-                value_label="Scratch Placing",
-                key_suffix="scratch_sec",
-            )
             avg_speed_plot_predict(df_scratch_mask, "Scratch")
             st.markdown("---")
 
@@ -4897,72 +4889,16 @@ if authentication_status:
             metric_plot_and_predict(df_tempo_mask, "Tempo", "Total")
             metric_plot_and_predict(df_tempo_mask, "Tempo", "Sprints Won")
             metric_plot_and_predict(df_tempo_mask, "Tempo", "P.Laps")
-            metric_plot_and_predict(
-                df_points_mask,
-                "Tempo (Overall Medalists)",
-                "Tempo",
-                custom_title=f"{category} Omnium Overall Medalists Tempo Points progression",
-                value_label="Tempo Points",
-                key_suffix="tempo_sec",
-            )
-            metric_plot_and_predict(
-                df_points_mask,
-                "Tempo (Overall Medalists)",
-                "Tempo Placing",
-                custom_title=f"{category} Omnium Overall Medalists Tempo Placing progression",
-                value_label="Tempo Placing",
-                key_suffix="tempo_sec",
-            )
             avg_speed_plot_predict(df_tempo_mask, "Tempo")
             st.markdown("---")
 
             st.header("Elimination")
             st.dataframe(df_elimination_mask)
-            metric_plot_and_predict(
-                df_points_mask,
-                "Elimination (Overall Medalists)",
-                "Elimination",
-                custom_title=f"{category} Omnium Overall Medalists Elimination Points progression",
-                value_label="Elimination Points",
-                key_suffix="elim_sec",
-            )
-            metric_plot_and_predict(
-                df_points_mask,
-                "Elimination (Overall Medalists)",
-                "Elimination Placing",
-                custom_title=f"{category} Omnium Overall Medalists Elimination Placing progression",
-                value_label="Elimination Placing",
-                key_suffix="elim_sec",
-            )
             avg_speed_plot_predict(df_elimination_mask, "Elimination")
             st.markdown("---")
 
-            st.header("Points & Overall Medalists")
+            st.header("Points")
             st.dataframe(df_points_mask)
-            metric_plot_and_predict(
-                df_points_mask,
-                "Overall",
-                "Scratch",
-                custom_title=f"{category} Omnium Overall Medalists Scratch Points progression",
-                value_label="Scratch Points",
-                key_suffix="points_sec",
-            )
-            metric_plot_and_predict(
-                df_points_mask,
-                "Overall",
-                "Tempo",
-                custom_title=f"{category} Omnium Overall Medalists Tempo Points progression",
-                value_label="Tempo Points",
-                key_suffix="points_sec",
-            )
-            metric_plot_and_predict(
-                df_points_mask,
-                "Overall",
-                "Elimination",
-                custom_title=f"{category} Omnium Overall Medalists Elimination Points progression",
-                value_label="Elimination Points",
-                key_suffix="points_sec",
-            )
             metric_plot_and_predict(df_points_mask, "Points", "Final")
             metric_plot_and_predict(df_points_mask, "Points", "Sub Total")
             metric_plot_and_predict(df_points_mask, "Points", "Points Total")
@@ -4970,6 +4906,45 @@ if authentication_status:
             metric_plot_and_predict(df_points_mask, "Points", "Sprints Scored")
             metric_plot_and_predict(df_points_mask, "Points", "Sprints Won")
             avg_speed_plot_predict(df_points_mask, "Points")
+            st.markdown("---")
+
+            st.header("Overall Medalist")
+            metric_plot_and_predict(
+                df_points_mask,
+                "Scratch",
+                "Scratch Placing",
+                custom_title=f"{category} Omnium Overall Medalists Scratch Placing progression",
+                value_label="Scratch Placing",
+                key_suffix="overall_medalist_scratch",
+                show_points_in_brackets=True,
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Tempo",
+                "Tempo Placing",
+                custom_title=f"{category} Omnium Overall Medalists Tempo Placing progression",
+                value_label="Tempo Placing",
+                key_suffix="overall_medalist_tempo",
+                show_points_in_brackets=True,
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Elimination",
+                "Elimination Placing",
+                custom_title=f"{category} Omnium Overall Medalists Elimination Placing progression",
+                value_label="Elimination Placing",
+                key_suffix="overall_medalist_elim",
+                show_points_in_brackets=True,
+            )
+            metric_plot_and_predict(
+                df_points_mask,
+                "Points",
+                "Points Placing",
+                custom_title=f"{category} Omnium Overall Medalists Points Placing progression",
+                value_label="Points Placing",
+                key_suffix="overall_medalist_points",
+                show_points_in_brackets=True,
+            )
 
                     
                 

@@ -101,6 +101,51 @@ def get_latest_selectbox_index(df, column, options):
     return 0
 
 
+def race_time_to_seconds(value):
+    if pd.isna(value):
+        return np.nan
+    if isinstance(value, datetime.time):
+        return (
+            value.hour * 3600
+            + value.minute * 60
+            + value.second
+            + value.microsecond / 1_000_000
+        )
+    if isinstance(value, (datetime.timedelta, pd.Timedelta)):
+        return pd.Timedelta(value).total_seconds()
+    if isinstance(value, (int, float, np.number)):
+        return float(value) * 86400 if 0 <= value < 1 else float(value)
+
+    try:
+        return pd.to_timedelta(str(value).strip()).total_seconds()
+    except (TypeError, ValueError):
+        return np.nan
+
+
+def format_race_time(seconds):
+    if pd.isna(seconds):
+        return ""
+    minutes, remaining_seconds = divmod(float(seconds), 60)
+    return f"{int(minutes):02d}:{remaining_seconds:06.3f}"
+
+
+def format_race_time_axis(fig, seconds):
+    valid_seconds = pd.Series(seconds).dropna().astype(float)
+    if valid_seconds.empty:
+        return fig
+
+    lower, upper = valid_seconds.min(), valid_seconds.max()
+    padding = max((upper - lower) * 0.05, 0.5)
+    tick_values = np.linspace(lower - padding, upper + padding, 6)
+    fig.update_yaxes(
+        title_text="Race Time",
+        tickmode="array",
+        tickvals=tick_values,
+        ticktext=[format_race_time(value) for value in tick_values],
+    )
+    return fig
+
+
 @st.cache_data
 def read_excel_cached(path, sheet_name, usecols=None, skiprows=0, nrows=None, file_mtime=None):
     return pd.read_excel(
@@ -5409,8 +5454,23 @@ if authentication_status:
 
 
             #FIRST FIGURE -- FINAL TIME PROGRESSION
-            df_countryHistoryNN = df_countryHistory.loc[df_countryHistory['Time'].notnull()]
-            fig_country_history = px.line(df_countryHistoryNN, x="Date", y = "Final Time", title = "Times by Date",color="Country",markers=True)
+            df_countryHistory_plot = df_countryHistory.copy()
+            df_countryHistory_plot["Time Seconds"] = df_countryHistory_plot["Time"].apply(race_time_to_seconds)
+            df_countryHistory_plot = df_countryHistory_plot.dropna(subset=["Time Seconds"])
+            df_countryHistory_plot["Time Display"] = df_countryHistory_plot["Time Seconds"].apply(format_race_time)
+            fig_country_history = px.line(
+                df_countryHistory_plot,
+                x="Date",
+                y="Time Seconds",
+                title="Times by Date",
+                color="Country",
+                markers=True,
+                custom_data=["Time Display", "Location"],
+            )
+            fig_country_history.update_traces(
+                hovertemplate="Date=%{x}<br>Time=%{customdata[0]}<br>Location=%{customdata[1]}<extra>%{fullData.name}</extra>"
+            )
+            format_race_time_axis(fig_country_history, df_countryHistory_plot["Time Seconds"])
             fig_country_history.update_traces(textposition="top right")
             st.plotly_chart(fig_country_history, use_container_width=True)
 
@@ -5723,8 +5783,23 @@ if authentication_status:
 
 
             #FIRST FIGURE -- FINAL TIME PROGRESSION
-
-            fig_country_history = px.line(df_countryHistory, x="Date", y = "Time", title = "Times by Date",color="Country",markers=True)
+            df_countryHistory_plot = df_countryHistory.copy()
+            df_countryHistory_plot["Time Seconds"] = df_countryHistory_plot["Time"].apply(race_time_to_seconds)
+            df_countryHistory_plot = df_countryHistory_plot.dropna(subset=["Time Seconds"])
+            df_countryHistory_plot["Time Display"] = df_countryHistory_plot["Time Seconds"].apply(format_race_time)
+            fig_country_history = px.line(
+                df_countryHistory_plot,
+                x="Date",
+                y="Time Seconds",
+                title="Times by Date",
+                color="Country",
+                markers=True,
+                custom_data=["Time Display", "Location"],
+            )
+            fig_country_history.update_traces(
+                hovertemplate="Date=%{x}<br>Time=%{customdata[0]}<br>Location=%{customdata[1]}<extra>%{fullData.name}</extra>"
+            )
+            format_race_time_axis(fig_country_history, df_countryHistory_plot["Time Seconds"])
             fig_country_history.update_traces(textposition="top right")
             st.plotly_chart(fig_country_history, use_container_width=True)
 
