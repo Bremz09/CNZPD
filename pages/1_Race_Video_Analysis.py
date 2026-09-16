@@ -51,7 +51,7 @@ for uname,name,pwd in zip(usernames,names,hashed_passwords):
 authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
 
 try:
-    login_result = authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
+    login_result = authenticator.login(location="main", fields={'Username':'Username', 'Password':'Password', 'Login':'Login'})
 except TypeError:
     login_result = authenticator.login("Login", "main")
 
