@@ -7,6 +7,14 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+from fit_sync import (
+    SYNC_REFERENCE_COLUMN,
+    aligned_fit_frame,
+    attach_sync_reference,
+    load_sync_reference,
+    parse_sync_bytes,
+    sync_payload_to_frame,
+)
 from PIL import Image
 import numpy as np
 from io import StringIO
@@ -15,6 +23,7 @@ from plotly.subplots import make_subplots
 import xlwings as xw
 import datetime
 import io
+import json
 import os.path
 import streamlit.components.v1 as components
 from pandas.api.types import (
@@ -4723,12 +4732,117 @@ if authentication_status:
                         mime='application/vnd.ms-excel'
                     )                
                     
+    def _wts_numeric_gears(df_event):
+        if "Gears" not in df_event.columns:
+            return []
+        gear_values = pd.to_numeric(df_event["Gears"].iloc[:3], errors="coerce")
+        return gear_values.tolist() if gear_values.notna().all() else []
+
+    def _wts_half_lap_times(df_table, rider_index, sparse_timing=False):
+        half_distances = ["125", "250", "375", "500", "625", "750"]
+        if sparse_timing:
+            return [pd.to_numeric(df_table.loc[rider_index, distance], errors="coerce") for distance in half_distances]
+
+        cumulative = 0.0
+        half_lap_times = []
+        segment_distances = ["62.5", "125", "187.5", "250", "312.5", "375", "437.5", "500", "562.5", "625", "687.5", "750"]
+        for distance in segment_distances:
+            segment_time = pd.to_numeric(df_table.loc[rider_index, distance], errors="coerce")
+            if pd.notna(segment_time):
+                cumulative += float(segment_time)
+            if distance in half_distances:
+                half_lap_times.append(cumulative)
+        return half_lap_times
+
+    def _render_wts_fit_report(fit_frame, session_title, df_table, gear_values, sparse_timing):
+        metric_frames = {}
+        for metric in ["power", "cadence", "torque"]:
+            metric_frame = aligned_fit_frame(fit_frame, session_title, metric)
+            if not metric_frame.empty:
+                metric_frames[metric] = metric_frame
+
+        if "cadence" not in metric_frames or "power" not in metric_frames:
+            return False
+
+        cadence_frame = metric_frames["cadence"].copy()
+        power_frame = metric_frames["power"].copy()
+        gear_map = {str(name).strip(): gear for name, gear in zip(df_table["Rider"], gear_values)}
+        cadence_frame["Gear"] = cadence_frame["Rider"].map(gear_map)
+        cadence_frame["Speed (km/h)"] = cadence_frame["Value"] * cadence_frame["Gear"] * np.pi * 0.0254 * 3.6 / 60
+        speed_frame = cadence_frame.dropna(subset=["Speed (km/h)"]).copy()
+        speed_frame["Value"] = speed_frame["Speed (km/h)"]
+
+        stats_rows = []
+        half_lap_rows = []
+        for rider_index, rider_name in enumerate(df_table["Rider"].astype(str)):
+            rider_power = power_frame[power_frame["Rider"] == rider_name]
+            rider_cadence = cadence_frame[cadence_frame["Rider"] == rider_name]
+            rider_torque = metric_frames.get("torque", pd.DataFrame())
+            rider_torque = rider_torque[rider_torque["Rider"] == rider_name]
+            half_laps = _wts_half_lap_times(df_table, rider_index, sparse_timing)
+            half_row = {"Rider": rider_name}
+            previous_time = 0.0
+            for half_index, half_time in enumerate(half_laps, start=1):
+                half_row[f"H{half_index}"] = half_time
+                cadence_mask = rider_cadence["Video Time (s)"].between(previous_time, half_time, inclusive="right")
+                speed_mask = speed_frame["Rider"].eq(rider_name) & speed_frame["Video Time (s)"].between(previous_time, half_time, inclusive="right")
+                half_row[f"H{half_index} Cadence (rpm)"] = rider_cadence.loc[cadence_mask, "Value"].mean()
+                half_row[f"H{half_index} Speed (km/h)"] = speed_frame.loc[speed_mask, "Value"].mean()
+                if pd.notna(half_time):
+                    previous_time = half_time
+            half_lap_rows.append(half_row)
+            stats_rows.append({
+                "Rider": rider_name,
+                "Gear": gear_values[rider_index],
+                "Peak Power (W)": rider_power["Value"].max(),
+                "Peak Cadence (rpm)": rider_cadence["Value"].max(),
+                "Peak Torque (Nm)": rider_torque["Value"].max() if not rider_torque.empty else np.nan,
+            })
+
+        st.subheader("FIT Race Report")
+        power_col, cadence_col = st.columns(2)
+        with power_col:
+            st.plotly_chart(px.line(power_frame, x="Video Time (s)", y="Value", color="Rider", title="Power vs Time", labels={"Value": "Power (W)"}), use_container_width=True)
+        with cadence_col:
+            st.plotly_chart(px.line(cadence_frame, x="Video Time (s)", y="Value", color="Rider", title="Cadence vs Time", labels={"Value": "Cadence (rpm)"}), use_container_width=True)
+        st.plotly_chart(px.line(speed_frame, x="Video Time (s)", y="Value", color="Rider", title="Speed vs Time", labels={"Value": "Speed (km/h)"}), use_container_width=True)
+        st.subheader("Rider FIT Stats")
+        st.dataframe(pd.DataFrame(stats_rows).round(1), use_container_width=True, hide_index=True)
+        st.subheader("Cumulative Half-Lap Times")
+        half_lap_frame = pd.DataFrame(half_lap_rows)
+        st.dataframe(half_lap_frame.round(2), use_container_width=True, hide_index=True)
+        if len(half_lap_frame) >= 3:
+            gap_frame = pd.DataFrame({
+                "Half-Lap": [f"H{i}" for i in range(1, 7)],
+                f"{half_lap_frame.loc[0, 'Rider']} -> {half_lap_frame.loc[1, 'Rider']} gap": [
+                    half_lap_frame.loc[1, f"H{i}"] - half_lap_frame.loc[0, f"H{i}"] for i in range(1, 7)
+                ],
+                f"{half_lap_frame.loc[1, 'Rider']} -> {half_lap_frame.loc[2, 'Rider']} gap": [
+                    half_lap_frame.loc[2, f"H{i}"] - half_lap_frame.loc[1, f"H{i}"] for i in range(1, 7)
+                ],
+            })
+            st.plotly_chart(
+                px.line(gap_frame, x="Half-Lap", y=gap_frame.columns[1:], markers=True, title="Cumulative Rider Gap", labels={"value": "Gap (s)"}),
+                use_container_width=True,
+            )
+
+        cadence_half = half_lap_frame[["Rider"] + [f"H{i} Cadence (rpm)" for i in range(1, 7)]]
+        speed_half = half_lap_frame[["Rider"] + [f"H{i} Speed (km/h)" for i in range(1, 7)]]
+        cadence_half.columns = ["Rider"] + [f"H{i}" for i in range(1, 7)]
+        speed_half.columns = ["Rider"] + [f"H{i}" for i in range(1, 7)]
+        st.subheader("Cadence at Half-Lap (rpm)")
+        st.dataframe(cadence_half.round(1), use_container_width=True, hide_index=True)
+        st.subheader("Speed at Half-Lap (km/h)")
+        st.dataframe(speed_half.round(1), use_container_width=True, hide_index=True)
+        return True
+
     ################################################ Women's Team Sprint ########################################
     
     if racetype == "Women's Team Sprint":
         
         st.markdown("---")            
-        df_master = pd.read_excel(f'pages/video_analysis/WTS_Master_Women.xlsx')
+        wts_workbook = pd.ExcelFile(f'pages/video_analysis/WTS_Master_Women.xlsx')
+        df_master = pd.read_excel(wts_workbook, sheet_name=wts_workbook.sheet_names[0])
         #df_master = pd.read_excel("C:\\Users\\SamB\\CNZPD\\pages\\video_analysis\\WTS_Master_Women.xlsx")
         st.header("Race Viewer")
         country_codes = sorted({
@@ -4848,6 +4962,23 @@ if authentication_status:
                 df_table_small = df_table[["Event", "Position", "Rider", "RT", "Lap 1", "Lap 2", "Lap 3", "Time"]].copy()
                 df_table_small = df_table_small.rename(columns={"Lap 1": "Lap1", "Lap 2": "Lap2", "Lap 3": "Lap3", "Time": "time"})
                 st.header(selections[i])
+                fit_sync_frame = pd.DataFrame()
+                if SYNC_REFERENCE_COLUMN in df_temp.columns:
+                    sync_references = df_temp[SYNC_REFERENCE_COLUMN].dropna().astype(str).str.strip()
+                    sync_references = sync_references[sync_references.str.lower() != "nan"]
+                    if not sync_references.empty:
+                        fit_sync_payload = load_sync_reference(sync_references.iloc[0])
+                        if fit_sync_payload is not None:
+                            fit_sync_frame = sync_payload_to_frame(selections[i], fit_sync_payload)
+                gear_values = _wts_numeric_gears(df_temp)
+                if not fit_sync_frame.empty and gear_values:
+                    _render_wts_fit_report(
+                        fit_sync_frame,
+                        selections[i],
+                        df_table,
+                        gear_values,
+                        is_sparse_wts_timing,
+                    )
                 df_table
                 st.subheader("Compact Summary")
                 df_table_small
@@ -4993,6 +5124,61 @@ if authentication_status:
                 st.plotly_chart(wts_time_fig, use_container_width=True)
         st.markdown('---')
         st.header("Editor")
+
+        st.subheader("Attach FIT sync to a session")
+        fit_sync_session = st.selectbox(
+            "Session for FIT sync:",
+            options=df_master["Title"].dropna().astype(str).sort_values(ascending=False).unique(),
+            key="wts_fit_sync_session",
+        )
+        fit_sync_new_session = st.text_input(
+            "Or enter a new session title:",
+            key="wts_fit_sync_new_session",
+        ).strip()
+        fit_sync_target_session = fit_sync_new_session or fit_sync_session
+        uploaded_fit_sync = st.file_uploader(
+            "Choose a .sync file:",
+            type=["sync", "json"],
+            key="wts_fit_sync_uploader",
+        )
+        if uploaded_fit_sync is not None:
+            try:
+                fit_sync_payload = parse_sync_bytes(uploaded_fit_sync.getvalue())
+                fit_sync_riders = ", ".join(fit_sync_payload["riderNames"])
+                st.caption(
+                    f"Loaded {len(fit_sync_payload['files'])} FIT stream(s) for {fit_sync_riders}. "
+                    "The selected session title will be linked to the uploaded filename. "
+                    "Commit the .sync file to pages/video_analysis/FIT_Sync/ before deploying."
+                )
+                if st.button("Create master workbook with FIT sync", key="wts_create_fit_master"):
+                    master_frame = pd.read_excel(
+                        wts_workbook,
+                        sheet_name=wts_workbook.sheet_names[0],
+                    )
+                    updated_master = attach_sync_reference(
+                        master_frame,
+                        fit_sync_target_session,
+                        uploaded_fit_sync.name,
+                    )
+                    fit_master_buffer = io.BytesIO()
+                    with pd.ExcelWriter(fit_master_buffer, engine="xlsxwriter") as writer:
+                        for sheet_name in wts_workbook.sheet_names:
+                            if sheet_name == "FIT_Sync":
+                                continue
+                            if sheet_name == wts_workbook.sheet_names[0]:
+                                sheet_frame = updated_master
+                            else:
+                                sheet_frame = pd.read_excel(wts_workbook, sheet_name=sheet_name)
+                            sheet_frame.to_excel(writer, sheet_name=sheet_name, index=False)
+                    st.download_button(
+                        "Download WTS master with FIT filename reference",
+                        data=fit_master_buffer.getvalue(),
+                        file_name="WTS_Master_Women.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="wts_download_fit_master",
+                    )
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as fit_sync_error:
+                st.error(f"Could not read the FIT sync file: {fit_sync_error}")
 
 
         uploaded_file = st.file_uploader("Choose a file",key="uploader")
