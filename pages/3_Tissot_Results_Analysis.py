@@ -409,7 +409,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -670,7 +670,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -801,7 +801,7 @@ if authentication_status:
             df = pd.read_excel(
                 io='pages/MensRaceResults.xlsm',
                 engine ='openpyxl',
-                sheet_name='Sprint_Trueskill',
+                sheet_name='Sprint',
                 skiprows=0,
                 usecols='A:W',
                 nrows=3000
@@ -885,7 +885,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -1085,9 +1085,9 @@ if authentication_status:
             df = pd.read_excel(
                 io='pages/WomensRaceResults.xlsm',
                 engine ='openpyxl',
-                sheet_name='Sprint_Trueskill',
+                sheet_name='Sprint',
                 skiprows=0,
-                usecols='A:W',
+                usecols='A:X',
                 nrows=3000
                 )
             df = df.replace(',','')
@@ -1168,7 +1168,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -1354,9 +1354,9 @@ if authentication_status:
         def get_data_from_excel():
             df = read_excel_auto_refresh(
                 path='pages/MensRaceResults.xlsm',
-                sheet_name='Keirin_Trueskill',
+                sheet_name='Keirin',
                 skiprows=0,
-                usecols='A:R'
+                usecols='A:T'
             )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -1440,7 +1440,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -1616,9 +1616,9 @@ if authentication_status:
         def get_data_from_excel():
             df = read_excel_auto_refresh(
                 path='pages/WomensRaceResults.xlsm',
-                sheet_name='Keirin_Trueskill',
+                sheet_name='Keirin',
                 skiprows=0,
-                usecols='A:S'
+                usecols='A:T'
             )
             df = df.replace(',','')
             df['Date'] = pd.to_datetime(df['Date']).dt.date
@@ -1703,7 +1703,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -2002,7 +2002,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Country History")
+        st.title(":notebook: Country History")
 
         #FILTERS FOR DATAFRAME
 
@@ -2289,7 +2289,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Country History")
+        st.title(":notebook: Country History")
 
         #FILTERS FOR DATAFRAME
 
@@ -2747,7 +2747,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Rider History")
+        st.title(":notebook: Rider History")
 
         names = df_points_orig['Name'].drop_duplicates().sort_values()
         name = st.multiselect("Select Rider(s):", names)
@@ -3229,6 +3229,14 @@ if authentication_status:
         st.subheader('Summary & Points Race')
 
         ##Defining colouring functions for dataframes
+        def safe_format(value, format_string):
+            if isinstance(value, str):
+                return value
+            try:
+                return format_string.format(value)
+            except (TypeError, ValueError):
+                return value
+
         format_dict = {'Scratch':'{0:,.0f}','Tempo':'{0:,.0f}','Elimination':'{0:,.0f}','Rank':'{0:,.0f}','Sprint 1':'{0:,.0f}', 
                        'Sprint 2':'{0:,.0f}','Sprint 3':'{0:,.0f}','Sprint 4':'{0:,.0f}','Sprint 5':'{0:,.0f}','Sprint 6':'{0:,.0f}',
                        'Sprint 7':'{0:,.0f}','Sprint 8':'{0:,.0f}','Lap +':'{0:,.0f}','Lap -':'{0:,.0f}','Final':'{0:,.0f}',
@@ -3238,6 +3246,10 @@ if authentication_status:
                        4:'{0:,.0f}',8:'{0:,.0f}',27:'{0:,.0f}',28:'{0:,.0f}',29:'{0:,.0f}',30:'{0:,.0f}',31:'{0:,.0f}',32:'{0:,.0f}',
                        36:'{0:,.0f}',35:'{0:,.0f}',34:'{0:,.0f}',33:'{0:,.0f}',
                        'Date': '{:%d-%m-%y}', 'Age': '{0:,.2f}', 'Sub Total': '{0:,.0f}', 'Avg Speed': '{0:,.3f}'}
+        format_dict = {
+            column: (lambda value, format_string=format_string: safe_format(value, format_string))
+            for column, format_string in format_dict.items()
+        }
         def color_points(val):
             if val == 5:
                 background_color = 'darkgoldenrod'    
@@ -3403,7 +3415,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Rider History")
+        st.title(":notebook: Rider History")
 
         names = df_points_orig['Name'].drop_duplicates().sort_values()
         name = st.multiselect("Select Rider(s):", names)
@@ -3864,7 +3876,7 @@ if authentication_status:
         ##Download buttons complete
         st.markdown("---")
 
-        st.title(":bicyclist: Event History")
+        st.title(":notebook: Event History")
 
         countries = df_orig['Country'].drop_duplicates().sort_values()
         country = st.multiselect("Select Country(s):", countries)
@@ -4075,7 +4087,7 @@ if authentication_status:
                 engine ='openpyxl',
                 sheet_name='Madison',
                 skiprows=0,
-                usecols='A:AA',
+                usecols='A:AC',
                 nrows=2000
                 )
             df = df.replace(',','')
@@ -4206,7 +4218,7 @@ if authentication_status:
         ##Download buttons complete
         st.markdown("---")
 
-        st.title(":bicyclist: Event History")
+        st.title(":notebook: Event History")
 
         countries = df_orig['Country'].drop_duplicates().sort_values()
         country = st.multiselect("Select Country(s):", countries)
@@ -4533,7 +4545,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -4813,7 +4825,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -5094,7 +5106,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         athletes = df_orig['Athlete'].drop_duplicates().sort_values()
         athlete = st.multiselect("Select Athlete(s):", athletes)
@@ -5407,7 +5419,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Country History")
+        st.title(":notebook: Country History")
 
         #FILTERS FOR DATAFRAME
 
@@ -5736,7 +5748,7 @@ if authentication_status:
 
         st.markdown("---")
 
-        st.title(":bicyclist: Country History")
+        st.title(":notebook: Country History")
 
         #FILTERS FOR DATAFRAME
 
@@ -6012,7 +6024,7 @@ if authentication_status:
         ##Download buttons complete
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         #FILTERS FOR DATAFRAME
 
@@ -6298,7 +6310,7 @@ if authentication_status:
         st.plotly_chart(fig_tt, use_container_width=True)
         st.markdown("---")
 
-        st.title(":bicyclist: Athlete History")
+        st.title(":notebook: Athlete History")
 
         #FILTERS FOR DATAFRAME
 
