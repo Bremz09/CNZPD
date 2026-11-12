@@ -41,7 +41,7 @@ for uname,name,pwd in zip(usernames,names,hashed_passwords):
     user_dict = {"name": name, "password": pwd}
     credentials["usernames"].update({uname: user_dict})
         
-authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
+authenticator = stauth.Authenticate(credentials, "CNZPD_v2", "abcdef", cookie_expiry_days=30)
 
 try:
     login_result = authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})

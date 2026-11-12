@@ -275,7 +275,7 @@ credentials = {"usernames": {}}
 for uname, name, pwd in zip(usernames, names, hashed_passwords):
     credentials["usernames"].update({uname: {"name": name, "password": pwd}})
 
-authenticator = stauth.Authenticate(credentials, "CNZPD", "abcdef", cookie_expiry_days=30)
+authenticator = stauth.Authenticate(credentials, "CNZPD_v2", "abcdef", cookie_expiry_days=30)
 try:
     login_result = authenticator.login(location="main", fields={'Form name':'Login', 'Username':'Username', 'Password':'Password', 'Login':'Login'})
 except TypeError:
