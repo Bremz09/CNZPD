@@ -110,9 +110,11 @@ def build_paralympics_guideline_lookup(
 ) -> tuple[
     dict[tuple[str, str, str], object],
     dict[tuple[str, str, str], float],
+    dict[tuple[str, str, str], float],
 ]:
     guideline_lookup = {}
     track_participants_lookup = {}
+    road_participants_lookup = {}
     for results, metric_column, precision, is_track in (
         (track_results, "Time_seconds", 3, True),
         (road_results, "Speed", 2, False),
@@ -125,23 +127,33 @@ def build_paralympics_guideline_lookup(
             lookup_key = tuple(str(part) for part in key)
             if pd.notna(value):
                 guideline_lookup[lookup_key] = round(float(value), precision)
-            if is_track:
-                group = rank_three[
-                    (rank_three["Sex"] == key[0])
-                    & (rank_three["Class"] == key[1])
-                    & (rank_three["Event"] == key[2])
-                ]
-                participants = average_participants_with_missing_years(
-                    group,
-                    selected_years,
+            group = rank_three[
+                (rank_three["Sex"] == key[0])
+                & (rank_three["Class"] == key[1])
+                & (rank_three["Event"] == key[2])
+            ]
+            participants = average_participants_with_missing_years(
+                group,
+                selected_years,
+            )
+            if pd.notna(participants):
+                participants_lookup = (
+                    track_participants_lookup
+                    if is_track
+                    else road_participants_lookup
                 )
-                if pd.notna(participants):
-                    track_participants_lookup[lookup_key] = round(
-                        participants,
-                        2,
-                    )
+                participants_lookup[lookup_key] = round(participants, 2)
 
-    return guideline_lookup, track_participants_lookup
+    road_results_in_years = road_results[road_results["Year"].isin(selected_years)]
+    for key, group in road_results_in_years.groupby(["Sex", "Class", "Event"]):
+        lookup_key = tuple(str(part) for part in key)
+        if lookup_key in road_participants_lookup:
+            continue
+        participants = average_participants_with_missing_years(group, selected_years)
+        if pd.notna(participants):
+            road_participants_lookup[lookup_key] = round(participants, 2)
+
+    return guideline_lookup, track_participants_lookup, road_participants_lookup
 
 
 def apply_track_paralympics_factors(
@@ -208,12 +220,13 @@ def apply_track_paralympics_factors(
         )
         for _, row in result.iterrows()
     ]
-    return result.dropna(subset=["Guideline Time"])
+    return result
 
 
 def apply_road_paralympics_factors(
     road_df: pd.DataFrame,
     guideline_lookup: dict[tuple[str, str, str], object],
+    participants_lookup: dict[tuple[str, str, str], float],
     factor_groups: dict[int, tuple[int, int]],
 ) -> pd.DataFrame:
     result = road_df.copy()
@@ -245,6 +258,10 @@ def apply_road_paralympics_factors(
                 )
 
     result["Guideline Speed"] = [guideline_speeds.get(index) for index in result.index]
+    result["Participants"] = [
+        participants_lookup.get((str(row["Sex"]), str(row["Class"]), str(row["Event"])))
+        for _, row in result.iterrows()
+    ]
     result["Factored"] = [
         guideline_speeds[index] / float(factors[index])
         if pd.notna(factors[index]) and index in guideline_speeds
@@ -261,7 +278,7 @@ def apply_road_paralympics_factors(
         else guideline_speeds.get(index)
         for index in result.index
     ]
-    return result.dropna(subset=["Guideline Speed"])
+    return result
 
 
 def build_paralympics_guideline_tables(
@@ -650,7 +667,11 @@ if authentication_status:
         )
         paralympics_sheets = load_paralympics_sheets()
         track_factor_groups, road_factor_groups = load_paralympics_factor_groups()
-        guideline_lookup, track_participants_lookup = build_paralympics_guideline_lookup(
+        (
+            guideline_lookup,
+            track_participants_lookup,
+            road_participants_lookup,
+        ) = build_paralympics_guideline_lookup(
             track_results,
             road_results,
             selected_years,
@@ -672,6 +693,7 @@ if authentication_status:
         paralympics_sheets["Road Data"] = apply_road_paralympics_factors(
             paralympics_sheets["Road Data"],
             guideline_lookup,
+            road_participants_lookup,
             road_factor_groups,
         )
         paralympics_sheets["Track Data"] = paralympics_sheets["Track Data"].reset_index(drop=True)
